@@ -56,7 +56,9 @@ class SocRingView(context: Context) : View(context) {
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
-        val want = (MAX_DP * dp).toInt()
+        // Альбомна: екран низький — циферблат менший, щоб під ним було видно числа (знімки CI 16.10).
+        val maxDp = minOf(MAX_DP, (resources.configuration.screenHeightDp * 0.45f).toInt().coerceAtLeast(MIN_DP))
+        val want = (maxDp * dp).toInt()
         val side = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) want else minOf(w, want)
         setMeasuredDimension(if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) w else side, side)
     }
@@ -74,13 +76,25 @@ class SocRingView(context: Context) : View(context) {
             else -> Palette.accent
         }
         if (percent > 0) canvas.drawArc(box, START, SWEEP * percent / 100f, false, arc)
+        // Текст не виходить за дугу навіть з великим шрифтом телефона (шрифт 1,3 — підпис налазив на дугу).
+        val inner = (r - stroke) * 2f * 0.86f
+        big.textSize = sp(46f)
+        fit(big, "$percent %", inner)
+        small.textSize = sp(14f)
+        fit(small, caption, inner * 0.92f)
         val baseline = cy + big.textSize * 0.3f
         canvas.drawText("$percent %", cx, baseline, big)
         if (caption.isNotEmpty()) canvas.drawText(caption, cx, baseline + small.textSize * 1.8f, small)
     }
 
+    private fun fit(p: Paint, text: String, maxWidth: Float) {
+        val w = p.measureText(text)
+        if (w > maxWidth && w > 0f) p.textSize = p.textSize * maxWidth / w
+    }
+
     companion object {
         const val MAX_DP = 220
+        const val MIN_DP = 140
         const val LOW = 20
         const val EMPTY = 10
         private const val START = 135f
