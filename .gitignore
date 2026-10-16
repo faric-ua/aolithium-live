@@ -1,0 +1,30 @@
+# Aolithium Live — публічний репозиторій.
+# Ключі підпису й паролі — ніколи в Git.
+*.jks
+*.jks.*
+*.keystore
+*.keystore.*
+*.p12
+*signing.properties
+.env*
+*.pem
+*.key
+
+# Записи екрана, журнали з телефона (там може бути повна адреса батареї), медіа — не в Git.
+*.wav
+*.mp3
+*.mp4
+*.log
+logs/
+
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+.kotlin/
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
