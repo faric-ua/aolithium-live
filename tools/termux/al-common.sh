@@ -12,11 +12,11 @@ info() { printf '   %s\n' "$*"; }
 warn() { printf '⚠️  %s\n' "$*"; }
 fail() { printf '❌ %s\n' "$*"; }
 
-tc_version() {
+al_version() {
   sed -n 's/^ *versionName = "\(.*\)"$/\1/p' "$AL_REPO/android/app/build.gradle.kts" 2>/dev/null | head -n 1
 }
 
-tc_need_storage() {
+al_need_storage() {
   if ! mkdir -p "$AL_DOCS" 2>/dev/null; then
     fail "Termux не має доступу до пам'яті телефона."
     info "Один раз: команда termux-setup-storage → «Дозволити»."
@@ -24,17 +24,17 @@ tc_need_storage() {
   fi
 }
 
-tc_gh_ready() {
+al_gh_ready() {
   command -v gh >/dev/null 2>&1 && gh auth status -h github.com >/dev/null 2>&1
 }
 
-tc_prop() {
+al_prop() {
   sed -n "s/^$1=//p" "$AL_PROPS" 2>/dev/null | head -n 1
 }
 
 # Відкрити папку пам'яті телефона в «Моїх файлах». Аргумент — шлях від /storage/emulated/0,
 # напр. "Documents/Aolithium Live/apk/v0.1.4". Три спроби, як у Renault (A26 і M30s відкривають по-різному).
-tc_open_dir() {
+al_open_dir() {
   local enc uri
   enc="$(printf '%s' "$1" | sed 's/%/%25/g; s/ /%20/g; s#/#%2F#g')"
   uri="content://com.android.externalstorage.documents/document/primary%3A$enc"
@@ -49,7 +49,7 @@ tc_open_dir() {
   return 0
 }
 
-tc_open() {
+al_open() {
   # Відкрити файл (APK → встановлення).
   if command -v termux-open >/dev/null 2>&1; then
     termux-open --view "$1" >/dev/null 2>&1 || termux-open "$1" >/dev/null 2>&1

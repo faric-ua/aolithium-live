@@ -165,6 +165,24 @@ class OwnKey(unittest.TestCase):
             for bad in ("track-catcher", "TC_", "trackcatcher"):
                 self.assertNotIn(bad, text, f"{f.name}: {bad}")
 
+    def test_every_called_function_is_defined(self):
+        """16.10 22:06, пункт 7 на A26: «al_gh_ready: command not found» — у спільному файлі функції лишились з назвами
+        Track Catcher (tc_*). Тепер: кожна al_* функція, яку кличуть скрипти, оголошена в al-common.sh."""
+        common = (ROOT / "tools/termux/al-common.sh").read_text(encoding="utf-8")
+        defined = set(re.findall(r"^(al_[a-z_]+)\(\)", common, re.M))
+        used = set()
+        for f in [ROOT / "menu.sh", *(ROOT / "tools/termux").glob("*.sh")]:
+            used |= set(re.findall(r"\b(al_[a-z_]+)\b", f.read_text(encoding="utf-8")))
+        self.assertEqual(set(), used - defined, "функції без оголошення")
+        for f in [ROOT / "menu.sh", *(ROOT / "tools/termux").glob("*.sh")]:
+            self.assertNotRegex(f.read_text(encoding="utf-8"), r"\btc_", f.name)
+
+    @unittest.skipUnless(shutil.which("bash"), "потрібен bash")
+    def test_common_functions_load_in_bash(self):
+        r = subprocess.run(["bash", "-c", '. "$1" && type al_gh_ready al_need_storage al_open al_prop al_version >/dev/null',
+                            "_", str(ROOT / "tools/termux/al-common.sh")], capture_output=True, text=True)
+        self.assertEqual(0, r.returncode, r.stderr)
+
     def test_other_phone_item(self):
         self.assertIn("al-other-phone.sh", MENU)
         other = (ROOT / "tools/termux/al-other-phone.sh").read_text(encoding="utf-8")
