@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="al_bg">#FF0E1116</color>
+    <color name="al_accent">#FF5EC8F2</color>
+    <color name="ic_launcher_background">#FF0E1116</color>
+
+    <style name="Theme.AolithiumLive" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/al_bg</item>
+        <item name="android:colorBackground">@color/al_bg</item>
+        <item name="android:colorAccent">@color/al_accent</item>
+        <item name="android:colorPrimary">@color/al_bg</item>
+        <item name="android:colorPrimaryDark">@color/al_bg</item>
+        <item name="android:statusBarColor">@color/al_bg</item>
+        <item name="android:navigationBarColor">@color/al_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+</resources>

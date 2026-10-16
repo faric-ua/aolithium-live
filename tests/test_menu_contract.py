@@ -1,0 +1,189 @@
+"""Меню Termux: номери не зсуваються, скрипти існують, оновлення лише fast-forward."""
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+MENU = (ROOT / "menu.sh").read_text(encoding="utf-8")
+STABLE_ITEMS = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "0"}
+
+
+def git(cwd, *args):
+    return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=True).stdout.strip()
+
+
+class MenuContract(unittest.TestCase):
+    def test_numbers_are_stable(self):
+        shown = set(re.findall(r'echo "\s*(\d+) — ', MENU))
+        handled = set(re.findall(r"^\s+(\d+)(?:\s*\|[^)]*)?\)", MENU, re.M))
+        self.assertTrue(STABLE_ITEMS <= shown, shown)
+        self.assertTrue(STABLE_ITEMS <= handled, handled)
+
+    def test_every_tool_exists(self):
+        for name in re.findall(r"(al-[a-z-]+\.sh)", MENU):
+            self.assertTrue((ROOT / "tools/termux" / name).is_file(), name)
+
+    def test_no_destructive_git(self):
+        for f in [ROOT / "menu.sh", *(ROOT / "tools/termux").glob("*.sh")]:
+            text = f.read_text(encoding="utf-8")
+            for bad in ("reset --hard", "git clean", "push --force", "rm -rf"):
+                self.assertNotIn(bad, text, f"{f.name}: {bad}")
+
+    def test_widget_launcher_syncs_then_opens_menu(self):
+        w = (ROOT / "termux-widget/Aolithium Live").read_text(encoding="utf-8")
+        self.assertTrue(w.startswith("#!/data/data/com.termux/files/usr/bin/bash"))
+        self.assertLess(w.index("al-sync.sh"), w.index('exec bash "$MENU"'))
+        self.assertIn("AL_MENU_SYNCED=1", w)
+        self.assertIn('PROJECT="$HOME/aolithium-live"', w)
+        self.assertIn("al-widget.sh\" --quiet", MENU)
+        self.assertNotIn("rm -", (ROOT / "tools/termux/al-widget.sh").read_text(encoding="utf-8"))
+
+    def test_shell_returns_to_menu_and_update_restarts(self):
+        shell = MENU[MENU.index("    6)"):MENU.index("    7)")]
+        self.assertIn("bash -l", shell)
+        self.assertIn('exec bash "$REPO/menu.sh"', shell)
+        upd = MENU[MENU.index("    1)"):MENU.index("    2)")]
+        self.assertLess(upd.index('if [ "$rc" = 0 ]'), upd.index('exec bash "$REPO/menu.sh"'))
+
+    def test_local_build_shows_progress(self):
+        b = (ROOT / "tools/termux/al-local-build.sh").read_text(encoding="utf-8")
+        self.assertIn('kill -0 "$pid"', b)
+        self.assertIn('wait "$pid"', b)
+
+    def test_second_phone_never_creates_second_key(self):
+        setup = (ROOT / "tools/termux/al-signing-setup.sh").read_text(encoding="utf-8")
+        guard = setup.index("gh secret list")
+        create = setup.index("keytool -genkeypair")
+        self.assertLess(guard, create, "перевірка «ключ уже в GitHub» має бути до створення ключа")
+
+    def test_phone_build_goes_to_separate_release(self):
+        pub = (ROOT / "tools/termux/al-publish-phone-apk.sh").read_text(encoding="utf-8")
+        inst = (ROOT / "tools/termux/al-install-latest.sh").read_text(encoding="utf-8")
+        self.assertIn('TAG="phone-build"', pub)
+        self.assertIn("git diff --quiet HEAD -- android", pub)  # опис = код у Git
+        self.assertNotIn("--force", pub)
+        self.assertIn("grep -v '^phone-build$'", inst)  # пункт 2 — лише офіційні релізи
+        build = (ROOT / "tools/termux/al-local-build.sh").read_text(encoding="utf-8")
+        self.assertIn("al-publish-phone-apk.sh", build)
+
+    def test_phone_and_ci_use_same_gradle_and_signing_names(self):
+        build = (ROOT / "tools/termux/al-local-build.sh").read_text(encoding="utf-8")
+        ci = (ROOT / ".github/workflows/android.yml").read_text(encoding="utf-8")
+        gradle = (ROOT / "android/app/build.gradle.kts").read_text(encoding="utf-8")
+        setup = (ROOT / "tools/termux/al-signing-setup.sh").read_text(encoding="utf-8")
+        self.assertIn("gradle-8.13", build)
+        self.assertIn('gradle-version: "8.13"', ci)
+        for env in ("AL_KEYSTORE_PATH", "AL_STORE_PASSWORD", "AL_KEY_ALIAS", "AL_KEY_PASSWORD"):
+            self.assertIn(env, gradle)
+            self.assertIn(env, ci)
+        for prop in ("storeFile", "storePassword", "keyAlias", "keyPassword"):
+            self.assertIn(f'"{prop}"', gradle)
+            self.assertIn(f"{prop}=", setup)
+        for secret in ("AL_KEYSTORE_B64", "AL_STORE_PASSWORD", "AL_KEY_ALIAS", "AL_KEY_PASSWORD", "AL_CERT_SHA256"):
+            self.assertIn(secret, setup)
+            self.assertIn(f"secrets.{secret}", ci)
+
+
+@unittest.skipUnless(shutil.which("git") and shutil.which("bash"), "потрібні git і bash")
+class SyncBehaviour(unittest.TestCase):
+    """al-sync.sh на справжніх тимчасових репо."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self.origin = self.tmp / "origin.git"
+        subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(self.origin)], check=True)
+        self.work = self.tmp / "work"
+        subprocess.run(["git", "clone", "-q", str(self.origin), str(self.work)], check=True, capture_output=True)
+        for k, v in (("user.name", "t"), ("user.email", "t@example.com")):
+            git(self.work, "config", k, v)
+        git(self.work, "checkout", "-q", "-b", "main")
+        (self.work / "tools/termux").mkdir(parents=True)
+        for f in ("al-common.sh", "al-sync.sh"):
+            shutil.copy(ROOT / "tools/termux" / f, self.work / "tools/termux" / f)
+        (self.work / "a.txt").write_text("1")
+        git(self.work, "add", "-A")
+        git(self.work, "commit", "-qm", "init")
+        git(self.work, "push", "-q", "origin", "main")
+        self.phone = self.tmp / "phone"
+        subprocess.run(["git", "clone", "-q", "-b", "main", str(self.origin), str(self.phone)], check=True, capture_output=True)
+
+    def sync(self):
+        env = dict(os.environ, AL_REPO=str(self.phone), HOME=str(self.tmp))
+        return subprocess.run(["bash", str(self.phone / "tools/termux/al-sync.sh")], cwd=self.phone, env=env, capture_output=True, text=True)
+
+    def push_change(self, text="2"):
+        (self.work / "a.txt").write_text(text)
+        git(self.work, "commit", "-qam", "change")
+        git(self.work, "push", "-q", "origin", "main")
+
+    def test_up_to_date(self):
+        self.assertEqual(10, self.sync().returncode)
+
+    def test_fast_forward(self):
+        self.push_change()
+        r = self.sync()
+        self.assertEqual(0, r.returncode, r.stdout + r.stderr)
+        self.assertEqual("2", (self.phone / "a.txt").read_text())
+
+    def test_dirty_is_not_touched(self):
+        self.push_change()
+        (self.phone / "a.txt").write_text("локальна правка")
+        self.assertEqual(4, self.sync().returncode)
+        self.assertEqual("локальна правка", (self.phone / "a.txt").read_text())
+
+    def test_wrong_branch(self):
+        git(self.phone, "checkout", "-q", "-b", "other")
+        self.assertEqual(3, self.sync().returncode)
+
+    def test_diverged_is_not_reset(self):
+        self.push_change()
+        for k, v in (("user.name", "t"), ("user.email", "t@example.com")):
+            git(self.phone, "config", k, v)
+        (self.phone / "b.txt").write_text("телефон")
+        git(self.phone, "add", "-A")
+        git(self.phone, "commit", "-qm", "phone")
+        before = git(self.phone, "rev-parse", "HEAD")
+        self.assertEqual(7, self.sync().returncode)
+        self.assertEqual(before, git(self.phone, "rev-parse", "HEAD"))
+
+
+class OwnKey(unittest.TestCase):
+    """Свій ключ підпису й свої секрети — не плутати з Track Catcher (той самий телефон, той самий ~/.android)."""
+
+    def test_key_files_are_own(self):
+        common = (ROOT / "tools/termux/al-common.sh").read_text(encoding="utf-8")
+        self.assertIn('AL_KEY="$HOME/.android/aolithium-live.jks"', common)
+        self.assertIn('AL_PROPS="$HOME/.android/aolithium-live-signing.properties"', common)
+        for f in [ROOT / "menu.sh", *(ROOT / "tools/termux").glob("*.sh"), ROOT / ".github/workflows/android.yml",
+                  ROOT / "android/app/build.gradle.kts"]:
+            text = f.read_text(encoding="utf-8")
+            for bad in ("track-catcher", "TC_", "trackcatcher"):
+                self.assertNotIn(bad, text, f"{f.name}: {bad}")
+
+    def test_other_phone_item(self):
+        self.assertIn("al-other-phone.sh", MENU)
+        other = (ROOT / "tools/termux/al-other-phone.sh").read_text(encoding="utf-8")
+        self.assertIn("releases/latest", other)
+
+
+class MenuBanner(unittest.TestCase):
+    """Шапка з великою назвою між смужками (faric 2026-10-16 02:12) — і влазить у вузький екран телефона."""
+
+    def test_banner_shown_and_fits_phone(self):
+        menu = MENU
+        self.assertIn("show_banner() {", menu)
+        self.assertRegex(menu, r"while true; do\n  clear\n(?:.*\n){0,6}?  show_banner\n")
+        body = menu.split("show_banner() {", 1)[1].split("\n}\n", 1)[0]
+        art = re.findall(r'echo -e "\$\{c\}( [^"$]*)\$\{z\}"', body)
+        self.assertEqual(6, len(art), "дві назви по три рядки")
+        for line in art:
+            self.assertLessEqual(len(line), 37, line)
+
+
+if __name__ == "__main__":
+    unittest.main()
