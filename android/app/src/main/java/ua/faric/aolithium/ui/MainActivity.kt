@@ -117,6 +117,8 @@ class MainActivity : Activity() {
 
     fun goHome() = show(Page.HOME, null)
 
+    fun openHelp() = show(Page.HELP, null)
+
     private fun show(p: Page, address: String?) {
         screen?.let { s ->
             val b = Bundle()

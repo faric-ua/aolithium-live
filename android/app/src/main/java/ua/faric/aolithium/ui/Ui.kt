@@ -154,6 +154,31 @@ class Ui(val ctx: Context) {
         b.alpha = if (enabled) 1f else 0.45f
     }
 
+    /** Вибір з кількох (як у Track Catcher): вибране — зелена рамка 2 dp, білий жирний текст. Без галочок. */
+    fun choice(label: String, selected: Boolean, onClick: () -> Unit): TextView = TextView(ctx).apply {
+        text = label
+        gravity = Gravity.CENTER
+        textAlignment = View.TEXT_ALIGNMENT_CENTER
+        maxLines = 2
+        textSize = 15f
+        minHeight = dp(MIN_TOUCH_DP)
+        minimumHeight = dp(MIN_TOUCH_DP)
+        minWidth = dp(64)
+        setPadding(dp(14), dp(8), dp(14), dp(8))
+        isClickable = true
+        isFocusable = true
+        isSelected = selected
+        setOnClickListener { onClick() }
+        typeface = if (selected) MEDIUM else REGULAR
+        setTextColor(if (selected) Palette.text else Palette.muted)
+        background = pressable(
+            if (selected) rounded(Palette.selectedFill, Palette.success, radiusDp = 12, strokeDp = 2)
+            else rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12),
+            12,
+        )
+        contentDescription = if (selected) "$label · вибрано" else label
+    }
+
     /** Стан — кольорова «пігулка» зі словом (не лише колір). */
     fun pill(label: String, tone: Tone): TextView = text(label, 12.5f, tone.color, medium = true).apply {
         setPadding(dp(10), dp(4), dp(10), dp(5))

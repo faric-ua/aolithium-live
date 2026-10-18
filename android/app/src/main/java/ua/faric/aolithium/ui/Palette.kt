@@ -21,6 +21,8 @@ object Palette {
     const val dangerFill = 0xFF3A1C21.toInt()
     const val warning = 0xFFF0B968.toInt()
     const val warningFill = 0xFF2B251F.toInt()
+    /** Четверта лінія на графіку комірок. */
+    const val violet = 0xFFA99FFF.toInt()
     const val track = 0xFF262E3A.toInt()
     const val scrim = 0xCC05070A.toInt()
     const val ripple = 0x33FFFFFF
