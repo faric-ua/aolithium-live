@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import ua.faric.aolithium.ble.BleScanner
 import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.data.Batteries
 
 /**
@@ -134,8 +135,9 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         val batteriesFound = results.filter { it.kind != BmsMatch.Kind.OTHER }
         val others = results.filter { it.kind == BmsMatch.Kind.OTHER }
         for (f in batteriesFound) {
-            val sub = kindLine(f.kind, f.address) + " · сигнал ${f.rssi} dBm"
+            val sub = kindLine(f.kind, f.address) + " · " + Signal.describe(f.rssi)
             card.addView(batteryRow(f.name ?: "Без назви", sub) { connectTo(f) }, ui.matchWrap())
+            if (Signal.tooFar(f.rssi)) card.addView(ui.text(FAR_HINT, 14f, Palette.warning))
         }
         if (scannedOnce && !scanner.isScanning && batteriesFound.isEmpty()) {
             card.addView(ui.muted(NOTHING_FOUND, 14f))
@@ -148,7 +150,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
             if (showOthers) {
                 card.addView(ui.muted("Це не схоже на плату батареї. Підключатись — лише якщо точно знаєш, що це вона: застосунок тільки читає, нічого не змінює.", 13f))
                 for (f in others) {
-                    card.addView(batteryRow(f.name ?: "Без назви", BmsMatch.shortAddress(f.address) + " · ${f.rssi} dBm") { connectTo(f) }, ui.matchWrap())
+                    card.addView(batteryRow(f.name ?: "Без назви", BmsMatch.shortAddress(f.address) + " · " + Signal.describe(f.rssi)) { connectTo(f) }, ui.matchWrap())
                 }
             }
         }
@@ -198,6 +200,8 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     }
 
     private companion object {
+        const val FAR_HINT = "Сигнал дуже слабкий — батарея далеко або за стіною. З таким сигналом підключення " +
+            "зазвичай зривається. Підійди ближче (1–3 м) і пошукай ще раз."
         const val KEY_OTHERS = "others"
         const val KEY_SCANNED = "scanned"
         const val NOTHING_FOUND = "Батареї не знайдено. Перевір: батарея поруч (до 5–10 м); застосунок Aolithium на інших " +
