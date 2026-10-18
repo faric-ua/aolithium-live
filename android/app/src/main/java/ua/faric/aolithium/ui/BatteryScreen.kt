@@ -505,12 +505,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         if (pts.isEmpty()) {
             sum.addView(ui.muted("Ще немає записів. Історія пишеться раз на 10 с, поки застосунок відкритий і на зв'язку.", 14f))
         } else {
-            sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success))
-            sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger))
-            if (stats.socMin != null) sum.addView(fact("Заряд", "${stats.socMin}–${stats.socMax} %", "soc"))
-            sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current"))
-            if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp"))
-            stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta")) }
+            sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success, known = true))
+            sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger, known = true))
+            if (stats.socMin != null) sum.addView(fact("Заряд", "${stats.socMin}–${stats.socMax} %", "soc", known = true))
+            sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
+            if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp", known = true))
+            stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta", known = true)) }
             val share = (stats.coveredMs * 100 / range.ms).coerceIn(0, 100)
             sum.addView(ui.muted("Записано ${share} % часу (решта — застосунок був закритий).", 12.5f))
         }
@@ -618,9 +618,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val hist = ui.card(8)
         hist.addView(labelRow("Історія", LineIcon.CHART, "history"))
         val (days, bytes) = historyBytes ?: history.size(address).also { historyBytes = it }
-        hist.addView(fact("Записано", if (demo != null) "демо — не пишеться" else "$days дн. · ${Fmt.num(bytes / 1024.0, 0)} КБ", "history"))
-        hist.addView(fact("Як часто", "раз на 10 с, поки відкрито", "history"))
-        hist.addView(fact("Скільки зберігається", "${HistoryStore.KEEP_DAYS} днів", "history"))
+        hist.addView(fact("Записано", if (demo != null) "демо — не пишеться" else "$days дн. · ${Fmt.num(bytes / 1024.0, 0)} КБ", "history", known = true))
+        hist.addView(fact("Як часто", "раз на 10 с, поки відкрито", "history", known = true))
+        hist.addView(fact("Скільки зберігається", "${HistoryStore.KEEP_DAYS} днів", "history", known = true))
         if (demo == null && days > 0) hist.addView(ui.button("Стерти історію цієї батареї", Ui.Kind.DANGER) { showClearHistory() }, ui.matchWrap())
 
         val dict = ui.card(6)
