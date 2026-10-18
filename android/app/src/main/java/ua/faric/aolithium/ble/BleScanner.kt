@@ -199,9 +199,14 @@ class BleScanner(context: Context) {
                     main.post { finish(null) }
                 }
             }
-            val filters = listOf(ScanFilter.Builder().setDeviceAddress(address.uppercase()).build())
+            // Неправильна адреса — ScanFilter кидає виняток і закриває застосунок (знайдено на емуляторі 18.10).
+            if (!android.bluetooth.BluetoothAdapter.checkBluetoothAddress(address.uppercase())) {
+                done(null)
+                return
+            }
             val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
             try {
+                val filters = listOf(ScanFilter.Builder().setDeviceAddress(address.uppercase()).build())
                 scanner.startScan(filters, settings, cb)
             } catch (e: SecurityException) {
                 done(null)

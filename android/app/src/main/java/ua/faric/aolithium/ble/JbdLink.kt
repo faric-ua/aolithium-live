@@ -104,6 +104,11 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
             status(LinkStatus.Phase.FAILED, "Bluetooth вимкнено. Увімкни його й натисни «Підключити ще раз».")
             return
         }
+        if (!android.bluetooth.BluetoothAdapter.checkBluetoothAddress(address.uppercase())) {
+            running = false
+            status(LinkStatus.Phase.FAILED, "Неправильна адреса батареї ($address).")
+            return
+        }
         resetSession()
         status(LinkStatus.Phase.CONNECTING)
         val token = ++attempt
