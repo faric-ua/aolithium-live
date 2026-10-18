@@ -81,14 +81,14 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
             card.addView(ui.muted(n.explain, 14f))
         }
         if (BtAccess.Need.NO_BLE !in needs) {
-            val row = FlowLayout(host, ui.dp(8), ui.dp(8))
+            val buttons = ArrayList<View>()
             when {
-                BtAccess.Need.PERMISSION in needs -> row.addView(ui.button("Дозволити", Ui.Kind.PRIMARY) { host.requestAccess() })
-                BtAccess.Need.BLUETOOTH_OFF in needs -> row.addView(ui.button("Увімкнути Bluetooth", Ui.Kind.PRIMARY) { host.enableBluetooth() })
-                BtAccess.Need.LOCATION_OFF in needs -> row.addView(ui.button("Увімкнути геолокацію", Ui.Kind.PRIMARY) { host.openLocationSettings() })
+                BtAccess.Need.PERMISSION in needs -> buttons += ui.button("Дозволити", Ui.Kind.PRIMARY) { host.requestAccess() }
+                BtAccess.Need.BLUETOOTH_OFF in needs -> buttons += ui.button("Увімкнути Bluetooth", Ui.Kind.PRIMARY) { host.enableBluetooth() }
+                BtAccess.Need.LOCATION_OFF in needs -> buttons += ui.button("Увімкнути геолокацію", Ui.Kind.PRIMARY) { host.openLocationSettings() }
             }
-            if (BtAccess.Need.PERMISSION in needs) row.addView(ui.button("Налаштування застосунку", Ui.Kind.QUIET) { host.openAppSettings() })
-            card.addView(row, ui.matchWrap())
+            if (BtAccess.Need.PERMISSION in needs) buttons += ui.button("Налаштування застосунку", Ui.Kind.QUIET) { host.openAppSettings() }
+            card.addView(ui.grid(buttons), ui.matchWrap())
         }
         accessBox.addView(card, ui.matchWrap())
     }
@@ -143,7 +143,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
             card.addView(ui.muted(NOTHING_FOUND, 14f))
         }
         if (others.isNotEmpty()) {
-            card.addView(ui.button(if (showOthers) "Сховати інші пристрої" else "Інші пристрої поруч: ${others.size}", Ui.Kind.QUIET) {
+            card.addView(ui.button(if (showOthers) "Сховати інші пристрої" else "Інші пристрої поруч: ${others.size}", Ui.Kind.NORMAL) {
                 showOthers = !showOthers
                 renderScan()
             }, ui.matchWrap())

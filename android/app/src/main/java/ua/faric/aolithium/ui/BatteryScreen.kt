@@ -476,9 +476,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private fun renderCharts() {
-        val chips = FlowLayout(host, ui.dp(8), ui.dp(8))
+        // Періоди — один рядок на всю ширину, 5 рівних кнопок.
+        val chipList = ArrayList<View>()
         for (r in Range.entries) {
-            chips.addView(ui.choice(r.label, r == range) {
+            chipList.add(ui.choice(r.label, r == range) {
                 if (r != range) {
                     range = r
                     points = emptyList()
@@ -488,7 +489,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 }
             })
         }
-        body.addView(chips, ui.matchWrap())
+        chipList.forEach { (it as TextView).apply { minWidth = 0; setPadding(ui.dp(2), ui.dp(8), ui.dp(2), ui.dp(8)); textSize = 14f } }
+        body.addView(ui.grid(chipList, perRow = chipList.size, gapDp = 6), ui.matchWrap())
         if (pointsFor != range) {
             body.addView(ui.muted("Завантажую історію…", 14f), ui.matchWrap())
             return
@@ -605,12 +607,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun renderMore() {
         val actions = ui.card()
         actions.addView(labelRow("Дії", LineIcon.SLIDERS, null))
-        val row = FlowLayout(host, ui.dp(8), ui.dp(8))
-        if (demo == null) row.addView(ui.iconButton(LineIcon.PEN, "Перейменувати", Ui.Kind.NORMAL) { showRename() })
-        row.addView(ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.NORMAL) { reconnect() })
-        row.addView(ui.button("Журнал зв'язку", Ui.Kind.NORMAL) { showLog() })
-        if (demo == null && batteries.find(address) != null) row.addView(ui.button("Прибрати зі списку", Ui.Kind.QUIET) { showForget() })
-        actions.addView(row, ui.matchWrap())
+        val buttons = ArrayList<View>()
+        if (demo == null) buttons += ui.iconButton(LineIcon.PEN, "Перейменувати", Ui.Kind.NORMAL) { showRename() }
+        buttons += ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.NORMAL) { reconnect() }
+        buttons += ui.button("Журнал зв'язку", Ui.Kind.NORMAL) { showLog() }
+        if (demo == null && batteries.find(address) != null) buttons += ui.button("Прибрати зі списку", Ui.Kind.QUIET) { showForget() }
+        actions.addView(ui.grid(buttons), ui.matchWrap())
         actions.addView(ui.muted("Застосунок лише читає плату — нічого в ній не змінює. Поки він підключений, Aolithium на іншому телефоні не підключиться: сховай цей застосунок — через 5 с зв'язок звільниться.", 12.5f))
 
         val hist = ui.card(8)
@@ -664,10 +666,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         return card
     }
 
-    private fun retryRow(): View = FlowLayout(host, ui.dp(8), ui.dp(8)).apply {
-        addView(ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.PRIMARY) { reconnect() })
-        addView(ui.button("Журнал зв'язку", Ui.Kind.QUIET) { showLog() })
-    }
+    private fun retryRow(): View = ui.grid(listOf(
+        ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.PRIMARY) { reconnect() },
+        ui.button("Журнал зв'язку", Ui.Kind.QUIET) { showLog() },
+    ))
 
     private fun reconnect() {
         LinkHolder.release(this)
