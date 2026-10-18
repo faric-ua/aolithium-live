@@ -20,7 +20,7 @@ import ua.faric.aolithium.core.Fmt
 /**
  * Простий графік лініями за час. Кілька ліній; розриви (застосунок був закритий) — не з'єднуються.
  * [zeroSplit] — для струму: вище нуля лінія зелена (заряд), нижче — червона (розряд).
- * Дотик і рух пальцем — вертикальна риска й значення в цій точці.
+ * Дотик чи ведення пальцем убік — вертикальна риска й значення в цій точці.
  */
 class ChartView(context: Context) : View(context) {
     class Series(val name: String, val color: Int, val points: List<Pair<Long, Double>?>)
@@ -68,16 +68,42 @@ class ChartView(context: Context) : View(context) {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), (HEIGHT_DP * dp).toInt())
     }
 
+    private var downX = 0f
+    private var downY = 0f
+    private var dragging = false
+    private val slop = android.view.ViewConfiguration.get(context).scaledTouchSlop
+
+    /**
+     * Дотик — курсор зі значенням. Рух пальцем убік — курсор іде за пальцем (сторінку не гортаємо);
+     * рух угору-вниз — гортається сторінка, як завжди (інакше на вкладці «Графіки» не прогорнути).
+     */
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                parent?.requestDisallowInterceptTouchEvent(true)
+            MotionEvent.ACTION_DOWN -> {
+                downX = e.x
+                downY = e.y
+                dragging = false
                 touchX = e.x
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_MOVE -> {
+                val dx = abs(e.x - downX)
+                val dy = abs(e.y - downY)
+                if (!dragging && dx > slop && dx > dy) {
+                    dragging = true
+                    parent?.requestDisallowInterceptTouchEvent(true)
+                }
+                if (dragging) touchX = e.x
+            }
+            MotionEvent.ACTION_UP -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
+                if (dragging) touchX = -1f // після ведення пальцем — сховати; після дотику — лишити, доки не торкнешся знову
+                dragging = false
+            }
+            MotionEvent.ACTION_CANCEL -> {
                 parent?.requestDisallowInterceptTouchEvent(false)
                 touchX = -1f
+                dragging = false
             }
         }
         invalidate()

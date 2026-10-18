@@ -8,7 +8,14 @@ PKG="ua.faric.aolithium.dev"
 ACT="$PKG/ua.faric.aolithium.ui.MainActivity"
 mkdir -p "$OUT"
 
-shot() { sleep "${2:-3}"; adb exec-out screencap -p > "$OUT/$1.png"; echo "знімок: $1"; }
+# Системне вікно «Pixel Launcher isn't responding» на повільному емуляторі закривало знімки (18.10) — ховаємо.
+shot() {
+  sleep "${2:-3}"
+  adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
+  sleep 0.5
+  adb exec-out screencap -p > "$OUT/$1.png"
+  echo "знімок: $1"
+}
 rotate() {
   adb shell settings put system user_rotation "$1"
   adb shell cmd window user-rotation lock "$1" >/dev/null 2>&1 || adb shell wm user-rotation lock "$1" >/dev/null 2>&1 || true
@@ -23,6 +30,7 @@ adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system font_scale 1.0
+adb shell settings put global hide_error_dialogs 1 || true
 adb install -r "$APK"
 adb logcat -c
 rotate 0
