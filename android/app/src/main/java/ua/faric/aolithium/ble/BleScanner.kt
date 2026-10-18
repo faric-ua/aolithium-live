@@ -9,13 +9,15 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.Signal
 
 /**
  * Пошук пристроїв Bluetooth LE поруч ([SCAN_MS]). Кожен знайдений — з оцінкою, чи це плата батареї.
  * Колбеки — у головному потоці.
  */
 class BleScanner(context: Context) {
-    data class Found(val address: String, val name: String?, val rssi: Int, val kind: BmsMatch.Kind)
+    /** [rssi] — згладжене число для екрана; [order] — коли з'явився (порядок у списку не міняється). */
+    data class Found(val address: String, val name: String?, val rssi: Int, val kind: BmsMatch.Kind, val order: Int)
 
     interface Listener {
         fun onFound(all: List<Found>)
@@ -51,6 +53,7 @@ class BleScanner(context: Context) {
         listener = l
         if (scanning) return
         found.clear()
+        smoothed.clear()
         val scanner = BtAccess.adapter(app)?.bluetoothLeScanner
         if (scanner == null || !BtAccess.bluetoothOn(app)) {
             l.onFinished("Bluetooth вимкнено.")
@@ -104,13 +107,39 @@ class BleScanner(context: Context) {
         seen[address] = r.device
         val kind = BmsMatch.kind(address, name, services, ids)
         val old = found[address]
-        found[address] = Found(address, name ?: old?.name, r.rssi, if (old != null && old.kind != BmsMatch.Kind.OTHER) old.kind else kind)
-        listener?.onFound(sorted())
+        val smooth = Signal.smooth(smoothed[address], r.rssi)
+        smoothed[address] = smooth
+        lastRssi[address] = smooth
+        val shown = Signal.shown(old?.rssi, smooth)
+        val updated = Found(
+            address, name ?: old?.name, shown,
+            if (old != null && old.kind != BmsMatch.Kind.OTHER) old.kind else kind,
+            old?.order ?: found.size,
+        )
+        if (updated == old) return // нічого видимого не змінилось — екран не перемальовуємо
+        found[address] = updated
+        notifySoon()
     }
 
-    /** Спершу батареї, потім інші; усередині — ближчі (сильніший сигнал) вище. */
+    private val smoothed = HashMap<String, Int>()
+    private var notifyPending = false
+
+    /** Не частіше ніж раз на [REFRESH_MS] — щоб список не мерехтів. */
+    private fun notifySoon() {
+        if (notifyPending) return
+        notifyPending = true
+        main.postDelayed({
+            notifyPending = false
+            if (scanning) listener?.onFound(sorted())
+        }, REFRESH_MS)
+    }
+
+    /**
+     * Спершу батареї, потім інші; усередині — у порядку, в якому з'явились, і цей порядок більше не міняється
+     * (18.10: сортування за сигналом змушувало рядки стрибати щосекунди).
+     */
     private fun sorted(): List<Found> = found.values.sortedWith(
-        compareBy<Found> { if (it.kind == BmsMatch.Kind.OTHER) 1 else 0 }.thenByDescending { it.rssi },
+        compareBy<Found> { if (it.kind == BmsMatch.Kind.OTHER) 1 else 0 }.thenBy { it.order },
     )
 
     private fun scanError(code: Int) = when (code) {
@@ -122,6 +151,10 @@ class BleScanner(context: Context) {
 
     companion object {
         const val SCAN_MS = 15_000L
+        const val REFRESH_MS = 700L
+
+        /** Останній (згладжений) сигнал кожного пристрою — щоб екран батареї міг сказати «ти далеко». */
+        val lastRssi = java.util.concurrent.ConcurrentHashMap<String, Int>()
 
         /**
          * Пристрої з останніх пошуків. Підключатись краще до пристрою з пошуку, ніж за голою адресою:
@@ -156,6 +189,7 @@ class BleScanner(context: Context) {
                     main.post {
                         if (result.device.address.equals(address, ignoreCase = true)) {
                             seen[result.device.address] = result.device
+                            lastRssi[result.device.address] = result.rssi
                             finish(result.device)
                         }
                     }

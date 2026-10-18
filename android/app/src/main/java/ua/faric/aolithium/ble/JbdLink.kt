@@ -19,6 +19,7 @@ import ua.faric.aolithium.core.JbdAssembler
 import ua.faric.aolithium.core.JbdBasic
 import ua.faric.aolithium.core.JbdFrame
 import ua.faric.aolithium.core.JbdParser
+import ua.faric.aolithium.core.Signal
 
 /**
  * Зв'язок з платою JBD по Bluetooth LE: лише **читання**.
@@ -108,7 +109,8 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         val token = ++attempt
         val known = BleScanner.seen[address]
         if (known != null) {
-            LinkLog.add("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}")
+            LinkLog.add("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}" +
+                (BleScanner.lastRssi[address]?.let { ", ${Signal.describe(it)}" } ?: ""))
             h.postDelayed({ connectTo(known, token) }, AFTER_SCAN_MS)
             return
         }
@@ -175,8 +177,11 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         retryOrGiveUp(reason)
     }
 
-    private fun retryOrGiveUp(reason: String) {
+    private fun retryOrGiveUp(why: String) {
         if (!running) return
+        // 18.10: на A26 при сигналі −97 dBm — код 133 щоразу. Кажемо прямо, що батарея далеко.
+        val reason = BleScanner.lastRssi[address]?.takeIf { Signal.tooFar(it) }
+            ?.let { "$why Батарея далеко (${Signal.describe(it)}) — підійди ближче, на 1–3 м." } ?: why
         if (reconnects < MAX_RECONNECTS) {
             reconnects++
             status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $MAX_RECONNECTS)…")
