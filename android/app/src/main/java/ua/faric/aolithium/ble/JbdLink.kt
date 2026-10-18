@@ -115,7 +115,7 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         val known = BleScanner.seen[address]
         if (known != null) {
             LinkLog.add("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}" +
-                (BleScanner.lastRssi[address]?.let { ", ${Signal.describe(it)}" } ?: ""))
+                (BleScanner.lastRssi[address]?.let { ", сигнал ${Signal.describe(it)}" } ?: ""))
             h.postDelayed({ connectTo(known, token) }, AFTER_SCAN_MS)
             return
         }
@@ -186,7 +186,7 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         if (!running) return
         // 18.10: на A26 при сигналі −97 dBm — код 133 щоразу. Кажемо прямо, що батарея далеко.
         val reason = BleScanner.lastRssi[address]?.takeIf { Signal.tooFar(it) }
-            ?.let { "$why Батарея далеко (${Signal.describe(it)}) — підійди ближче, на 1–3 м." } ?: why
+            ?.let { "$why Батарея далеко (сигнал ${Signal.describe(it)}) — підійди ближче, на 1–3 м." } ?: why
         if (reconnects < MAX_RECONNECTS) {
             reconnects++
             status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $MAX_RECONNECTS)…")

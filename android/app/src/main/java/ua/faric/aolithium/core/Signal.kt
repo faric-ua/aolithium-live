@@ -18,18 +18,17 @@ object Signal {
     /** Слабше за це — підключення часто зривається (на A26 18.10 при −97 — код 133 щоразу). */
     const val TOO_FAR = -88
 
+    /** Три слова (faric 19.10: «дуже слабкий» не влазило в рядок — лишаємо просто «слабкий»). */
     enum class Level(val title: String) {
         STRONG("сильний"),
         MEDIUM("середній"),
         WEAK("слабкий"),
-        VERY_WEAK("дуже слабкий"),
     }
 
     fun level(rssi: Int): Level = when {
         rssi >= -70 -> Level.STRONG
-        rssi >= -80 -> Level.MEDIUM
-        rssi > TOO_FAR -> Level.WEAK
-        else -> Level.VERY_WEAK
+        rssi > TOO_FAR -> Level.MEDIUM
+        else -> Level.WEAK
     }
 
     fun tooFar(rssi: Int): Boolean = rssi <= TOO_FAR
@@ -42,6 +41,6 @@ object Signal {
     fun shown(previousShown: Int?, smoothed: Int): Int =
         if (previousShown == null || abs(smoothed - previousShown) >= STEP) smoothed else previousShown
 
-    /** «сигнал −97 dBm, дуже слабкий». */
-    fun describe(rssi: Int): String = "сигнал $rssi dBm, ${level(rssi).title}"
+    /** «−97 dBm, слабкий» — коротко, щоб влазило в рядок. */
+    fun describe(rssi: Int): String = "$rssi dBm, ${level(rssi).title}"
 }

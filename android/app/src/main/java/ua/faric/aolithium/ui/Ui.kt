@@ -220,11 +220,16 @@ class Ui(val ctx: Context) {
     }
 
     /** Рядок «назва — значення». */
+    /**
+     * Рядок «назва — значення». Обидві частини мають свою частку ширини й переносяться словами:
+     * раніше значення брало скільки хотіло, і довге («сигнал −91 dBm, …») вилазило за край,
+     * а назви ламались посеред слова («Заряджен-о») — відео faric 19.10.
+     */
     fun fact(name: String, value: CharSequence, valueColor: Int = Palette.text): LinearLayout = row(12).apply {
         gravity = Gravity.TOP
         addView(muted(name, 14f), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         addView(numbers(text(value, 15f, valueColor, medium = true)).apply { gravity = Gravity.END },
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f))
     }
 
     companion object {

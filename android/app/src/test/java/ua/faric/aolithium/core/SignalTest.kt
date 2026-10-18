@@ -10,11 +10,12 @@ class SignalTest {
     fun levels() {
         assertEquals(Signal.Level.STRONG, Signal.level(-66)) // так було на відео Aolithium 16.10
         assertEquals(Signal.Level.MEDIUM, Signal.level(-78))
-        assertEquals(Signal.Level.WEAK, Signal.level(-85))
-        assertEquals(Signal.Level.VERY_WEAK, Signal.level(-97)) // так було 18.10, коли не підключалось
+        assertEquals(Signal.Level.MEDIUM, Signal.level(-85))
+        assertEquals(Signal.Level.WEAK, Signal.level(-88))
+        assertEquals(Signal.Level.WEAK, Signal.level(-97)) // так було 18.10, коли не підключалось
         assertTrue(Signal.tooFar(-97))
         assertFalse(Signal.tooFar(-80))
-        assertEquals("сигнал -97 dBm, дуже слабкий", Signal.describe(-97))
+        assertEquals("-97 dBm, слабкий", Signal.describe(-97))
     }
 
     @Test
