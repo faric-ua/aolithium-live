@@ -135,7 +135,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         val batteriesFound = results.filter { it.kind != BmsMatch.Kind.OTHER }
         val others = results.filter { it.kind == BmsMatch.Kind.OTHER }
         for (f in batteriesFound) {
-            val sub = kindLine(f.kind, f.address) + " · " + Signal.describe(f.rssi)
+            val sub = kindLine(f.kind, f.address) + " · сигнал " + Signal.describe(f.rssi)
             card.addView(batteryRow(f.name ?: "Без назви", sub) { connectTo(f) }, ui.matchWrap())
             if (Signal.tooFar(f.rssi)) card.addView(ui.text(FAR_HINT, 14f, Palette.warning))
         }
@@ -150,7 +150,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
             if (showOthers) {
                 card.addView(ui.muted("Це не схоже на плату батареї. Підключатись — лише якщо точно знаєш, що це вона: застосунок тільки читає, нічого не змінює.", 13f))
                 for (f in others) {
-                    card.addView(batteryRow(f.name ?: "Без назви", BmsMatch.shortAddress(f.address) + " · " + Signal.describe(f.rssi)) { connectTo(f) }, ui.matchWrap())
+                    card.addView(batteryRow(f.name ?: "Без назви", BmsMatch.shortAddress(f.address) + " · сигнал " + Signal.describe(f.rssi)) { connectTo(f) }, ui.matchWrap())
                 }
             }
         }
@@ -200,7 +200,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     }
 
     private companion object {
-        const val FAR_HINT = "Сигнал дуже слабкий — батарея далеко або за стіною. З таким сигналом підключення " +
+        const val FAR_HINT = "Сигнал слабкий — батарея далеко або за стіною. З таким сигналом підключення " +
             "зазвичай зривається. Підійди ближче (1–3 м) і пошукай ще раз."
         const val KEY_OTHERS = "others"
         const val KEY_SCANNED = "scanned"

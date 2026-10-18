@@ -242,7 +242,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         tab = t
         styleTabs()
-        render()
+        render(keepScroll = false)
         scroll.scrollTo(0, 0)
         if (t == Tab.CHARTS) loadHistory()
         if (t == Tab.MORE) historyBytes = history.size(address)
@@ -250,7 +250,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     // ---------- малювання ----------
 
-    private fun render() {
+    /** [keepScroll] — оновлення того самого екрана (нові числа кожні 2 с, нові точки графіків): не стрибати вгору. */
+    private fun render(keepScroll: Boolean = true) {
+        val y = scroll.scrollY
         renderHead()
         body.removeAllViews()
         val s = snapshot ?: stale?.first ?: BatterySnapshot.EMPTY
@@ -268,6 +270,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             Tab.MORE -> renderMore()
         }
         body.addView(ui.muted(host.versionLine, 12f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+        if (keepScroll && y > 0) scroll.post { scroll.scrollTo(0, y) }
     }
 
     /**
@@ -481,9 +484,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         for (r in Range.entries) {
             chipList.add(ui.choice(r.label, r == range) {
                 if (r != range) {
+                    // Старі графіки лишаються, поки вантажаться нові: сторінка не стрибає (відео faric 19.10 01:38).
                     range = r
-                    points = emptyList()
-                    pointsFor = null
                     render()
                     loadHistory()
                 }
@@ -491,17 +493,18 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         chipList.forEach { (it as TextView).apply { minWidth = 0; setPadding(ui.dp(2), ui.dp(8), ui.dp(2), ui.dp(8)); textSize = 14f } }
         body.addView(ui.grid(chipList, perRow = chipList.size, gapDp = 6), ui.matchWrap())
-        if (pointsFor != range) {
-            body.addView(ui.muted("Завантажую історію…", 14f), ui.matchWrap())
+        val shown = pointsFor
+        if (shown == null) {
+            body.addView(ui.muted("Завантажую історію…", 14f).apply { minHeight = ui.dp(ChartView.HEIGHT_DP) }, ui.matchWrap())
             return
         }
         val to = System.currentTimeMillis()
-        val from = to - range.ms
+        val from = to - shown.ms
         val pts = points
         val stats = HistoryMath.stats(pts)
 
         val sum = ui.card(8)
-        sum.addView(labelRow("За ${range.label}", LineIcon.LIST, "energy"))
+        sum.addView(labelRow(if (shown != range) "За ${shown.label} · оновлюю…" else "За ${shown.label}", LineIcon.LIST, "energy"))
         if (pts.isEmpty()) {
             sum.addView(ui.muted("Ще немає записів. Історія пишеться раз на 10 с, поки застосунок відкритий і на зв'язку.", 14f))
         } else {
@@ -511,12 +514,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
             if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp", known = true))
             stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta", known = true)) }
-            val share = (stats.coveredMs * 100 / range.ms).coerceIn(0, 100)
+            val share = (stats.coveredMs * 100 / shown.ms).coerceIn(0, 100)
             sum.addView(ui.muted("Записано ${share} % часу (решта — застосунок був закритий).", 12.5f))
         }
 
         val n = 240
-        val gap = maxOf(HistoryMath.GAP_MS, range.ms / n * 3)
+        val gap = maxOf(HistoryMath.GAP_MS, shown.ms / n * 3)
         fun ser(name: String, color: Int, f: (HistoryPoint) -> Double?) = ChartView.Series(name, color, HistoryMath.bucket(pts, from, to, n, f))
         fun chartCard(name: String, icon: LineIcon, info: String, chart: ChartView, legend: List<Pair<String, Int>> = emptyList()): View {
             val c = ui.card(8)
