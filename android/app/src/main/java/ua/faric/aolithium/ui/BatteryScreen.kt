@@ -29,6 +29,7 @@ import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.Zones
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.HistoryStore
+import ua.faric.aolithium.data.LastSnapshot
 
 /**
  * Одна батарея (v0.2.0, faric 18.10 20:47: «внизу менюшечка, по групам поділено… графіки… спідометр»).
@@ -64,6 +65,19 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private var status = LinkStatus.IDLE
     private var snapshot: BatterySnapshot? = null
     private var snapshotAt = 0L
+    private val lastStore = LastSnapshot(host)
+    /** Останнє збережене (коли зараз зв'язку нема) — faric 18.10 21:48: «щоб можна було по всьому додатку лазити». */
+    private val stale: Pair<BatterySnapshot, Long>? = if (demo == null) lastStore.load(address) else null
+
+    /** Що показуємо: живі числа, останні збережені чи порожньо (прочерки). */
+    private enum class Data { LIVE, STALE, NONE }
+
+    private val data: Data
+        get() = when {
+            snapshot != null -> Data.LIVE
+            stale != null -> Data.STALE
+            else -> Data.NONE
+        }
     private var remembered = false
     private var renameDraft = state?.getString(KEY_DRAFT)
     private var tab = state?.getString(KEY_TAB)?.let { n -> Tab.entries.firstOrNull { it.name == n } } ?: Tab.NOW
@@ -163,6 +177,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             batteries.remember(address, Batteries.scanNames[address] ?: snapshot.model, BmsMatch.Kind.JBD)
         }
         history.record(address, snapshot, atMs)
+        lastStore.save(address, snapshot, atMs)
         if (tab == Tab.CHARTS) {
             // графіки не перемальовуємо щосекунди — лише підвантажуємо нові точки раз на 30 с
             if (atMs - pointsLoadedAt > 30_000) loadHistory()
@@ -238,21 +253,55 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun render() {
         renderHead()
         body.removeAllViews()
-        val s = snapshot
-        if (s == null && tab != Tab.MORE && tab != Tab.CHARTS) {
-            body.addView(waitingCard(), ui.matchWrap())
-        } else {
-            if (s != null && status.phase != LinkStatus.Phase.LIVE && tab != Tab.MORE) body.addView(statusCard(), ui.matchWrap())
-            when (tab) {
-                Tab.NOW -> renderNow(s!!)
-                Tab.CELLS -> renderCells(s!!)
-                Tab.CHARTS -> renderCharts()
-                Tab.BOARD -> renderBoard(s!!)
-                Tab.MORE -> renderMore()
+        val s = snapshot ?: stale?.first ?: BatterySnapshot.EMPTY
+        if (tab != Tab.MORE && tab != Tab.CHARTS) {
+            when {
+                data != Data.LIVE -> body.addView(offlineCard(), ui.matchWrap())
+                status.phase != LinkStatus.Phase.LIVE -> body.addView(statusCard(), ui.matchWrap())
             }
+        }
+        when (tab) {
+            Tab.NOW -> renderNow(s)
+            Tab.CELLS -> renderCells(s)
+            Tab.CHARTS -> renderCharts()
+            Tab.BOARD -> renderBoard(s)
+            Tab.MORE -> renderMore()
         }
         body.addView(ui.muted(host.versionLine, 12f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
     }
+
+    /**
+     * Зв'язку зараз нема: що відбувається з підключенням + чиї числа нижче (останні від … / прочерки).
+     * Усі вкладки при цьому доступні.
+     */
+    private fun offlineCard(): View {
+        val failed = status.phase == LinkStatus.Phase.FAILED || status.phase == LinkStatus.Phase.NO_ANSWER
+        val card = when {
+            failed -> ui.card(fill = Palette.dangerFill, stroke = Palette.danger)
+            status.phase == LinkStatus.Phase.LOST -> ui.card(fill = Palette.warningFill, stroke = Palette.warning)
+            else -> ui.card()
+        }
+        card.addView(labelRow("Зв'язок", LineIcon.BLUETOOTH, "onelink"))
+        card.addView(ui.text(status.phase.title, 17f, Palette.text, medium = true))
+        val msg = status.message.ifBlank {
+            when (status.phase) {
+                LinkStatus.Phase.CONNECTING -> "Підключаюсь до батареї. Зазвичай 2–5 секунд, якщо вона поруч (1–3 м)."
+                LinkStatus.Phase.READING -> "Підключились, читаю дані плати…"
+                else -> ""
+            }
+        }
+        if (msg.isNotBlank()) card.addView(ui.muted(msg, 14f))
+        val st = stale
+        card.addView(ui.text(
+            if (st != null) "Нижче — останні дані від ${stamp(st.second)} (${Fmt.ago(System.currentTimeMillis() - st.second)}). Наживо — коли з'явиться зв'язок."
+            else "З цією батареєю ще не було зв'язку — замість чисел прочерки. Усі вкладки можна дивитись.",
+            14f, Palette.warning,
+        ))
+        if (failed || status.phase == LinkStatus.Phase.LOST || status.phase == LinkStatus.Phase.IDLE) card.addView(retryRow(), ui.matchWrap())
+        return card
+    }
+
+    private fun stamp(ms: Long) = java.text.SimpleDateFormat("dd.MM HH:mm", java.util.Locale.ROOT).format(java.util.Date(ms))
 
     /** Альбомна: дві колонки карток; книжкова — одна. */
     private fun columns(left: List<View>, right: List<View>) {
@@ -283,7 +332,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private fun renderUpdated() {
-        updated.text = if (snapshotAt == 0L) "" else "оновлено " + Fmt.ago(System.currentTimeMillis() - snapshotAt)
+        updated.text = when {
+            snapshotAt != 0L -> "оновлено " + Fmt.ago(System.currentTimeMillis() - snapshotAt)
+            stale != null -> "останні дані від " + stamp(stale.second)
+            else -> "даних ще нема"
+        }
     }
 
     private fun tone(p: LinkStatus.Phase) = when (p) {
@@ -304,11 +357,17 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             current = s.current
             power = s.power
             caption = "${Fmt.num(s.remainAh, 1)} з ${Fmt.num(s.fullAh, 1)} А·год"
+            noData = data == Data.NONE
             setOnClickListener { showInfo("zones") }
         }, ui.matchWrap())
-        val zone = Zones.of(s.soc)
-        gaugeCard.addView(ui.text(zone.title, 15f, GaugeView.toneColor(zone.tone), medium = true).apply { gravity = Gravity.CENTER }, ui.matchWrap())
-        gaugeCard.addView(ui.muted(zone.advice, 13f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+        if (data == Data.NONE) {
+            gaugeCard.addView(ui.text("Немає даних", 15f, Palette.muted, medium = true).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+            gaugeCard.addView(ui.muted("Зони на ободі: червона 0–10 %, помаранчева 10–20 %, зелена 20–90 %, помаранчева 90–100 %. Торкнись — докладно.", 13f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+        } else {
+            val zone = Zones.of(s.soc)
+            gaugeCard.addView(ui.text(zone.title, 15f, GaugeView.toneColor(zone.tone), medium = true).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+            gaugeCard.addView(ui.muted(zone.advice, 13f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+        }
 
         val now = ui.card(8)
         now.addView(labelRow("Зараз", LineIcon.PULSE, null))
@@ -327,13 +386,25 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         if (s.temperatures.isNotEmpty()) {
             val hot = s.temperatures.max()
             now.addView(fact(if (s.temperatures.size == 1) "Температура" else "Температура (макс.)", Fmt.celsius(hot), "temp", tempColor(hot)))
+        } else if (data == Data.NONE) {
+            now.addView(fact("Температура", DASH, "temp"))
         }
         s.deltaMv?.let { d -> now.addView(fact("Різниця комірок", "${Fmt.millivolts(d)} — ${s.deltaVerdict!!.title}", "delta", verdictColor(s))) }
+            ?: if (data == Data.NONE) now.addView(fact("Різниця комірок", DASH, "delta")) else Unit
         now.addView(fact("Цикли", s.cycles.toString(), "cycles"))
 
         val state = ui.card()
         state.addView(labelRow("Стан плати", LineIcon.SHIELD, "protState"))
         val row = FlowLayout(host, ui.dp(8), ui.dp(8))
+        if (data == Data.NONE) {
+            row.addView(pillInfo("Заряд: $DASH", Ui.Tone.NEUTRAL, "chargeSw"))
+            row.addView(pillInfo("Розряд: $DASH", Ui.Tone.NEUTRAL, "dischargeSw"))
+            row.addView(pillInfo("Балансування: $DASH", Ui.Tone.NEUTRAL, "balance"))
+            row.addView(pillInfo("Захист: $DASH", Ui.Tone.NEUTRAL, "protState"))
+            state.addView(row, ui.matchWrap())
+            columns(listOf(gaugeCard), listOf(now, state))
+            return
+        }
         row.addView(pillInfo(if (s.chargeOn) "Заряд: дозволено" else "Заряд: вимкнено", if (s.chargeOn) Ui.Tone.GOOD else Ui.Tone.BAD, "chargeSw"))
         row.addView(pillInfo(if (s.dischargeOn) "Розряд: дозволено" else "Розряд: вимкнено", if (s.dischargeOn) Ui.Tone.GOOD else Ui.Tone.BAD, "dischargeSw"))
         row.addView(
@@ -355,7 +426,14 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     private fun renderCells(s: BatterySnapshot) {
         val cards = ArrayList<View>()
-        if (s.cellsMv.isNotEmpty()) {
+        if (s.cellsMv.isEmpty()) {
+            val card = ui.card(8)
+            card.addView(labelRow("Комірки", LineIcon.CELLS, "cells"))
+            card.addView(ui.muted("Напруга кожної комірки з'явиться після підключення. У батареї Aolithium їх 4.", 14f))
+            for (i in 1..4) card.addView(fact("Комірка $i", DASH, "cells"))
+            card.addView(fact("Різниця", DASH, "delta"))
+            cards += card
+        } else {
             val card = ui.card(8)
             card.addView(labelRow("Комірки: ${s.cellsMv.size}", LineIcon.CELLS, "cells"))
             card.addView(CellBarsView(host).apply { set(s.cellsMv, s.balancingCells, s.minCell, s.maxCell) }, ui.matchWrap())
@@ -373,7 +451,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         val temps = ui.card(8)
         temps.addView(labelRow("Температура", LineIcon.THERMO, "temp"))
-        if (s.temperatures.isEmpty()) temps.addView(ui.muted("Плата не повідомила жодного датчика.", 14f))
+        if (s.temperatures.isEmpty()) temps.addView(
+            if (data == Data.NONE) fact("Датчики", DASH, "temp") else ui.muted("Плата не повідомила жодного датчика.", 14f),
+        )
         s.temperatures.forEachIndexed { i, t ->
             temps.addView(fact("Датчик ${i + 1}", Fmt.celsius(t), "temp", tempColor(t)))
         }
@@ -484,8 +564,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
         val board = ui.card(8)
         board.addView(labelRow("Плата", LineIcon.CHIP, "board"))
-        board.addView(fact("Тип", "JBD (Jiabaida)", "board"))
-        s.model?.let { board.addView(fact("Назва плати", it, "model")) }
+        board.addView(fact("Тип", "JBD (Jiabaida)", "board", known = true))
+        s.model?.let { board.addView(fact("Назва плати", it, "model")) } ?: if (data == Data.NONE) board.addView(fact("Назва плати", DASH, "model")) else Unit
         s.firmware?.let { board.addView(fact("Версія програми", it, "firmware")) }
         s.made?.let { board.addView(fact("Дата виготовлення", it.toString(), "made")) }
         board.addView(fact("Комірок", s.cellCount.toString(), "cells"))
@@ -497,6 +577,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
         val right = ArrayList<View>()
         if (s.hasProblem) right += problemCard(s)
+        if (s.errorCounts == null) {
+            val c = ui.card(8)
+            c.addView(labelRow("Захисти за весь час", LineIcon.LIST, "counters"))
+            c.addView(ui.muted("Скільки разів плата вмикала кожен захист — з'явиться після підключення.", 13f))
+            right += c
+        }
         s.errorCounts?.let { counts ->
             val c = ui.card(8)
             c.addView(labelRow("Захисти за весь час", LineIcon.LIST, "counters"))
@@ -627,8 +713,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     /** «Назва ············ значення ⓘ» — весь рядок натискається. */
-    private fun fact(name: String, value: CharSequence, info: String, color: Int = Palette.text): View =
-        ui.fact(name, "$value  $INFO", color).apply { clickableInfo(this, info) }
+    private fun fact(name: String, value: CharSequence, info: String, color: Int = Palette.text, known: Boolean = false): View {
+        val none = data == Data.NONE && !known
+        return ui.fact(name, (if (none) DASH else value).toString() + "  $INFO", if (none) Palette.muted else color).apply { clickableInfo(this, info) }
+    }
 
     private fun infoRow(title: String, id: String): View = ui.row(8).apply {
         addView(ui.text(title, 15f, Palette.text), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -782,6 +870,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     private companion object {
         const val INFO = "ⓘ"
+        const val DASH = "—"
         const val KEY_TAB = "tab"
         const val KEY_RANGE = "range"
         const val DLG_INFO = "info:"

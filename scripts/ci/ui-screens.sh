@@ -66,6 +66,13 @@ start --es demo IDLE --es dialog tab:MORE
 shot p09-more 4
 scroll_down
 shot p09b-more-dictionary
+# Без зв'язку й без збережених даних (faric 18.10 21:48): усі вкладки з прочерками.
+start --es demo OFFLINE
+shot p14-offline-now 6
+start --es demo OFFLINE --es dialog tab:CELLS
+shot p15-offline-cells 3
+start --es demo OFFLINE --es dialog tab:BOARD
+shot p16-offline-board 3
 start --es demo IDLE --es dialog info:zones
 shot p10-info-zones 4
 rotate 1
