@@ -179,6 +179,27 @@ class Ui(val ctx: Context) {
         contentDescription = if (selected) "$label · вибрано" else label
     }
 
+    /**
+     * Кнопки на всю ширину (faric 18.10 23:49: «кнопки на всю ширину скрізь, де можна; де можна — ділити рядок
+     * на дві кнопки»): по [perRow] в рядку, однакової ширини й висоти; остання непарна — на весь рядок.
+     * Порядок зберігається: «Скасувати / Закрити» лишається останньою, тобто праворуч або внизу.
+     */
+    fun grid(views: List<View>, perRow: Int = 2, gapDp: Int = 8): LinearLayout {
+        val box = column(gapDp)
+        views.chunked(perRow.coerceAtLeast(1)).forEach { chunk ->
+            val row = row(gapDp).apply {
+                gravity = Gravity.FILL_VERTICAL
+                isBaselineAligned = false // різні підписи в одному рядку не зсувають кнопки (урок Renault)
+            }
+            for (v in chunk) {
+                (v.parent as? ViewGroup)?.removeView(v)
+                row.addView(v, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+            }
+            box.addView(row, matchWrap())
+        }
+        return box
+    }
+
     /** Стан — кольорова «пігулка» зі словом (не лише колір). */
     fun pill(label: String, tone: Tone): TextView = text(label, 12.5f, tone.color, medium = true).apply {
         setPadding(dp(10), dp(4), dp(10), dp(5))

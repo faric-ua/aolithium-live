@@ -11,7 +11,7 @@ import android.widget.ScrollView
 /**
  * Власні вікна поверх екрана (замість стандартних сірих діалогів Android).
  * Кожне вікно має ключ — після повороту екрана Activity відновлює його за ключем.
- * Копія з Track Catcher (номери T41, T51, T53 у коментарях — задачі того репо).
+ * Копія з Track Catcher (номери T41, T51, T53 у коментарях — задачі того репо); кнопки вікон — на всю ширину ([Ui.grid]).
  */
 class Overlay(private val host: FrameLayout, private val ui: Ui, private val onChange: (String?) -> Unit) {
     var key: String? = null
@@ -115,11 +115,9 @@ class Overlay(private val host: FrameLayout, private val ui: Ui, private val onC
         box.addView(ui.title(title, 19f))
         if (message.isNotEmpty()) box.addView(ui.text(message, 15f, Palette.muted))
         extra?.let { box.addView(it) }
-        val row = FlowLayout(host.context, ui.dp(8), ui.dp(8), alignEnd = true) // кнопки праворуч, «Закрити» — найправіша (T53)
-        actions.forEachIndexed { i, (label, kind) ->
-            row.addView(ui.button(label, kind) { onAction(i) })
-        }
-        box.addView(row, ui.matchWrap())
+        // Кнопки на всю ширину вікна, рівними частинами; «Закрити/Скасувати» — остання, тобто найправіша (T53).
+        val buttons = actions.mapIndexed { i, (label, kind) -> ui.button(label, kind) { onAction(i) } }
+        box.addView(ui.grid(buttons, perRow = buttons.size.coerceAtMost(2)), ui.matchWrap())
         return box
     }
 }

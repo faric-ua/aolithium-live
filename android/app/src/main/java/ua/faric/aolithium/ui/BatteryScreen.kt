@@ -476,9 +476,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private fun renderCharts() {
-        val chips = FlowLayout(host, ui.dp(8), ui.dp(8))
+        // Періоди — один рядок на всю ширину, 5 рівних кнопок.
+        val chipList = ArrayList<View>()
         for (r in Range.entries) {
-            chips.addView(ui.choice(r.label, r == range) {
+            chipList.add(ui.choice(r.label, r == range) {
                 if (r != range) {
                     range = r
                     points = emptyList()
@@ -488,7 +489,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 }
             })
         }
-        body.addView(chips, ui.matchWrap())
+        chipList.forEach { (it as TextView).apply { minWidth = 0; setPadding(ui.dp(2), ui.dp(8), ui.dp(2), ui.dp(8)); textSize = 14f } }
+        body.addView(ui.grid(chipList, perRow = chipList.size, gapDp = 6), ui.matchWrap())
         if (pointsFor != range) {
             body.addView(ui.muted("Завантажую історію…", 14f), ui.matchWrap())
             return
@@ -503,12 +505,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         if (pts.isEmpty()) {
             sum.addView(ui.muted("Ще немає записів. Історія пишеться раз на 10 с, поки застосунок відкритий і на зв'язку.", 14f))
         } else {
-            sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success))
-            sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger))
-            if (stats.socMin != null) sum.addView(fact("Заряд", "${stats.socMin}–${stats.socMax} %", "soc"))
-            sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current"))
-            if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp"))
-            stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta")) }
+            sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success, known = true))
+            sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger, known = true))
+            if (stats.socMin != null) sum.addView(fact("Заряд", "${stats.socMin}–${stats.socMax} %", "soc", known = true))
+            sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
+            if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp", known = true))
+            stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta", known = true)) }
             val share = (stats.coveredMs * 100 / range.ms).coerceIn(0, 100)
             sum.addView(ui.muted("Записано ${share} % часу (решта — застосунок був закритий).", 12.5f))
         }
@@ -605,20 +607,20 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun renderMore() {
         val actions = ui.card()
         actions.addView(labelRow("Дії", LineIcon.SLIDERS, null))
-        val row = FlowLayout(host, ui.dp(8), ui.dp(8))
-        if (demo == null) row.addView(ui.iconButton(LineIcon.PEN, "Перейменувати", Ui.Kind.NORMAL) { showRename() })
-        row.addView(ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.NORMAL) { reconnect() })
-        row.addView(ui.button("Журнал зв'язку", Ui.Kind.NORMAL) { showLog() })
-        if (demo == null && batteries.find(address) != null) row.addView(ui.button("Прибрати зі списку", Ui.Kind.QUIET) { showForget() })
-        actions.addView(row, ui.matchWrap())
+        val buttons = ArrayList<View>()
+        if (demo == null) buttons += ui.iconButton(LineIcon.PEN, "Перейменувати", Ui.Kind.NORMAL) { showRename() }
+        buttons += ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.NORMAL) { reconnect() }
+        buttons += ui.button("Журнал зв'язку", Ui.Kind.NORMAL) { showLog() }
+        if (demo == null && batteries.find(address) != null) buttons += ui.button("Прибрати зі списку", Ui.Kind.QUIET) { showForget() }
+        actions.addView(ui.grid(buttons), ui.matchWrap())
         actions.addView(ui.muted("Застосунок лише читає плату — нічого в ній не змінює. Поки він підключений, Aolithium на іншому телефоні не підключиться: сховай цей застосунок — через 5 с зв'язок звільниться.", 12.5f))
 
         val hist = ui.card(8)
         hist.addView(labelRow("Історія", LineIcon.CHART, "history"))
         val (days, bytes) = historyBytes ?: history.size(address).also { historyBytes = it }
-        hist.addView(fact("Записано", if (demo != null) "демо — не пишеться" else "$days дн. · ${Fmt.num(bytes / 1024.0, 0)} КБ", "history"))
-        hist.addView(fact("Як часто", "раз на 10 с, поки відкрито", "history"))
-        hist.addView(fact("Скільки зберігається", "${HistoryStore.KEEP_DAYS} днів", "history"))
+        hist.addView(fact("Записано", if (demo != null) "демо — не пишеться" else "$days дн. · ${Fmt.num(bytes / 1024.0, 0)} КБ", "history", known = true))
+        hist.addView(fact("Як часто", "раз на 10 с, поки відкрито", "history", known = true))
+        hist.addView(fact("Скільки зберігається", "${HistoryStore.KEEP_DAYS} днів", "history", known = true))
         if (demo == null && days > 0) hist.addView(ui.button("Стерти історію цієї батареї", Ui.Kind.DANGER) { showClearHistory() }, ui.matchWrap())
 
         val dict = ui.card(6)
@@ -664,10 +666,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         return card
     }
 
-    private fun retryRow(): View = FlowLayout(host, ui.dp(8), ui.dp(8)).apply {
-        addView(ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.PRIMARY) { reconnect() })
-        addView(ui.button("Журнал зв'язку", Ui.Kind.QUIET) { showLog() })
-    }
+    private fun retryRow(): View = ui.grid(listOf(
+        ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.PRIMARY) { reconnect() },
+        ui.button("Журнал зв'язку", Ui.Kind.QUIET) { showLog() },
+    ))
 
     private fun reconnect() {
         LinkHolder.release(this)

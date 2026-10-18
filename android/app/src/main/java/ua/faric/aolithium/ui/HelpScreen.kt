@@ -52,9 +52,9 @@ class HelpScreen(host: MainActivity, @Suppress("UNUSED_PARAMETER") state: Bundle
         val demo = ui.card()
         demo.addView(ui.label("Демо без батареї", LineIcon.INFO))
         demo.addView(ui.muted("Показати екран батареї на готових даних (ті самі байти, що шле плата). Справжня батарея не потрібна.", 14f))
-        val row = FlowLayout(host, ui.dp(8), ui.dp(8))
-        for (scene in DemoFrames.Scene.entries) row.addView(ui.button(scene.title, Ui.Kind.NORMAL) { host.openBattery("demo:" + scene.name) })
-        demo.addView(row, ui.matchWrap())
+        demo.addView(ui.grid(DemoFrames.Scene.entries.map { scene ->
+            ui.button(scene.title, Ui.Kind.NORMAL) { host.openBattery("demo:" + scene.name) }
+        }, perRow = 1), ui.matchWrap())
 
         val body: View = if (ui.twoPane) {
             val l = ui.column(14)
