@@ -35,41 +35,51 @@ adb shell svc bluetooth enable || true
 start --es page HOME
 shot p02-home-ready 4
 start --es demo IDLE
-shot p03-battery-idle 4
+shot p03-now-idle 4
 scroll_down
-shot p03b-battery-idle-cells
-scroll_down
-shot p03c-battery-idle-board
+shot p03b-now-idle-scrolled
 start --es demo CHARGING
-shot p04-battery-charging 4
+shot p04-now-charging 4
 start --es demo COLD
-shot p05-battery-cold 4
+shot p05-now-cold 4
+start --es demo CHARGING --es dialog tab:CELLS
+shot p06-cells 4
+start --es demo IDLE --es dialog tab:CHARTS
+shot p07-charts 5
 scroll_down
-shot p05b-battery-cold-scrolled
-start --es demo IDLE --es dialog log
-shot p06-log-dialog 4
-adb shell input keyevent KEYCODE_BACK
-start --es demo IDLE --es dialog rename
-shot p07-rename-dialog 4
+shot p07b-charts-scrolled
+scroll_down
+shot p07c-charts-scrolled2
+start --es demo IDLE --es dialog tab:BOARD
+shot p08-board 4
+scroll_down
+shot p08b-board-scrolled
+start --es demo IDLE --es dialog tab:MORE
+shot p09-more 4
+scroll_down
+shot p09b-more-dictionary
+start --es demo IDLE --es dialog info:zones
+shot p10-info-zones 4
 rotate 1
-shot l01-rename-after-rotation
-adb shell input keyevent KEYCODE_BACK
+shot l01-info-after-rotation
 adb shell input keyevent KEYCODE_BACK
 start --es demo CHARGING
-shot l02-battery-two-pane 4
+shot l02-now-two-pane 4
+start --es demo IDLE --es dialog tab:CHARTS
+shot l03-charts-two-pane 5
 start --es page HELP
-shot l03-help-two-pane
+shot l04-help-two-pane
 start --es page HOME
-shot l04-home-two-pane
+shot l05-home-two-pane
 rotate 0
 start --es page HELP
-shot p08-help
+shot p11-help
 adb shell settings put system font_scale 1.3
 sleep 2
 start --es demo IDLE
-shot p09-battery-font130 4
+shot p12-now-font130 4
 start --es page HOME
-shot p10-home-font130
+shot p13-home-font130
 adb shell settings put system font_scale 1.0
 
 # Падіння лише нашого застосунку (системні застосунки емулятора теж іноді падають — їх не рахуємо).
