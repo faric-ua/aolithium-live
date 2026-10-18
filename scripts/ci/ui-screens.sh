@@ -52,7 +52,7 @@ start --es demo COLD
 shot p05-now-cold 4
 start --es demo CHARGING --es dialog tab:CELLS
 shot p06-cells 4
-start --es demo IDLE --es dialog tab:CHARTS
+start --es demo IDLE --es dialog tab:CHARTS:D1
 shot p07-charts 5
 scroll_down
 shot p07b-charts-scrolled
@@ -73,7 +73,7 @@ shot l01-info-after-rotation
 adb shell input keyevent KEYCODE_BACK
 start --es demo CHARGING
 shot l02-now-two-pane 4
-start --es demo IDLE --es dialog tab:CHARTS
+start --es demo IDLE --es dialog tab:CHARTS:D1
 shot l03-charts-two-pane 5
 start --es page HELP
 shot l04-help-two-pane

@@ -33,6 +33,7 @@ class ChartView(context: Context) : View(context) {
     private var zeroSplit = false
     private var fixedMin: Double? = null
     private var fixedMax: Double? = null
+    private var gapMs = 60_000L
     private var touchX = -1f
 
     private val dp = resources.displayMetrics.density
@@ -50,8 +51,9 @@ class ChartView(context: Context) : View(context) {
 
     fun set(
         series: List<Series>, from: Long, to: Long, unit: String, digits: Int,
-        zeroSplit: Boolean = false, min: Double? = null, max: Double? = null,
+        zeroSplit: Boolean = false, min: Double? = null, max: Double? = null, gapMs: Long = 60_000L,
     ) {
+        this.gapMs = gapMs
         this.series = series
         this.from = from
         this.to = max(to, from + 1)
@@ -189,38 +191,38 @@ class ChartView(context: Context) : View(context) {
         }
     }
 
+    /**
+     * Лінія через точки; порожні шматки часу пропускаємо. Розрив — лише коли між сусідніми точками більше [gapMs]
+     * (застосунок був закритий). Інакше на 1 год з точкою раз на 10 с лінія розсипалась на крапки (знімки CI 18.10).
+     */
     private fun drawPath(canvas: Canvas, pts: List<Pair<Long, Double>?>, x: (Long) -> Float, y: (Double) -> Float) {
         path.reset()
-        var open = false
-        var single: Pair<Long, Double>? = null
+        var prev: Pair<Long, Double>? = null
+        var segLen = 0
         for (p in pts) {
-            if (p == null) {
-                if (open && single != null) canvas.drawPoint(x(single.first), y(single.second), line)
-                open = false
-                continue
-            }
-            if (!open) {
+            if (p == null) continue
+            val a = prev
+            if (a == null || p.first - a.first > gapMs) {
+                if (a != null && segLen == 1) canvas.drawPoint(x(a.first), y(a.second), line)
                 path.moveTo(x(p.first), y(p.second))
-                open = true
-                single = p
+                segLen = 1
             } else {
                 path.lineTo(x(p.first), y(p.second))
-                single = null
+                segLen++
             }
+            prev = p
         }
+        prev?.let { if (segLen == 1) canvas.drawPoint(x(it.first), y(it.second), line) }
         canvas.drawPath(path, line)
     }
 
-    /** Струм: кожен відрізок свого кольору за знаком. */
+    /** Струм: кожен відрізок свого кольору за знаком; розриви — як у [drawPath]. */
     private fun drawLine(canvas: Canvas, pts: List<Pair<Long, Double>?>, x: (Long) -> Float, y: (Double) -> Float, positive: (Double) -> Boolean) {
         var prev: Pair<Long, Double>? = null
         for (p in pts) {
-            if (p == null) {
-                prev = null
-                continue
-            }
+            if (p == null) continue
             val a = prev
-            if (a != null) {
+            if (a != null && p.first - a.first <= gapMs) {
                 line.color = if (positive((a.second + p.second) / 2)) Palette.success else Palette.danger
                 canvas.drawLine(x(a.first), y(a.second), x(p.first), y(p.second), line)
             } else {

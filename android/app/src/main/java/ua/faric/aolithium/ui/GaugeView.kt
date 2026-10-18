@@ -100,7 +100,8 @@ class GaugeView(context: Context) : View(context) {
         // заповнення
         box.set(cx - rFill, cy - rFill, cx + rFill, cy + rFill)
         canvas.drawArc(box, START, SWEEP, false, track)
-        fill.color = toneColor(Zones.of(soc).tone).let { if (Zones.of(soc).tone == Zones.Tone.GREEN) Palette.accent else it }
+        // Заповнення — блакитне; лише внизу шкали (мало / глибокий розряд) фарбується кольором зони як попередження.
+        fill.color = if (soc < 20) toneColor(Zones.of(soc).tone) else Palette.accent
         if (soc > 0) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
 
         // поділки 0 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення
@@ -142,10 +143,21 @@ class GaugeView(context: Context) : View(context) {
         val yAmp = yBig + amp.textSize * 1.35f
         canvas.drawText(ampText, cx, yAmp, amp)
 
+        // 3-й рядок — потужність (коли є струм); ємність — окремо внизу, у прорізі між кінцями дуги,
+        // щоб не налазити на поділки «0» і «100» (знімки CI 18.10).
         small.textSize = sp(13f)
-        val line3 = if (kotlin.math.abs(current) > IDLE) Fmt.watts(kotlin.math.abs(power)) + (if (caption.isNotEmpty()) " · $caption" else "") else caption
-        fit(small, line3, inner * 0.85f)
-        if (line3.isNotEmpty()) canvas.drawText(line3, cx, yAmp + small.textSize * 1.5f, small)
+        if (kotlin.math.abs(current) > IDLE) {
+            val w = Fmt.watts(kotlin.math.abs(power))
+            fit(small, w, inner * 0.6f)
+            canvas.drawText(w, cx, yAmp + small.textSize * 1.45f, small)
+        }
+        if (caption.isNotEmpty()) {
+            small.textSize = sp(13f)
+            val gapWidth = (2 * rFill * cos(Math.toRadians(30.0))).toFloat() * 0.7f
+            fit(small, caption, gapWidth)
+            val yCap = cy + (rFill * sin(Math.toRadians(30.0))).toFloat() + fillStroke / 2 + small.textSize
+            canvas.drawText(caption, cx, minOf(yCap, height - 4 * dp), small)
+        }
     }
 
     private fun fit(p: Paint, text: String, maxWidth: Float) {

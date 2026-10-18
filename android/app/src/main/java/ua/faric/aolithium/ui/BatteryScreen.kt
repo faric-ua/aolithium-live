@@ -76,7 +76,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private val handler = Handler(Looper.getMainLooper())
     private val head = ui.column(6)
     private val body = ui.column(14)
-    private val scroll: ScrollView = ui.scroll(body)
+    // Заголовок гортається разом з вмістом: в альбомній екран низький (знімки CI 18.10 — для карток лишалась смужка).
+    private val scroll: ScrollView = ui.scroll(ui.column(10).apply {
+        addView(head, ui.matchWrap())
+        addView(body, ui.matchWrap())
+    })
     private val tabButtons = LinkedHashMap<Tab, TextView>()
     private val updated = ui.muted("", 12.5f)
     override val view: View
@@ -90,8 +94,6 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     init {
         val root = ui.column()
-        head.setPadding(ui.dp(16), ui.dp(4), ui.dp(16), ui.dp(4))
-        root.addView(head, ui.matchWrap())
         root.addView(scroll, ui.weight(1f, vertical = true))
         root.addView(tabBar(), ui.matchWrap())
         view = root
@@ -134,7 +136,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             key == DLG_FORGET -> showForget()
             key == DLG_CLEAR -> showClearHistory()
             key.startsWith(DLG_INFO) -> showInfo(key.removePrefix(DLG_INFO))
-            key.startsWith("tab:") -> Tab.entries.firstOrNull { it.name == key.removePrefix("tab:") }?.let { selectTab(it) }
+            // debug/CI: «tab:CHARTS» або «tab:CHARTS:D1» (вкладка й період графіків)
+            key.startsWith("tab:") -> {
+                val parts = key.split(':')
+                parts.getOrNull(2)?.let { r -> Range.entries.firstOrNull { it.name == r } }?.let { range = it; pointsFor = null }
+                Tab.entries.firstOrNull { it.name == parts.getOrNull(1) }?.let { selectTab(it) }
+            }
             else -> return false
         }
         return true
@@ -169,7 +176,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     private fun tabBar(): View {
         val bar = ui.row(6).apply {
-            setPadding(ui.dp(8), ui.dp(6), ui.dp(8), ui.dp(8))
+            if (ui.twoPane) setPadding(ui.dp(8), ui.dp(4), ui.dp(8), ui.dp(4)) else setPadding(ui.dp(8), ui.dp(6), ui.dp(8), ui.dp(8))
             setBackgroundColor(Palette.surface)
         }
         for (t in Tab.entries) {
@@ -177,9 +184,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 gravity = Gravity.CENTER
                 textSize = 12f
                 maxLines = 2
-                minHeight = ui.dp(Ui.MIN_TOUCH_DP + 8)
-                minimumHeight = ui.dp(Ui.MIN_TOUCH_DP + 8)
-                setPadding(ui.dp(2), ui.dp(6), ui.dp(2), ui.dp(6))
+                val h = if (ui.twoPane) Ui.MIN_TOUCH_DP else Ui.MIN_TOUCH_DP + 8
+                minHeight = ui.dp(h)
+                minimumHeight = ui.dp(h)
+                setPadding(ui.dp(2), ui.dp(if (ui.twoPane) 2 else 6), ui.dp(2), ui.dp(if (ui.twoPane) 2 else 6))
                 isClickable = true
                 isFocusable = true
                 contentDescription = t.label
@@ -195,7 +203,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun styleTabs() {
         for ((t, b) in tabButtons) {
             val on = t == tab
-            b.text = ui.iconText(t.icon, t.label, if (on) Palette.accent else Palette.muted, sizeDp = LineIcon.BUTTON_DP, above = true)
+            // альбомна — значок поруч з підписом (низький екран), книжкова — над ним
+            b.text = ui.iconText(t.icon, t.label, if (on) Palette.accent else Palette.muted,
+                sizeDp = if (ui.twoPane) LineIcon.LABEL_DP else LineIcon.BUTTON_DP, above = !ui.twoPane)
             b.setTextColor(if (on) Palette.text else Palette.muted)
             b.typeface = if (on) Ui.MEDIUM else Ui.REGULAR
             b.background = ui.pressable(
@@ -208,6 +218,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     private fun selectTab(t: Tab) {
         if (t == tab) {
+            if (t == Tab.CHARTS && pointsFor != range) {
+                render()
+                loadHistory()
+            }
             scroll.smoothScrollTo(0, 0)
             return
         }
@@ -420,6 +434,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
 
         val n = 240
+        val gap = maxOf(HistoryMath.GAP_MS, range.ms / n * 3)
         fun ser(name: String, color: Int, f: (HistoryPoint) -> Double?) = ChartView.Series(name, color, HistoryMath.bucket(pts, from, to, n, f))
         fun chartCard(name: String, icon: LineIcon, info: String, chart: ChartView, legend: List<Pair<String, Int>> = emptyList()): View {
             val c = ui.card(8)
@@ -432,18 +447,18 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
             return c
         }
-        val socChart = ChartView(host).apply { set(listOf(ser("Заряд", Palette.accent) { it.soc.toDouble() }), from, to, "%", 0, min = 0.0, max = 100.0) }
-        val curChart = ChartView(host).apply { set(listOf(ser("Струм", Palette.success) { it.current }), from, to, "А", 2, zeroSplit = true) }
-        val pwrChart = ChartView(host).apply { set(listOf(ser("Потужність", Palette.success) { it.power }), from, to, "Вт", 0, zeroSplit = true) }
-        val vChart = ChartView(host).apply { set(listOf(ser("Напруга", Palette.accent) { it.voltage }), from, to, "В", 2) }
+        val socChart = ChartView(host).apply { set(listOf(ser("Заряд", Palette.accent) { it.soc.toDouble() }), from, to, "%", 0, min = 0.0, max = 100.0, gapMs = gap) }
+        val curChart = ChartView(host).apply { set(listOf(ser("Струм", Palette.success) { it.current }), from, to, "А", 2, zeroSplit = true, gapMs = gap) }
+        val pwrChart = ChartView(host).apply { set(listOf(ser("Потужність", Palette.success) { it.power }), from, to, "Вт", 0, zeroSplit = true, gapMs = gap) }
+        val vChart = ChartView(host).apply { set(listOf(ser("Напруга", Palette.accent) { it.voltage }), from, to, "В", 2, gapMs = gap) }
         val tChart = ChartView(host).apply {
-            set(listOf(ser("Макс.", Palette.warning) { it.tempMax }, ser("Мін.", Palette.accent) { it.tempMin }), from, to, "°C", 1)
+            set(listOf(ser("Макс.", Palette.warning) { it.tempMax }, ser("Мін.", Palette.accent) { it.tempMin }), from, to, "°C", 1, gapMs = gap)
         }
-        val dChart = ChartView(host).apply { set(listOf(ser("Різниця", Palette.warning) { it.deltaMv?.toDouble() }), from, to, "мВ", 0, min = 0.0) }
+        val dChart = ChartView(host).apply { set(listOf(ser("Різниця", Palette.warning) { it.deltaMv?.toDouble() }), from, to, "мВ", 0, min = 0.0, gapMs = gap) }
         val cellColors = listOf(Palette.accent, Palette.success, Palette.warning, Palette.violet)
         val cellsN = pts.lastOrNull()?.cellsMv?.size ?: 0
         val cChart = ChartView(host).apply {
-            set((0 until cellsN).map { i -> ser("№${i + 1}", cellColors[i % cellColors.size]) { p -> p.cellsMv.getOrNull(i)?.div(1000.0) } }, from, to, "В", 3)
+            set((0 until cellsN).map { i -> ser("№${i + 1}", cellColors[i % cellColors.size]) { p -> p.cellsMv.getOrNull(i)?.div(1000.0) } }, from, to, "В", 3, gapMs = gap)
         }
         val left = listOf(sum, chartCard("Заряд, %", LineIcon.BATTERY, "soc", socChart), chartCard("Струм, А", LineIcon.BOLT, "current", curChart,
             listOf("заряд" to Palette.success, "розряд" to Palette.danger)), chartCard("Потужність, Вт", LineIcon.BOLT, "power", pwrChart))
