@@ -1,6 +1,8 @@
 package ua.faric.aolithium.ble
 
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
@@ -99,6 +101,7 @@ class BleScanner(context: Context) {
         val mfr = record?.manufacturerSpecificData
         val ids = if (mfr == null) emptyList() else (0 until mfr.size()).map { mfr.keyAt(it) }
         val address = r.device.address
+        seen[address] = r.device
         val kind = BmsMatch.kind(address, name, services, ids)
         val old = found[address]
         found[address] = Found(address, name ?: old?.name, r.rssi, if (old != null && old.kind != BmsMatch.Kind.OTHER) old.kind else kind)
@@ -119,5 +122,61 @@ class BleScanner(context: Context) {
 
     companion object {
         const val SCAN_MS = 15_000L
+
+        /**
+         * Пристрої з останніх пошуків. Підключатись краще до пристрою з пошуку, ніж за голою адресою:
+         * Android тоді знає тип адреси й що батарея в ефірі (інакше Samsung часто дає код 133).
+         */
+        val seen = java.util.concurrent.ConcurrentHashMap<String, BluetoothDevice>()
+
+        /** Коротко пошукати одну адресу. [done] — у головному потоці, null — не знайшлась за [timeoutMs]. */
+        fun findOne(context: Context, address: String, timeoutMs: Long, done: (BluetoothDevice?) -> Unit) {
+            val main = Handler(Looper.getMainLooper())
+            val scanner = BtAccess.adapter(context)?.bluetoothLeScanner
+            if (scanner == null) {
+                done(null)
+                return
+            }
+            var finished = false
+            lateinit var cb: ScanCallback
+            fun finish(d: BluetoothDevice?) {
+                if (finished) return
+                finished = true
+                try {
+                    scanner.stopScan(cb)
+                } catch (e: SecurityException) {
+                    // дозвіл забрали — нічого
+                } catch (e: IllegalStateException) {
+                    // Bluetooth вимкнули
+                }
+                done(d)
+            }
+            cb = object : ScanCallback() {
+                override fun onScanResult(callbackType: Int, result: ScanResult) {
+                    main.post {
+                        if (result.device.address.equals(address, ignoreCase = true)) {
+                            seen[result.device.address] = result.device
+                            finish(result.device)
+                        }
+                    }
+                }
+
+                override fun onScanFailed(errorCode: Int) {
+                    main.post { finish(null) }
+                }
+            }
+            val filters = listOf(ScanFilter.Builder().setDeviceAddress(address.uppercase()).build())
+            val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+            try {
+                scanner.startScan(filters, settings, cb)
+            } catch (e: SecurityException) {
+                done(null)
+                return
+            } catch (e: IllegalArgumentException) {
+                done(null)
+                return
+            }
+            main.postDelayed({ finish(null) }, timeoutMs)
+        }
     }
 }

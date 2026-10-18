@@ -59,6 +59,8 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
     private var silentCycles = 0
     private var reconnects = 0
     private var everLive = false
+    private var attempt = 0
+    private var pendingConnect = false
     private val short = BmsMatch.shortAddress(address)
 
     private val connectTimeout = Runnable { failConnect("Батарея не відповіла за ${CONNECT_TIMEOUT_MS / 1000} с.") }
@@ -86,6 +88,14 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
 
     // ---------- підключення ----------
 
+    /**
+     * Підключення (v0.1.1, після коду 133 на A26 18.10):
+     * 1. Беремо пристрій **з пошуку** (Android знає тип адреси й що батарея в ефірі). Якщо його нема
+     *    (відкрили з «Моїх батарей») — спершу коротко шукаємо саме цю адресу.
+     * 2. Пауза після пошуку — Samsung дає 133, якщо підключатись одразу після зупинки пошуку.
+     * 3. `connectGatt` — з головного потоку (відома вимога деяких Samsung).
+     * 4. Остання спроба — «чекати батарею» (autoConnect): Android сам підключиться, щойно побачить її.
+     */
     private fun connect() {
         if (!running) return
         val adapter = BtAccess.adapter(app)
@@ -95,19 +105,57 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         }
         resetSession()
         status(LinkStatus.Phase.CONNECTING)
-        LinkLog.add("$short: підключаюсь…")
-        try {
-            val device = adapter.getRemoteDevice(address)
-            gatt = if (Build.VERSION.SDK_INT >= 23) {
-                device.connectGatt(app, false, callback, BluetoothDevice.TRANSPORT_LE)
-            } else {
-                device.connectGatt(app, false, callback)
+        val token = ++attempt
+        val known = BleScanner.seen[address]
+        if (known != null) {
+            LinkLog.add("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}")
+            h.postDelayed({ connectTo(known, token) }, AFTER_SCAN_MS)
+            return
+        }
+        LinkLog.add("$short: шукаю батарею в ефірі перед підключенням…")
+        main.post {
+            BleScanner.findOne(app, address, FIND_MS) { device ->
+                h.post {
+                    if (!running || token != attempt) return@post
+                    if (device == null) {
+                        LinkLog.add("$short: за ${FIND_MS / 1000} с у пошуку не з'явилась")
+                        running = false
+                        status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
+                    } else {
+                        LinkLog.add("$short: знайшлась, підключаюсь")
+                        h.postDelayed({ connectTo(device, token) }, AFTER_SCAN_MS)
+                    }
+                }
             }
-            h.postDelayed(connectTimeout, CONNECT_TIMEOUT_MS)
-        } catch (e: SecurityException) {
-            status(LinkStatus.Phase.FAILED, "Android не дав дозволу на Bluetooth. Дозволь на головному екрані застосунку.")
-        } catch (e: IllegalArgumentException) {
-            status(LinkStatus.Phase.FAILED, "Неправильна адреса батареї.")
+        }
+    }
+
+    private fun connectTo(device: BluetoothDevice, token: Int) {
+        if (!running || token != attempt) return
+        val wait = reconnects >= MAX_RECONNECTS // остання спроба — autoConnect
+        if (wait) LinkLog.add("$short: остання спроба — чекаю, доки Android сам підключиться (до ${WAIT_CONNECT_MS / 1000} с)")
+        pendingConnect = true
+        main.post {
+            val g = try {
+                if (Build.VERSION.SDK_INT >= 23) device.connectGatt(app, wait, callback, BluetoothDevice.TRANSPORT_LE)
+                else device.connectGatt(app, wait, callback)
+            } catch (e: SecurityException) {
+                null
+            }
+            h.post {
+                pendingConnect = false
+                if (g == null) {
+                    running = false
+                    status(LinkStatus.Phase.FAILED, "Android не дав дозволу на Bluetooth. Дозволь на головному екрані застосунку.")
+                    return@post
+                }
+                if (!running || token != attempt) {
+                    safe { g.close() }
+                    return@post
+                }
+                if (gatt == null) gatt = g
+                h.postDelayed(connectTimeout, if (wait) WAIT_CONNECT_MS else CONNECT_TIMEOUT_MS)
+            }
         }
     }
 
@@ -178,6 +226,7 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
     }
 
     private fun onConnectionChanged(g: BluetoothGatt, statusCode: Int, newState: Int) {
+        if (gatt == null && pendingConnect) gatt = g // відповідь Android прийшла раніше, ніж connectGatt повернувся
         if (g != gatt) {
             safe { g.close() }
             return
@@ -191,7 +240,7 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
                 h.postDelayed({ if (g == gatt && safe { g.discoverServices() } != true) failConnect("Не вдалось прочитати служби батареї.") }, 600)
             }
             newState == BluetoothProfile.STATE_DISCONNECTED -> {
-                LinkLog.add("$short: відключено (код Android $statusCode)")
+                LinkLog.add("$short: відключено (код Android $statusCode" + (if (everLive) ", після даних)" else if (expected == -1 && !reading) ", ще до з'єднання)" else ", під час читання)"))
                 closeGatt()
                 val reason = if (statusCode == 133 || statusCode == 8 || statusCode == 62) {
                     "Android не зміг утримати зв'язок (код $statusCode)."
@@ -387,6 +436,12 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         const val CONNECT_TIMEOUT_MS = 15_000L
         const val RECONNECT_DELAY_MS = 3_000L
         const val MAX_RECONNECTS = 3
+        const val AFTER_SCAN_MS = 600L
+        const val FIND_MS = 10_000L
+        const val WAIT_CONNECT_MS = 30_000L
+
+        const val NOT_ADVERTISING_HINT = "Батарея не з'являється в ефірі. Вона поруч? Aolithium на інших телефонах закритий? " +
+            "Поки плата з кимось на зв'язку, її не видно. Закрий інші застосунки й натисни «Підключити ще раз»."
         const val SILENT_CYCLES_LIMIT = 3
 
         const val BUSY_HINT = "Можливо, батарея зараз підключена до іншого телефона чи до застосунку Aolithium — " +
