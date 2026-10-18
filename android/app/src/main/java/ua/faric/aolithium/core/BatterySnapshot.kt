@@ -83,6 +83,13 @@ data class BatterySnapshot(
     }
 
     companion object {
+        /** Порожній знімок — коли з батареєю ще ніколи не було зв'язку (екран показує прочерки, faric 18.10 21:48). */
+        val EMPTY = BatterySnapshot(
+            voltage = 0.0, current = 0.0, soc = 0, remainAh = 0.0, fullAh = 0.0, cycles = 0, cellsMv = emptyList(),
+            temperatures = emptyList(), balancingCells = emptyList(), protections = emptyList(), unknownProtectionBits = emptyList(),
+            chargeOn = false, dischargeOn = false, firmware = null, made = null, model = null, errorCounts = null, cellCount = 0,
+        )
+
         /** Струм менше 0,05 А вважаємо «стоїть». */
         const val IDLE_A = 0.05
 

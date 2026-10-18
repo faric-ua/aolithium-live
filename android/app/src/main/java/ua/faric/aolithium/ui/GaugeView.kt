@@ -36,6 +36,13 @@ class GaugeView(context: Context) : View(context) {
             field = value
             invalidate()
         }
+    /** Даних ще нема: обід із зонами є, але без стрілки й заповнення, посередині «— %». */
+    var noData: Boolean = false
+        set(value) {
+            field = value
+            if (value) contentDescription = "Заряд невідомий — немає даних"
+            invalidate()
+        }
     var caption: String = ""
         set(value) {
             field = value
@@ -102,13 +109,19 @@ class GaugeView(context: Context) : View(context) {
         canvas.drawArc(box, START, SWEEP, false, track)
         // Заповнення — блакитне; лише внизу шкали (мало / глибокий розряд) фарбується кольором зони як попередження.
         fill.color = if (soc < 20) toneColor(Zones.of(soc).tone) else Palette.accent
-        if (soc > 0) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
+        if (soc > 0 && !noData) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
 
         // поділки 0 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення
         val rTick = rFill - fillStroke / 2 - 12 * dp
         for (v in TICKS) {
             val a = Math.toRadians(angleOf(v.toFloat()).toDouble())
             canvas.drawText("$v", cx + (rTick * cos(a)).toFloat(), cy + (rTick * sin(a)).toFloat() + tick.textSize / 3, tick)
+        }
+
+        if (noData) {
+            big.textSize = sp(44f)
+            canvas.drawText("— %", cx, cy + big.textSize * 0.15f, big)
+            return
         }
 
         // стрілка-трикутник ззовні обода, вістрям до центру
