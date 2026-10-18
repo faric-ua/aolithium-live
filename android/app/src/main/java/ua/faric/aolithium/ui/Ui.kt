@@ -228,11 +228,14 @@ class Ui(val ctx: Context) {
     fun fact(name: String, value: CharSequence, valueColor: Int = Palette.text): LinearLayout = row(12).apply {
         gravity = Gravity.TOP
         addView(muted(name, 14f), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        addView(numbers(text(value, 15f, valueColor, medium = true)).apply { gravity = Gravity.END },
+        addView(numbers(text(keepUnits(value), 15f, valueColor, medium = true)).apply { gravity = Gravity.END },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f))
     }
 
     companion object {
+        /** Число й одиниця не розриваються переносом: «63,5 А·год», а не «63,5 / А·год» (знімки CI, шрифт 1,3). */
+        fun keepUnits(v: CharSequence): String = v.toString().replace(Regex("""(\d) (?=[А-Яа-яІіЇїЄєA-Za-z°%])"""), "$1\u00A0")
+
         const val MIN_TOUCH_DP = 48
         const val TWO_PANE_DP = 600
         val REGULAR: Typeface = Typeface.create("sans-serif", Typeface.NORMAL)
