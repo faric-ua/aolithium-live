@@ -110,6 +110,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private var insightLoadedAt = 0L
     /** Хто зараз «найвища» / «найнижча» — липкі між оновленнями (T19, відео faric 19.10 13:57). */
     private var hiCell: Int? = null
+    /** Розмір підписів у плитках комірок, якщо довелось зменшити (шрифт 1.3); 0 — звичайний. */
+    private var miniCaptionPx = 0f
     private var loCell: Int? = null
     /** Остання година — графік різниці на «Комірках». */
     private var hourPts: List<HistoryPoint>? = null
@@ -725,6 +727,21 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             maxLines = lines
             minLines = lines
             ellipsize = android.text.TextUtils.TruncateAt.END
+            // Найдовше слово не влазить (шрифт 1.3, вузький телефон) — трохи зменшуємо шрифт, а не обрізаємо
+            // «середнь…» (знімок CI 19.10). Усі плитки однієї ширини — тож і шрифт однаковий у всіх.
+            // Розмір запам'ятовуємо: плитки перебудовуються кожні 2 с — без цього шрифт щоразу «стрибав» би 12 → менше.
+            if (miniCaptionPx > 0f) setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, miniCaptionPx)
+            val longest = name.split('\n', ' ').maxBy { it.length }
+            addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ ->
+                val tv = v as TextView
+                val avail = (r - l - tv.paddingLeft - tv.paddingRight).toFloat()
+                val need = tv.paint.measureText(longest)
+                if (avail > 0 && need > avail && tv.textSize > ui.dp(9)) {
+                    val size = maxOf(ui.dp(9).toFloat(), tv.textSize * avail / need * 0.98f)
+                    miniCaptionPx = if (miniCaptionPx > 0f) minOf(miniCaptionPx, size) else size
+                    tv.post { tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, miniCaptionPx) }
+                }
+            }
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val v = numbers(ui.text(Ui.keepUnits(value), 12.5f, color, medium = true))
         v.maxLines = 1
