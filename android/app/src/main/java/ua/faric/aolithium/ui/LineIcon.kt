@@ -44,6 +44,7 @@ enum class LineIcon(vararg val parts: Part) {
     CHART(Part("M4 20V4M4 20h16"), Part("M7 15l4-5 3 3 5-7")),
     DOTS(Part(SvgPath.circle(5f, 12f, 1.6f), filled = true), Part(SvgPath.circle(12f, 12f, 1.6f), filled = true), Part(SvgPath.circle(19f, 12f, 1.6f), filled = true)),
     GAUGE(Part("M4.5 17a8.5 8.5 0 1 1 15 0"), Part("M12 13l4-5")),
+    BELL(Part("M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"), Part("M10 21a2 2 0 0 0 4 0")),
     LIST(
         Part("M8 6h12M8 12h12M8 18h12"),
         Part(SvgPath.circle(4f, 6f, 1f)), Part(SvgPath.circle(4f, 12f, 1f)), Part(SvgPath.circle(4f, 18f, 1f)),

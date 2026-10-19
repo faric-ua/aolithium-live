@@ -225,6 +225,8 @@ class RecordService : Service() {
         if (skip != null) {
             LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: пропускаю — ${skip.text}")
             settings.saveResult(addr, Background.Result(System.currentTimeMillis(), ok = false, note = skip.text))
+            // Екран сам пише й сповіщає; а без Bluetooth чи дозволу — даних нема, як і коли батарея далеко.
+            if (skip != Background.Skip.SCREEN_OPEN) Notifier.onNoData(this, addr, System.currentTimeMillis())
             h.post { readNext() }
             return
         }
@@ -260,9 +262,11 @@ class RecordService : Service() {
             LastSnapshot(this).save(addr, s, atMs)
             settings.saveResult(addr, Background.Result(atMs, ok = true, soc = s.soc, current = s.current))
             LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: записано ${s.soc} %, ${Background.flow(s.current)}")
+            Notifier.onSnapshot(this, addr, s, atMs)
         } else {
             settings.saveResult(addr, Background.Result(atMs, ok = false, note = note))
             LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: $note")
+            Notifier.onNoData(this, addr, atMs)
         }
         updateNote()
         // Пауза між батареями — Android'у треба час закрити попереднє підключення.

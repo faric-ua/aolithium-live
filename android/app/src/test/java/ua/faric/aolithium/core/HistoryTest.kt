@@ -83,7 +83,7 @@ class HistoryTest {
             assertTrue(e.id, e.normal.isNotBlank() && e.worry.isNotBlank())
         }
         for (name in JbdParser.ERROR_COUNT_NAMES) assertTrue(name, Glossary.get(Glossary.forCounter(name)) != null)
-        for (id in listOf("soc", "zones", "voltage", "current", "power", "cells", "delta", "temp", "signal", "history", "soh", "energy")) {
+        for (id in listOf("soc", "zones", "voltage", "current", "power", "cells", "delta", "temp", "signal", "history", "soh", "energy", "background", "alerts")) {
             assertTrue(id, Glossary.get(id) != null)
         }
     }
