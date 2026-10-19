@@ -42,6 +42,11 @@ class MainActivity : Activity() {
     private lateinit var content: FrameLayout
     private var page = Page.HOME
     private var batteryAddress: String? = null
+    /**
+     * Звідки відкрили батарею (T26, faric 20.10 00:52): з «Довідки» (демо) — «Назад» веде назад у «Довідку», на те саме
+     * місце, а не на головну, щоб подивитись наступне демо без пошуку.
+     */
+    private var returnTo: Page? = null
     private var screen: Screen? = null
     private val screenStates = Bundle()
     private var started = false
@@ -54,6 +59,7 @@ class MainActivity : Activity() {
         savedInstanceState?.let { s ->
             page = s.getString(KEY_PAGE)?.let { n -> Page.entries.firstOrNull { it.name == n } } ?: Page.HOME
             batteryAddress = s.getString(KEY_ADDRESS)
+            returnTo = s.getString(KEY_RETURN)?.let { n -> Page.entries.firstOrNull { it.name == n } }
             s.getBundle(KEY_SCREENS)?.let { screenStates.putAll(it) }
         }
         buildChrome()
@@ -118,7 +124,8 @@ class MainActivity : Activity() {
             topBar.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             topBar.addView(ui.iconButton(LineIcon.HELP, "Довідка", Ui.Kind.QUIET) { show(Page.HELP, null) })
         } else {
-            topBar.addView(ui.iconButton(LineIcon.BACK, "Батареї", Ui.Kind.QUIET) { goHome() })
+            val toHelp = page == Page.BATTERY && returnTo == Page.HELP
+            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) "Довідка" else "Батареї", Ui.Kind.QUIET) { goBack() })
             topBar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         }
         topBar.gravity = Gravity.CENTER_VERTICAL
@@ -127,6 +134,11 @@ class MainActivity : Activity() {
     fun openBattery(address: String) = show(Page.BATTERY, address)
 
     fun goHome() = show(Page.HOME, null)
+
+    /** «Назад» (кнопка вгорі й системна): батарея, відкрита з «Довідки», → «Довідка»; решта → головна. */
+    private fun goBack() {
+        if (page == Page.BATTERY && returnTo == Page.HELP) show(Page.HELP, null) else goHome()
+    }
 
     fun openHelp() = show(Page.HELP, null)
 
@@ -138,6 +150,8 @@ class MainActivity : Activity() {
             if (started) s.onStop()
         }
         if (::overlay.isInitialized && overlay.isShowing) overlay.dismiss(notify = false)
+        // Перший показ після повороту (show(page) з onCreate) — returnTo вже відновлено, не чіпаємо.
+        if (p != page || screen != null) returnTo = if (p == Page.BATTERY && page == Page.HELP) Page.HELP else null
         page = p
         batteryAddress = if (p == Page.BATTERY) address else null
         val state = screenStates.getBundle(stateKey(p, batteryAddress))
@@ -166,7 +180,7 @@ class MainActivity : Activity() {
     private fun handleBack() {
         when {
             overlay.isShowing -> overlay.dismiss()
-            page != Page.HOME -> goHome()
+            page != Page.HOME -> goBack()
         }
     }
 
@@ -359,6 +373,7 @@ class MainActivity : Activity() {
         }
         outState.putString(KEY_PAGE, page.name)
         outState.putString(KEY_ADDRESS, batteryAddress)
+        returnTo?.let { outState.putString(KEY_RETURN, it.name) }
         outState.putBundle(KEY_SCREENS, screenStates)
         overlay.key?.let { outState.putString(KEY_DIALOG, it) }
     }
@@ -370,6 +385,7 @@ class MainActivity : Activity() {
         const val EXTRA_DIALOG = "dialog"
         private const val KEY_PAGE = "page"
         private const val KEY_ADDRESS = "address"
+        private const val KEY_RETURN = "returnTo"
         private const val KEY_SCREENS = "screens"
         private const val KEY_DIALOG = "dialog"
         private const val REQ_PERMS = 10
