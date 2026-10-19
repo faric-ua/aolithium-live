@@ -17,6 +17,18 @@ object Fmt {
     fun watts(v: Double) = num(v, if (abs(v) >= 100) 0 else 1) + " Вт"
     fun ampHours(v: Double) = num(v, 2) + " А·год"
     fun celsius(v: Double) = num(v, 1) + " °C"
+
+    /** Час роботи плати JK: «40 діб 3 год», «5 год 12 хв», «12 хв». */
+    fun runtime(sec: Long): String {
+        val m = sec / 60
+        val h = m / 60
+        val d = h / 24
+        return when {
+            d > 0 -> "$d " + plural(d.toInt(), "доба", "доби", "діб") + " ${h % 24} год"
+            h > 0 -> "$h год ${m % 60} хв"
+            else -> "$m хв"
+        }
+    }
     fun millivolts(mv: Int) = "$mv мВ"
     fun cellVolts(mv: Int) = num(mv / 1000.0, 3) + " В"
 

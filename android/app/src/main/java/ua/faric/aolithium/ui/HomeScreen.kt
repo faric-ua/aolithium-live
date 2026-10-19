@@ -158,12 +158,9 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     }
 
     private fun connectTo(f: BleScanner.Found) {
-        if (f.kind == BmsMatch.Kind.JK) {
-            host.toast("JK BMS (Logic Power) — буде у версії 0.4, коли будеш біля батареї в мами.")
-            return
-        }
         scanner.stop()
         f.name?.let { Batteries.scanNames[f.address] = it }
+        Batteries.scanKinds[f.address] = f.kind // v0.4: JK BMS відкривається своїм зв'язком (JkLink)
         host.openBattery(f.address)
     }
 

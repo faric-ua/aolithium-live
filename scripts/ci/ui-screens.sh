@@ -86,6 +86,22 @@ start --es demo DISCHARGING --es dialog widgets
 shot p17-widget-discharging 10
 start --es demo CHARGING --es dialog widgets
 shot p17b-widget-charging 10
+# v0.4 (T5): плата JK BMS (Logic Power) — демо з кадрами JK: «Зараз», «Комірки» (балансир, опір дротів), «Плата».
+start --es demo JK
+shot p19-jk-now 5
+start --es demo JK --es dialog tab:CELLS
+shot p19b-jk-cells 4
+scroll_down
+shot p19c-jk-cells-scrolled
+scroll_down
+shot p19d-jk-cells-scrolled2
+start --es demo JK --es dialog tab:BOARD
+shot p19e-jk-board 4
+scroll_down
+shot p19f-jk-board-scrolled
+start --es page HELP
+scroll_down; scroll_down; scroll_down
+shot p19g-help-demos
 # T25 (відео faric 19.10 22:12): рядок «Зв'язок» сталої висоти — на всіх станах спідометр на тому самому місці.
 for st in CONNECTING READING LOST FAILED LIVE; do
   start --es demo DISCHARGING --es dialog "status:$st"

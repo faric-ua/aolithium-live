@@ -7,6 +7,12 @@ import ua.faric.aolithium.core.DemoFrames
 import ua.faric.aolithium.core.JbdAssembler
 import ua.faric.aolithium.core.JbdBasic
 import ua.faric.aolithium.core.JbdParser
+import ua.faric.aolithium.core.Jk
+import ua.faric.aolithium.core.JkAssembler
+import ua.faric.aolithium.core.JkCells
+import ua.faric.aolithium.core.JkDemo
+import ua.faric.aolithium.core.JkDevice
+import ua.faric.aolithium.core.JkParser
 
 /**
  * Демо без батареї: ті самі байти, що шле плата JBD, проходять той самий розбір, що й справжні.
@@ -46,6 +52,7 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
     }
 
     private fun publish() {
+        if (scene == DemoFrames.Scene.JK) return publishJk()
         val a = JbdAssembler()
         var basic: JbdBasic? = null
         var cells: List<Int> = emptyList()
@@ -63,6 +70,26 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
         }
         val b = basic ?: return
         val snap = BatterySnapshot.fromJbd(b, cells, model, counts)
+        val now = System.currentTimeMillis()
+        lastSnapshot = snap
+        lastSnapshotAt = now
+        listener?.onSnapshot(snap, now)
+        status(LinkStatus(LinkStatus.Phase.LIVE, "Демо: «${scene.title}». Справжньої батареї тут нема."))
+    }
+
+    /** JK: «хто ти» + «комірки» шматками по 20 байт → той самий `JkAssembler` / `JkParser`, що в `JkLink`. */
+    private fun publishJk() {
+        val a = JkAssembler()
+        var device: JkDevice? = null
+        var cells: JkCells? = null
+        for (chunk in (JkDemo.device() + JkDemo.cells()).toList().chunked(20)) {
+            for (f in a.feed(chunk.toByteArray())) when (f.type) {
+                Jk.TYPE_DEVICE -> device = JkParser.device(f.bytes)
+                Jk.TYPE_CELLS -> cells = JkParser.cells(f.bytes, device?.swMajor ?: 0)
+            }
+        }
+        val c = cells ?: return
+        val snap = BatterySnapshot.fromJk(c, device)
         val now = System.currentTimeMillis()
         lastSnapshot = snap
         lastSnapshotAt = now

@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import ua.faric.aolithium.bg.RecordService
+import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.data.Batteries
 
 /**
  * Тримає одне підключення, поки відкрито екран батареї.
@@ -24,11 +26,15 @@ object LinkHolder {
         stopNow()
         // Плата тримає лише одне підключення: якщо саме зараз її читає запис у фоні — хай поступиться екрану.
         RecordService.yieldTo(address)
-        val created = DemoLink.sceneOf(address)?.let { DemoLink(it) } ?: JbdLink(ctx, address)
+        val created = DemoLink.sceneOf(address)?.let { DemoLink(it) } ?: create(ctx, address, quick = false)
         link = created
         created.start()
         return created
     }
+
+    /** Зв'язок потрібного типу (v0.4): JK BMS — `JkLink`, решта — `JbdLink`. Один вибір для екрана й фону. */
+    fun create(ctx: Context, address: String, quick: Boolean): BatteryLink =
+        if (Batteries.kindOf(ctx, address) == BmsMatch.Kind.JK) JkLink(ctx, address, quick) else JbdLink(ctx, address, quick)
 
     /** «Підключити ще раз»: закрити старе й почати нове. */
     fun restart(ctx: Context, address: String): BatteryLink {

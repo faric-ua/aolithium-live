@@ -12,6 +12,8 @@ object DemoFrames {
         CHARGING("Заряджається, балансування"),
         DISCHARGING("Світла нема — віддає"),
         COLD("Захист: холодно для заряду"),
+        /** v0.4: плата JK BMS (як у Logic Power у мами) — кадри JK з `JkDemo`, не JBD. */
+        JK("Logic Power (JK BMS): заряд, балансир"),
     }
 
     fun basic(scene: Scene): ByteArray = Jbd.responseFrame(Jbd.CMD_BASIC, basicData(scene))
@@ -27,6 +29,7 @@ object DemoFrames {
         Scene.CHARGING -> listOf(3402, 3451, 3418, 3409)
         Scene.DISCHARGING -> listOf(3302, 3305, 3303, 3301)
         Scene.COLD -> listOf(3301, 3305, 3302, 3304)
+        Scene.JK -> JkDemo.CELLS_MV
     }
 
     private fun basicData(scene: Scene): ByteArray {
@@ -35,6 +38,7 @@ object DemoFrames {
             Scene.CHARGING -> listOf(1368, 850, 7020, 76, 2731 + 185)
             Scene.DISCHARGING -> listOf(1321, -410, 5890, 64, 2731 + 163)
             Scene.COLD -> listOf(1321, 0, 5120, 55, 2731 - 42)
+            Scene.JK -> listOf(1359, 1864, 23810, 78, 2731 + 196) // не використовується: JK-демо шле кадри JK
         }
         val balance = if (scene == Scene.CHARGING) 0b0010 else 0
         val protection = if (scene == Scene.COLD) 1 shl Protection.CHARGE_COLD.bit else 0
