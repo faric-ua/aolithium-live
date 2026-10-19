@@ -57,5 +57,30 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <!-- Віджети на головний екран (v0.3.1): великий 4 × 2 і малий 2 × 2. -->
+        <receiver
+            android:name=".widget.WidgetLarge"
+            android:exported="true"
+            android:label="Aolithium · великий">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_large" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WidgetSmall"
+            android:exported="true"
+            android:label="Aolithium · малий">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_small" />
+        </receiver>
     </application>
 </manifest>

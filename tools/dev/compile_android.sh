@@ -23,12 +23,21 @@ object BuildConfig {
     const val GIT_SHA = "local"
 }
 EOF
-# R (теж генерує Gradle) — заглушка з іменами файлів у res/drawable (значок сповіщення фону з v0.2.5).
+# R (теж генерує Gradle) — заглушка з іменами файлів у res/drawable і res/layout (віджет з v0.3.1).
 {
   echo "package ua.faric.aolithium"
-  echo "object R { object drawable {"
+  echo "object R {"
+  echo "  object drawable {"
   for f in "$ROOT"/android/app/src/main/res/drawable/*.xml; do echo "    const val $(basename "$f" .xml) = 0"; done
-  echo "} }"
+  echo "  }"
+  # Віджет (v0.3.1): R.layout і R.id з res/layout.
+  echo "  object layout {"
+  for f in "$ROOT"/android/app/src/main/res/layout/*.xml; do [ -e "$f" ] && echo "    const val $(basename "$f" .xml) = 0"; done
+  echo "  }"
+  echo "  object id {"
+  cat "$ROOT"/android/app/src/main/res/layout/*.xml 2>/dev/null | grep -o '@+id/[A-Za-z0-9_]*' | sort -u | sed 's#@+id/#    const val #; s#$# = 0#'
+  echo "  }"
+  echo "}"
 } > "$TMP/stub/ua/faric/aolithium/R.kt"
 java -cp "$CP_COMPILER" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -no-stdlib -no-reflect -jvm-target 17 \
   -cp "$ANDROID_JAR:$(jar kotlin-stdlib)" -d "$TMP/out" \

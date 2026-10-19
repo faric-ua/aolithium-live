@@ -30,6 +30,7 @@ import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
 import ua.faric.aolithium.ui.MainActivity
+import ua.faric.aolithium.widget.Widgets
 
 /**
  * Запис у фоні (v0.2.5, TODO T3). Поки увімкнено хоч для однієї батареї — висить тихе сповіщення
@@ -137,10 +138,13 @@ class RecordService : Service() {
             nm?.createNotificationChannel(ch)
         }
         val batteries = Batteries(this)
-        val lines = settings.enabled().map { addr ->
+        val enabled = settings.enabled()
+        // T21 (faric 19.10 20:55): час останнього читання — у верхньому рядку сповіщення (праворуч), не в тексті.
+        val lines = enabled.map { addr ->
             val name = batteries.find(addr)?.title ?: BmsMatch.shortAddress(addr)
-            Background.line(name, settings.result(addr))
+            Background.line(name, settings.result(addr), withTime = false)
         }
+        val lastAt = enabled.mapNotNull { settings.result(it)?.at }.maxOrNull()
         val text = lines.joinToString("\n").ifBlank { "Запис у фоні вимкнено" }
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
@@ -158,7 +162,8 @@ class RecordService : Service() {
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setShowWhen(false)
+            .setShowWhen(lastAt != null)
+            .setWhen(lastAt ?: System.currentTimeMillis())
             .setCategory(Notification.CATEGORY_SERVICE)
             .addAction(Notification.Action.Builder(Icon.createWithResource(this, R.drawable.ic_note_battery), "Вимкнути", stop).build())
             .build()
@@ -263,10 +268,12 @@ class RecordService : Service() {
             settings.saveResult(addr, Background.Result(atMs, ok = true, soc = s.soc, current = s.current))
             LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: записано ${s.soc} %, ${Background.flow(s.current)}")
             Notifier.onSnapshot(this, addr, s, atMs)
+            Widgets.onData(this, fromScreen = false)
         } else {
             settings.saveResult(addr, Background.Result(atMs, ok = false, note = note))
             LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: $note")
             Notifier.onNoData(this, addr, atMs)
+            Widgets.onData(this, fromScreen = false)
         }
         updateNote()
         // Пауза між батареями — Android'у треба час закрити попереднє підключення.

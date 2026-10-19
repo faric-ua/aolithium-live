@@ -73,6 +73,7 @@
 | Bluetooth: пошук, зв'язок з платою, демо, журнал зв'язку | `…/ble/` |
 | Запис у фоні (v0.2.5): служба з тихим сповіщенням, будильник раз на 5 хв, поступається екрану | `…/bg/RecordService.kt`, `bg/BgReceiver.kt`, правила — `core/Background.kt`, налаштування — `data/BgSettings.kt` |
 | Сповіщення (v0.3): правила — без Android, показ — канали Android, перемикачі — «Ще» | `core/Alerts.kt` (+ `AlertsTest`), `bg/Notifier.kt`, `data/AlertSettings.kt` |
+| Віджет (v0.3.1): що писати — без Android, малюнок — Canvas, оновлення | `core/WidgetModel.kt` (+ тест), `widget/WidgetArt.kt`, `widget/Widgets.kt`, `res/xml/widget_*.xml` |
 | «Мої батареї» (пам'ять телефона) | `…/data/Batteries.kt` |
 | Екрани | `…/ui/` (`Palette.kt` — кольори, `Ui.kt` — кнопки/картки; `Overlay`, `LineIcon`, `FlowLayout` — з Track Catcher) |
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |

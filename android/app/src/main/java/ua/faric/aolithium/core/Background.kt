@@ -50,12 +50,15 @@ object Background {
         else -> "стоїть"
     }
 
-    /** Рядок сповіщення для однієї батареї: «Aolithium: 64 % · віддає 4,10 А · 04:35». */
-    fun line(name: String, r: Result?, tz: TimeZone = TimeZone.getDefault()): String {
+    /**
+     * Рядок сповіщення для однієї батареї: «Aolithium: 64 % · віддає 4,10 А · 04:35».
+     * [withTime] = false — без часу в кінці (T21, faric 19.10 20:55: час — у верхньому рядку сповіщення, праворуч).
+     */
+    fun line(name: String, r: Result?, tz: TimeZone = TimeZone.getDefault(), withTime: Boolean = true): String {
         if (r == null) return "$name: чекаю першого запису"
-        val t = hhmm(r.at, tz)
-        return if (r.ok) "$name: ${r.soc} % · ${flow(r.current)} · $t"
-        else "$name: ${r.note.ifBlank { Skip.NO_ANSWER.text }} · $t"
+        val t = if (withTime) " · ${hhmm(r.at, tz)}" else ""
+        return if (r.ok) "$name: ${r.soc} % · ${flow(r.current)}$t"
+        else "$name: ${r.note.ifBlank { Skip.NO_ANSWER.text }}$t"
     }
 
     /** Для «Ще»: «04:35 — 64 %, віддає 4,10 А» або «04:35 — нема зв'язку …». */
