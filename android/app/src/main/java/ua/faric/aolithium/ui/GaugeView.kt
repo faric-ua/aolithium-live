@@ -174,13 +174,13 @@ class GaugeView(context: Context) : View(context) {
         val absA = kotlin.math.abs(current)
         val absW = kotlin.math.abs(power)
         val mainText = if (showAmps) Fmt.amps(absA) else Fmt.watts(absW)
-        val arrowW = if (flow != 0) 16 * dp else 0f
+        val arrowW = if (flow != 0) 22 * dp else 0f
         fit(amp, mainText, inner * 0.78f - arrowW)
         val yAmp = yBig + amp.textSize * 1.3f
         val textW = amp.measureText(mainText)
         val xText = cx - arrowW / 2
         canvas.drawText(mainText, xText, yAmp, amp)
-        if (flow != 0) drawFlowArrow(canvas, xText + textW / 2 + 5 * dp, yAmp - amp.textSize * 0.36f, flow, color)
+        if (flow != 0) drawFlowArrow(canvas, xText + textW / 2 + 13 * dp, yAmp - amp.textSize * 0.36f, flow, color)
 
         // 3-й рядок — друге число, напруга й напрям
         small.textSize = sp(13f)

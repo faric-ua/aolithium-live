@@ -737,7 +737,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success, known = true))
             sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger, known = true))
             if (stats.socMin != null) sum.addView(fact("Заряд", "${stats.socMin}–${stats.socMax} %", "soc", known = true))
-            sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
+            sum.addView(fact("Найбільший струм", "заряд ${Fmt.amps(stats.maxChargeA)} · розряд ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
             if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp", known = true))
             stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta", known = true)) }
             val share = (stats.coveredMs * 100 / shown.ms).coerceIn(0, 100)
@@ -815,9 +815,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             sumBox += summaryTile("віддала", if (week.sumOf { it.wh } >= 1000) Fmt.num(week.sumOf { it.wh } / 1000, 1) + " кВт·год" else Fmt.num(week.sumOf { it.wh }, 0) + " Вт·год")
             sumBox += summaryTile("найнижче", (week.minOfOrNull { it.socTo }?.let { "$it %" } ?: "—"))
             oc.addView(ui.grid(sumBox, perRow = 2, gapDp = 6), ui.matchWrap())
-            val live = data == Data.LIVE
             for (o in outages.sortedByDescending { it.start }.take(5)) {
-                val ongoing = o.ongoing && live && now - o.end < 5 * 60_000L
+                // Остання точка історії — ще розряд, і вона свіжа: відключення триває зараз.
+                val ongoing = o.ongoing && now - o.end < 5 * 60_000L
                 val box = ui.column(4).apply {
                     background = ui.rounded(Palette.surfaceAlt, if (ongoing) Palette.danger else Palette.border, radiusDp = 12)
                     setPadding(ui.dp(12), ui.dp(10), ui.dp(12), ui.dp(10))
