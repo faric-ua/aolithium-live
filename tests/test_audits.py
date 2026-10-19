@@ -41,6 +41,14 @@ class AuditTests(unittest.TestCase):
         rules = {r for r, _ in audit_ui.audit(tmp)}
         self.assertIn("UI-05", rules)
 
+    def test_ui_audit_catches_rotating_screen(self):
+        # faric 19.10 04:25: «заборонити переворот екрану» — без portrait у маніфесті аудит падає.
+        tmp = self._copy()
+        m = tmp / "android/app/src/main/AndroidManifest.xml"
+        m.write_text(m.read_text(encoding="utf-8").replace('android:screenOrientation="portrait"', ""), encoding="utf-8")
+        rules = {r for r, _ in audit_ui.audit(tmp)}
+        self.assertIn("UI-06", rules)
+
     def test_repo_audit_catches_key_and_email(self):
         tmp = self._copy()
         (tmp / "release.jks").write_bytes(b"x")

@@ -4,9 +4,11 @@ import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
@@ -18,6 +20,7 @@ import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import ua.faric.aolithium.BuildConfig
+import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BtAccess
 
 /**
@@ -229,7 +232,74 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_SAVE) {
+            finishSave(if (resultCode == RESULT_OK) data?.data else null)
+            return
+        }
         screen?.onAccessChanged()
+    }
+
+    // ---------- запис у фоні (v0.2.5) ----------
+
+    /** Android 13+ питає дозвіл на сповіщення; без нього запис працює, але в шторці його не видно. */
+    val notificationsAllowed: Boolean
+        get() = Build.VERSION.SDK_INT < 33 || checkSelfPermission(PERM_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    fun requestNotifications() {
+        if (Build.VERSION.SDK_INT >= 33 && !notificationsAllowed) requestPermissions(arrayOf(PERM_NOTIFICATIONS), REQ_NOTIFICATIONS)
+    }
+
+    /** Чи не обмежує Android (Samsung — «Батарея: обмежено / оптимізовано») роботу застосунку у фоні. */
+    val batteryUnrestricted: Boolean
+        get() = (getSystemService(POWER_SERVICE) as? PowerManager)?.isIgnoringBatteryOptimizations(packageName) == true
+
+    /** Системне вікно «Дозволити працювати у фоні без обмежень?». Нема такого — сторінка застосунку в налаштуваннях. */
+    fun askUnrestrictedBattery() {
+        try {
+            startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+        } catch (e: ActivityNotFoundException) {
+            openAppSettings()
+        } catch (e: SecurityException) {
+            openAppSettings()
+        }
+    }
+
+    // ---------- зберегти файл (історія CSV) ----------
+
+    private var pendingSave: ((java.io.OutputStream) -> Unit)? = null
+
+    /** Системне вікно «Зберегти як…» (без бібліотек і без дозволу на пам'ять); [write] пише вміст у фоні. */
+    fun saveFile(name: String, mime: String, write: (java.io.OutputStream) -> Unit) {
+        pendingSave = write
+        val i = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime).putExtra(Intent.EXTRA_TITLE, name)
+        try {
+            @Suppress("DEPRECATION")
+            startActivityForResult(i, REQ_SAVE)
+        } catch (e: ActivityNotFoundException) {
+            pendingSave = null
+            toast("На телефоні немає вікна збереження файлів")
+        }
+    }
+
+    private fun finishSave(uri: Uri?) {
+        val write = pendingSave
+        pendingSave = null
+        if (uri == null) return
+        if (write == null) {
+            // Вікно повернули після повороту екрана — вміст загубився. Чесно кажемо.
+            toast("Не збереглося — натисни «Зберегти CSV» ще раз")
+            return
+        }
+        Thread {
+            val ok = try {
+                contentResolver.openOutputStream(uri)?.use { write(it) } != null
+            } catch (e: java.io.IOException) {
+                false
+            } catch (e: SecurityException) {
+                false
+            }
+            runOnUiThread { toast(if (ok) "Збережено" else "Не вдалось зберегти файл") }
+        }.start()
     }
 
     /** Переслати текст (журнал зв'язку) — системне вікно «Поділитися». */
@@ -256,6 +326,9 @@ class MainActivity : Activity() {
         super.onStart()
         started = true
         screen?.onStart()
+        // Запис у фоні ввімкнено, а службу Android зупинив (оновлення, «Очистити все» в диспетчері задач) —
+        // запускаємо знову, поки застосунок на екрані (з фону Android 12+ не дозволяє).
+        if (!RecordService.running) RecordService.ensure(this, RecordService.ACTION_TICK)
     }
 
     override fun onResume() {
@@ -292,5 +365,8 @@ class MainActivity : Activity() {
         private const val KEY_DIALOG = "dialog"
         private const val REQ_PERMS = 10
         private const val REQ_BLUETOOTH = 20
+        private const val REQ_NOTIFICATIONS = 30
+        private const val REQ_SAVE = 40
+        private const val PERM_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
     }
 }

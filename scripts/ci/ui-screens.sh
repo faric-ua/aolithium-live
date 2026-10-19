@@ -85,6 +85,7 @@ start --es demo OFFLINE --es dialog tab:BOARD
 shot p16-offline-board 3
 start --es demo IDLE --es dialog info:zones
 shot p10-info-zones 4
+# Поворот телефона: з v0.2.5 застосунок лишається книжковим (faric 19.10 04:25) — знімки l0* мають бути вертикальні.
 rotate 1
 shot l01-info-after-rotation
 adb shell input keyevent KEYCODE_BACK

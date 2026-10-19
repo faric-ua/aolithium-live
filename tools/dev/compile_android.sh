@@ -23,7 +23,14 @@ object BuildConfig {
     const val GIT_SHA = "local"
 }
 EOF
+# R (теж генерує Gradle) — заглушка з іменами файлів у res/drawable (значок сповіщення фону з v0.2.5).
+{
+  echo "package ua.faric.aolithium"
+  echo "object R { object drawable {"
+  for f in "$ROOT"/android/app/src/main/res/drawable/*.xml; do echo "    const val $(basename "$f" .xml) = 0"; done
+  echo "} }"
+} > "$TMP/stub/ua/faric/aolithium/R.kt"
 java -cp "$CP_COMPILER" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -no-stdlib -no-reflect -jvm-target 17 \
   -cp "$ANDROID_JAR:$(jar kotlin-stdlib)" -d "$TMP/out" \
-  $(find "$ROOT/android/app/src/main/java" -name '*.kt') "$TMP/stub/ua/faric/aolithium/BuildConfig.kt"
+  $(find "$ROOT/android/app/src/main/java" -name '*.kt') "$TMP/stub/ua/faric/aolithium/BuildConfig.kt" "$TMP/stub/ua/faric/aolithium/R.kt"
 echo "Компіляція: OK"

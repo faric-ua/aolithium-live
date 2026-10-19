@@ -14,6 +14,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import ua.faric.aolithium.ble.BatteryLink
 import ua.faric.aolithium.ble.BleScanner
+import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.ble.DemoLink
 import ua.faric.aolithium.ble.LinkHolder
 import ua.faric.aolithium.ble.LinkLog
@@ -34,7 +35,11 @@ import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.SteadyCurrent
 import ua.faric.aolithium.core.TimeLeft
 import ua.faric.aolithium.core.Zones
+import ua.faric.aolithium.bg.RecordService
+import ua.faric.aolithium.core.Background
+import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.data.Batteries
+import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
 import ua.faric.aolithium.data.Marks
@@ -67,6 +72,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private val batteries = Batteries(host)
+    private val bg = BgSettings(host)
     private val history = HistoryStore.get(host)
     private val demo = DemoLink.sceneOf(address)
     private var link: BatteryLink? = null
@@ -151,6 +157,15 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         handler.post(ticker)
         if (tab == Tab.CHARTS) loadInsights()
         if (tab == Tab.CELLS) loadHour()
+    }
+
+    override fun onAccessChanged() {
+        if (tab == Tab.MORE) render()
+    }
+
+    override fun onResume() {
+        // Повернулись із системного вікна (батарея без обмежень, сповіщення) — оновити картку «Запис у фоні».
+        if (tab == Tab.MORE) render()
     }
 
     override fun onStop() {
@@ -732,7 +747,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val sum = ui.card(8)
         sum.addView(labelRow(if (shown != range) "За ${shown.label} · оновлюю…" else "За ${shown.label}", LineIcon.LIST, "energy"))
         if (pts.isEmpty()) {
-            sum.addView(ui.muted("Ще немає записів. Історія пишеться раз на 10 с, поки застосунок відкритий і на зв'язку.", 14f))
+            sum.addView(ui.muted("Ще немає записів. Історія пишеться раз на 10 с, поки застосунок відкритий і на зв'язку, а з увімкненим «Запис у фоні» («Ще») — раз на ~5 хв і коли закритий.", 14f))
         } else {
             sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success, known = true))
             sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger, known = true))
@@ -741,7 +756,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp", known = true))
             stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta", known = true)) }
             val share = (stats.coveredMs * 100 / shown.ms).coerceIn(0, 100)
-            sum.addView(ui.muted("Записано ${share} % часу (решта — застосунок був закритий).", 12.5f))
+            sum.addView(ui.muted("Записано ${share} % часу (решта — застосунок був закритий і фон вимкнений).", 12.5f))
         }
 
         val n = 240
@@ -962,9 +977,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         hist.addView(labelRow("Історія", LineIcon.CHART, "history"))
         val (days, bytes) = historyBytes ?: history.size(address).also { historyBytes = it }
         hist.addView(fact("Записано", if (demo != null) "демо — не пишеться" else "$days дн. · ${Fmt.num(bytes / 1024.0, 0)} КБ", "history", known = true))
-        hist.addView(fact("Як часто", "раз на 10 с, поки відкрито", "history", known = true))
+        hist.addView(fact("Як часто", if (demo == null && bg.isOn(address)) "раз на 10 с відкрито · ~5 хв у фоні" else "раз на 10 с, поки відкрито", "history", known = true))
         hist.addView(fact("Скільки зберігається", "${HistoryStore.KEEP_DAYS} днів", "history", known = true))
-        if (demo == null && days > 0) hist.addView(ui.button("Стерти історію цієї батареї", Ui.Kind.DANGER) { showClearHistory() }, ui.matchWrap())
+        if (demo == null && days > 0) {
+            hist.addView(ui.iconButton(LineIcon.LIST, "Зберегти CSV (таблиця)", Ui.Kind.NORMAL) { saveCsv() }, ui.matchWrap())
+            hist.addView(ui.button("Стерти історію цієї батареї", Ui.Kind.DANGER) { showClearHistory() }, ui.matchWrap())
+        }
 
         val dict = ui.card(6)
         dict.addView(labelRow("Довідник: що означає кожен показник", LineIcon.BOOK, null))
@@ -978,7 +996,57 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         help.addView(ui.muted("Як підключити, чому не видно батареї, демо без батареї.", 13f))
         help.addView(ui.iconButton(LineIcon.HELP, "Відкрити довідку", Ui.Kind.NORMAL) { host.openHelp() }, ui.matchWrap())
 
-        columns(listOf(actions, hist, help), listOf(dict))
+        columns(listOf(backgroundCard(), actions, hist, help), listOf(dict))
+    }
+
+    /**
+     * «Запис у фоні» (v0.2.5, T3): перемикач для цієї батареї, останній запис, і що ще заважає
+     * (сповіщення заборонені, Android обмежує батарею для застосунку).
+     */
+    private fun backgroundCard(): View {
+        val on = demo == null && bg.isOn(address)
+        val card = if (on) ui.card(8, fill = Palette.accentFill, stroke = Palette.accent) else ui.card(8)
+        card.addView(labelRow("Запис у фоні", LineIcon.REPEAT, "background"))
+        if (demo != null) {
+            card.addView(ui.muted("У демо не працює — лише зі справжньою батареєю.", 13f))
+            return card
+        }
+        card.addView(ui.muted("Раз на ~5 хв, навіть коли застосунок закритий: коротко підключається, записує показники й відпускає батарею. Так видно відключення світла, що були без тебе.", 13f))
+        card.addView(ui.grid(listOf(
+            ui.choice("Увімкнено", on) { setBackground(true) },
+            ui.choice("Вимкнено", !on) { setBackground(false) },
+        )), ui.matchWrap())
+        if (on) {
+            card.addView(fact("Останній запис", Background.status(bg.result(address)), "background", known = true))
+            if (!RecordService.running) card.addView(ui.muted("Служба запису зараз не працює — Android її зупинив. Відкрий застосунок ще раз або вимкни й увімкни.", 13f))
+            if (BtAccess.missingPermissions(host).isNotEmpty()) {
+                card.addView(ui.muted("Немає дозволу на Bluetooth — без нього фон не прочитає батарею.", 13f))
+                card.addView(ui.button("Дати дозвіл", Ui.Kind.PRIMARY) { host.requestAccess() }, ui.matchWrap())
+            } else if (!host.notificationsAllowed) {
+                card.addView(ui.muted("Сповіщення заборонені: запис працює, але в шторці його не видно, і вимкнути можна лише тут.", 13f))
+                card.addView(ui.button("Дозволити сповіщення", Ui.Kind.NORMAL) { host.requestNotifications() }, ui.matchWrap())
+            }
+            if (!host.batteryUnrestricted) {
+                card.addView(ui.muted("Android може приспати запис, щоб берегти батарею телефона. Щоб писав рівно — дозволь «без обмежень».", 13f))
+                card.addView(ui.button("Не обмежувати у фоні", Ui.Kind.NORMAL) { host.askUnrestrictedBattery() }, ui.matchWrap())
+            }
+        }
+        return card
+    }
+
+    private fun setBackground(on: Boolean) {
+        if (on == bg.isOn(address)) return
+        bg.set(address, on)
+        if (on && batteries.find(address) == null) batteries.remember(address, Batteries.scanNames[address], BmsMatch.Kind.JBD)
+        RecordService.ensure(host)
+        if (on) {
+            if (BtAccess.missingPermissions(host).isNotEmpty()) host.requestAccess() else host.requestNotifications()
+        }
+        render()
+    }
+
+    private fun saveCsv() {
+        host.saveFile(HistoryCsv.fileName(title, System.currentTimeMillis()), "text/csv") { out -> history.writeCsv(address, out) }
     }
 
     // ---------- спільні картки ----------
