@@ -60,6 +60,9 @@ start --es demo CHARGING --es dialog tab:CELLS
 shot p06-cells 4
 scroll_down
 shot p06b-cells-scrolled
+# T19: плитки без вирівнювання (усі однієї висоти, мітки в один рядок).
+start --es demo IDLE --es dialog tab:CELLS
+shot p06c-cells-idle 4
 start --es demo IDLE --es dialog tab:CHARTS:D1
 shot p07-charts 5
 scroll_down
@@ -104,6 +107,8 @@ adb shell settings put system font_scale 1.3
 sleep 2
 start --es demo IDLE
 shot p12-now-font130 4
+start --es demo IDLE --es dialog tab:CELLS
+shot p12b-cells-font130 4
 start --es page HOME
 shot p13-home-font130
 adb shell settings put system font_scale 1.0
