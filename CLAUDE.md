@@ -1,7 +1,7 @@
 # Aolithium Live — правила для Claude
 
 Тут лише правила й карта. Стан — `STATUS.md`. Задачі — `TODO.md`. Історія рішень і проблем — `docs/PROJECT_LEDGER.md`.
-Задум і повний план — `docs/PLAN.md`. Протокол плати — `docs/PROTOCOL_JBD.md`.
+Задум і повний план — `docs/PLAN.md`. Протоколи плат — `docs/PROTOCOL_JBD.md` (Aolithium), `docs/PROTOCOL_JK.md` (Logic Power, v0.4).
 
 ## Що це
 
@@ -36,8 +36,9 @@
 
 ## Безпека батареї — головне правило
 
-- **Застосунок лише читає плату.** У плату йдуть тільки команди читання (`Jbd.READ_COMMANDS`: 0x03, 0x04, 0x05, 0xAA),
-  зібрані `Jbd.readCommand` — вона відмовляє на будь-яку іншу. Контракт-тест `test_app_only_reads_the_board` це стереже.
+- **Застосунок лише читає плату.** У плату йдуть тільки команди читання — JBD: `Jbd.READ_COMMANDS` (0x03, 0x04, 0x05, 0xAA),
+  зібрані `Jbd.readCommand`; JK: `Jk.READ_COMMANDS` (0x96, 0x97), зібрані `Jk.readCommand`. Обидві відмовляють на будь-яку
+  іншу. Контракт-тест `test_app_only_reads_the_board` це стереже.
 - Запис налаштувань, вмикання/вимикання ключів — лише з етапу v0.5, лише після **резервної копії** налаштувань у файл
   і окремого «так» faric. До того — не додавати навіть «на потім».
 - Показники — довідка, не захист: батарею захищає сама плата. У текстах не обіцяти безпеку.
@@ -70,7 +71,8 @@
 | Що | Де |
 |---|---|
 | Ядро без Android: протокол JBD, розбір, знімок стану, формат чисел, впізнавання плат | `android/app/src/main/java/ua/faric/aolithium/core/` + тести `src/test/…` |
-| Bluetooth: пошук, зв'язок з платою, демо, журнал зв'язку | `…/ble/` |
+| Bluetooth: пошук, зв'язок з платою, демо, журнал зв'язку | `…/ble/` (`JbdLink`, `JkLink` — вибір у `LinkHolder.create` за типом плати) |
+| JK BMS (v0.4): протокол, збирач кадрів, розкладки 24S/32S, демо-кадри | `core/Jk.kt` (+ `JkTest`), `docs/PROTOCOL_JK.md` |
 | Запис у фоні (v0.2.5): служба з тихим сповіщенням, будильник раз на 5 хв, поступається екрану | `…/bg/RecordService.kt`, `bg/BgReceiver.kt`, правила — `core/Background.kt`, налаштування — `data/BgSettings.kt` |
 | Сповіщення (v0.3): правила — без Android, показ — канали Android, перемикачі — «Ще» | `core/Alerts.kt` (+ `AlertsTest`), `bg/Notifier.kt`, `data/AlertSettings.kt` |
 | Віджет (v0.3.1): що писати — без Android, малюнок — Canvas, оновлення | `core/WidgetModel.kt` (+ тест), `widget/WidgetArt.kt`, `widget/Widgets.kt`, `res/xml/widget_*.xml` |
