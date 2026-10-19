@@ -10,6 +10,7 @@ object DemoFrames {
     enum class Scene(val title: String) {
         IDLE("Спокій (як на відео)"),
         CHARGING("Заряджається, балансування"),
+        DISCHARGING("Світла нема — віддає"),
         COLD("Захист: холодно для заряду"),
     }
 
@@ -24,6 +25,7 @@ object DemoFrames {
     fun cellsMv(scene: Scene): List<Int> = when (scene) {
         Scene.IDLE -> listOf(3326, 3329, 3328, 3329)
         Scene.CHARGING -> listOf(3402, 3451, 3418, 3409)
+        Scene.DISCHARGING -> listOf(3302, 3305, 3303, 3301)
         Scene.COLD -> listOf(3301, 3305, 3302, 3304)
     }
 
@@ -31,6 +33,7 @@ object DemoFrames {
         val (volts, amps, remain, soc, temp) = when (scene) {
             Scene.IDLE -> listOf(1331, 0, 8631, 93, 2731 + 123)
             Scene.CHARGING -> listOf(1368, 850, 7020, 76, 2731 + 185)
+            Scene.DISCHARGING -> listOf(1321, -410, 5890, 64, 2731 + 163)
             Scene.COLD -> listOf(1321, 0, 5120, 55, 2731 - 42)
         }
         val balance = if (scene == Scene.CHARGING) 0b0010 else 0

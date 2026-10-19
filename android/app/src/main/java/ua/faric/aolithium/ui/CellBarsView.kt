@@ -70,7 +70,7 @@ class CellBarsView(context: Context) : View(context) {
             canvas.drawRoundRect(rect, barH / 2, barH / 2, track)
             val k = ((mv - LOW_MV).toFloat() / (HIGH_MV - LOW_MV)).coerceIn(0.02f, 1f)
             fill.color = when {
-                (i + 1) in balancing -> Palette.success
+                (i + 1) in balancing -> Palette.violet
                 i == minIdx -> Palette.warning
                 i == maxIdx -> Palette.accent
                 else -> Palette.muted

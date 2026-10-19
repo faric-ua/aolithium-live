@@ -23,7 +23,8 @@ object DemoHistory {
             }
             soc = (soc + current * (step / 3_600_000.0) / 92.34 * 100).coerceIn(12.0, 100.0)
             val s = soc.toInt()
-            val v = 12.9 + s / 100.0 * 0.5 + current * 0.012
+            // кінець заряду — напруга вгору, як у справжньої батареї (для карток «зарядний» і «хто відстає»)
+            val v = 12.9 + s / 100.0 * 0.5 + current * 0.012 + if (s >= 95 && current > 0) 0.6 else 0.0
             val base = (v / 4 * 1000).toInt()
             val spread = if (current > 0 && s > 90) 28 else 6
             val temp = 14 + 3 * sin(2 * PI * hour / 24) + max(0.0, current) * 0.25
