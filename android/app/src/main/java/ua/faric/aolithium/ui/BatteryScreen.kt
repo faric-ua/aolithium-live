@@ -12,6 +12,8 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import ua.faric.aolithium.bg.Notifier
+import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BatteryLink
 import ua.faric.aolithium.ble.BleScanner
 import ua.faric.aolithium.ble.BtAccess
@@ -19,6 +21,8 @@ import ua.faric.aolithium.ble.DemoLink
 import ua.faric.aolithium.ble.LinkHolder
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.ble.LinkStatus
+import ua.faric.aolithium.core.Alerts
+import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.CellTrend
@@ -27,6 +31,7 @@ import ua.faric.aolithium.core.DailyMin
 import ua.faric.aolithium.core.Fmt
 import ua.faric.aolithium.core.Glossary
 import ua.faric.aolithium.core.Health
+import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.HistoryPoint
 import ua.faric.aolithium.core.Laggard
@@ -35,9 +40,7 @@ import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.SteadyCurrent
 import ua.faric.aolithium.core.TimeLeft
 import ua.faric.aolithium.core.Zones
-import ua.faric.aolithium.bg.RecordService
-import ua.faric.aolithium.core.Background
-import ua.faric.aolithium.core.HistoryCsv
+import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.HistoryStore
@@ -73,6 +76,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     private val batteries = Batteries(host)
     private val bg = BgSettings(host)
+    private val alertPrefs = AlertSettings(host)
     private val history = HistoryStore.get(host)
     private val demo = DemoLink.sceneOf(address)
     private var link: BatteryLink? = null
@@ -220,6 +224,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         history.record(address, snapshot, atMs)
         lastStore.save(address, snapshot, atMs)
+        if (demo == null) Notifier.onSnapshot(host, address, snapshot, atMs)
         if (tab == Tab.CHARTS) {
             // графіки не перемальовуємо щосекунди — лише підвантажуємо нові точки раз на 30 с
             if (atMs - pointsLoadedAt > 30_000) loadHistory()
@@ -1059,7 +1064,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         help.addView(ui.muted("Як підключити, чому не видно батареї, демо без батареї.", 13f))
         help.addView(ui.iconButton(LineIcon.HELP, "Відкрити довідку", Ui.Kind.NORMAL) { host.openHelp() }, ui.matchWrap())
 
-        columns(listOf(backgroundCard(), actions, hist, help), listOf(dict))
+        columns(listOf(backgroundCard(), alertsCard(), actions, hist, help), listOf(dict))
     }
 
     /**
@@ -1094,6 +1099,43 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 card.addView(ui.button("Не обмежувати у фоні", Ui.Kind.NORMAL) { host.askUnrestrictedBattery() }, ui.matchWrap())
             }
         }
+        return card
+    }
+
+    /**
+     * «Сповіщення» (v0.3, T4): перемикач кожного виду (спільні для всіх батарей, за замовчуванням усі увімкнені).
+     * faric 19.10 19:44: «всі типи сповіщень… якщо можеш про щось ще — сповіщай».
+     */
+    private fun alertsCard(): View {
+        val card = ui.card(8)
+        card.addView(labelRow("Сповіщення", LineIcon.BELL, "alerts"))
+        val bgOn = demo == null && bg.isOn(address)
+        card.addView(ui.muted(
+            if (demo != null) "Демо-батарея не сповіщає. Перемикачі спільні для всіх батарей — їх можна налаштувати й тут."
+            else if (bgOn) "Приходять і коли застосунок закритий (раз на ~5 хв). Лише поки телефон поруч із батареєю — Bluetooth дістає кілька метрів."
+            else "Зараз — лише поки відкритий цей екран. Щоб приходили й коли застосунок закритий, увімкни «Запис у фоні» вище.",
+            13f,
+        ))
+        if (!host.notificationsAllowed) {
+            card.addView(ui.muted("Android заборонив сповіщення цьому застосунку — у шторці їх не буде.", 13f))
+            card.addView(ui.button("Дозволити сповіщення", Ui.Kind.PRIMARY) { host.requestNotifications() }, ui.matchWrap())
+        }
+        val toggles = Alerts.Kind.entries.map { k ->
+            val on = alertPrefs.isOn(k)
+            ui.choice("${k.title}\n${if (on) "увімкнено" else "вимкнено"}", on) {
+                alertPrefs.set(k, !on)
+                if (!on) host.requestNotifications()
+                render()
+            }
+        }
+        card.addView(ui.grid(toggles, perRow = 1), ui.matchWrap())
+        if (demo == null) {
+            card.addView(ui.iconButton(LineIcon.BELL, "Перевірити сповіщення", Ui.Kind.NORMAL) {
+                host.requestNotifications()
+                Notifier.test(host, address, snapshot ?: stale?.first)
+            }, ui.matchWrap())
+        }
+        card.addView(ui.muted("Кожне — один раз, доки стан не мине. Захист «перезаряд комірки» наприкінці заряду — це «Батарея повна», не тривога.", 12.5f))
         return card
     }
 

@@ -69,9 +69,17 @@ class MainActivity : Activity() {
         applyIntent(intent)
     }
 
-    /** Лише debug-збірка (CI): відкрити демо-батарею чи сторінку для знімків екрана. */
+    /**
+     * Торкнулись сповіщення чи віджета (v0.3) — відкрити ту батарею. Решта — лише debug-збірка (CI):
+     * відкрити демо-батарею чи сторінку для знімків екрана.
+     */
     private fun applyIntent(i: Intent?) {
-        if (i == null || !BuildConfig.DEBUG) return
+        if (i == null) return
+        i.getStringExtra(EXTRA_BATTERY)?.takeIf { it.isNotBlank() && !it.startsWith("demo:") }?.let {
+            i.removeExtra(EXTRA_BATTERY)
+            openBattery(it)
+        }
+        if (!BuildConfig.DEBUG) return
         i.getStringExtra(EXTRA_DEMO)?.let { openBattery("demo:$it") }
         i.getStringExtra(EXTRA_PAGE)?.let { name -> Page.entries.firstOrNull { it.name == name } }?.let { if (it != Page.BATTERY) show(it, null) }
         i.getStringExtra(EXTRA_DIALOG)?.let { screen?.restoreDialog(it) }
@@ -356,6 +364,7 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        const val EXTRA_BATTERY = "battery"
         const val EXTRA_DEMO = "demo"
         const val EXTRA_PAGE = "page"
         const val EXTRA_DIALOG = "dialog"

@@ -72,6 +72,7 @@
 | Ядро без Android: протокол JBD, розбір, знімок стану, формат чисел, впізнавання плат | `android/app/src/main/java/ua/faric/aolithium/core/` + тести `src/test/…` |
 | Bluetooth: пошук, зв'язок з платою, демо, журнал зв'язку | `…/ble/` |
 | Запис у фоні (v0.2.5): служба з тихим сповіщенням, будильник раз на 5 хв, поступається екрану | `…/bg/RecordService.kt`, `bg/BgReceiver.kt`, правила — `core/Background.kt`, налаштування — `data/BgSettings.kt` |
+| Сповіщення (v0.3): правила — без Android, показ — канали Android, перемикачі — «Ще» | `core/Alerts.kt` (+ `AlertsTest`), `bg/Notifier.kt`, `data/AlertSettings.kt` |
 | «Мої батареї» (пам'ять телефона) | `…/data/Batteries.kt` |
 | Екрани | `…/ui/` (`Palette.kt` — кольори, `Ui.kt` — кнопки/картки; `Overlay`, `LineIcon`, `FlowLayout` — з Track Catcher) |
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |

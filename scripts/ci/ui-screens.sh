@@ -79,6 +79,8 @@ start --es demo IDLE --es dialog tab:MORE
 shot p09-more 4
 scroll_down
 shot p09b-more-dictionary
+scroll_down
+shot p09c-more-alerts
 # Без зв'язку й без збережених даних (faric 18.10 21:48): усі вкладки з прочерками.
 start --es demo OFFLINE
 shot p14-offline-now 6
