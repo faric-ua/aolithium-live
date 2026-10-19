@@ -118,22 +118,26 @@ object CellTrend {
     fun shown(perMin: Int): Int = if (abs(perMin) <= NOISE_MV) 0 else perMin
 
     /**
-     * Найвища й найнижча комірка — «липкі» (T19). Мітка переходить на іншу комірку, лише коли та вища / нижча
-     * за попередню щонайменше на [STICKY_MV]; рівні й на 1 мВ відмінні — лишаємо, де була. Без цього при
-     * 3,334 / 3,334 / 3,333 рамка «найнижча» стрибала №3 ↔ №4 кожні 2 с (відео faric 19.10 13:57).
-     * Усі комірки однакові (різниця 0) — міток нема. Повертає (найвища, найнижча) — індекси або null.
+     * Найвища й найнижча комірка (T19, виправлено T24).
+     *
+     * Мітка завжди на **справжній** найвищій / найнижчій. «Липка» — лише між **рівними**: коли кілька комірок
+     * однакові, мітка лишається на тій, де була (без цього при 3,334 / 3,334 рамка «найнижча» стрибала №3 ↔ №4
+     * кожні 2 с — відео faric 19.10 13:57).
+     * Помилка v0.2.6 (скрін faric 19.10 22:06): мітка трималась, доки інша не стане нижчою на 2 мВ, — і при
+     * 3,332 / 3,331 / 3,330 / 3,329 «найнижча» стояла на №3, хоча найнижча №4. Правило «±1 мВ — шум» тут не годиться:
+     * число на плитці видно, і мітка мусить з ним збігатись.
+     * Різниця всього 1 мВ або 0 — це точність плати, «найвищої» й «найнижчої» нема: міток нема.
+     * Повертає (найвища, найнижча) — індекси або null.
      */
-    const val STICKY_MV = 2
+    const val NO_MARKS_MV = 1
 
     fun extremes(cellsMv: List<Int>, prevHi: Int?, prevLo: Int?): Pair<Int?, Int?> {
         if (cellsMv.size < 2) return null to null
         val max = cellsMv.max()
         val min = cellsMv.min()
-        if (max == min) return null to null
-        val hi = prevHi?.takeIf { it in cellsMv.indices && cellsMv[it] > max - STICKY_MV && cellsMv[it] != min }
-            ?: cellsMv.indexOf(max)
-        val lo = prevLo?.takeIf { it in cellsMv.indices && cellsMv[it] < min + STICKY_MV && it != hi && cellsMv[it] != max }
-            ?: cellsMv.withIndex().filter { it.index != hi }.minBy { it.value }.index
+        if (max - min <= NO_MARKS_MV) return null to null
+        val hi = prevHi?.takeIf { it in cellsMv.indices && cellsMv[it] == max } ?: cellsMv.indexOf(max)
+        val lo = prevLo?.takeIf { it in cellsMv.indices && cellsMv[it] == min } ?: cellsMv.indexOf(min)
         return hi to lo
     }
 }
