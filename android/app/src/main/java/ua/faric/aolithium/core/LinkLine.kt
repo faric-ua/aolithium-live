@@ -51,7 +51,9 @@ object LinkLine {
             State.CONNECTING -> join(repeat.ifEmpty { "зазвичай 2–5 с" }, signal)
             State.READING -> "читаю дані плати"
             State.LOST -> join(repeat.ifEmpty { "пробую ще раз" }, signal)
-            State.NO_ANSWER, State.FAILED -> firstSentence(message).ifEmpty { "торкни — що робити" }
+            // Далеко — головне, що треба знати; інакше — перше речення пояснення (без повтору слова з пігулки).
+            State.NO_ANSWER, State.FAILED -> if (rssi != null && Signal.tooFar(rssi)) "батарея далеко · $signal"
+                else firstSentence(message).removePrefix(pillOf(state)).trim().ifEmpty { "торкни — що робити" }
             State.IDLE -> join("торкни «Ще раз»", null)
         }
         val (at, stamp) = if (liveAt > 0L) liveAt to liveStamp else savedAt to savedStamp

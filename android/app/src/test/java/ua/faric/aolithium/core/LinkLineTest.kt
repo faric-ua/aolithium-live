@@ -63,6 +63,11 @@ class LinkLineTest {
         assertEquals("торкни — що робити", LinkLine.build(State.NO_ANSWER, now = now).detail)
     }
 
+    @Test fun failed_far_away_says_so() {
+        assertEquals("батарея далеко · -90 dBm, слабкий", LinkLine.build(State.FAILED, message = "Не вдалось (код 133).", rssi = -90, now = now).detail)
+        assertEquals("підключитись (код 133)", LinkLine.build(State.FAILED, message = "Не вдалось підключитись (код 133). Далі.", rssi = -70, now = now).detail)
+    }
+
     @Test fun first_sentence_keeps_numbers_with_dots() {
         assertEquals("Сигнал -90 dBm, слабкий", LinkLine.firstSentence("Сигнал -90 dBm, слабкий"))
         assertEquals("Версія 2.3 не відповідає", LinkLine.firstSentence("Версія 2.3 не відповідає. Далі."))
