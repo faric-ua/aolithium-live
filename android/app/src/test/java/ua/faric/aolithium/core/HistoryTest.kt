@@ -32,9 +32,13 @@ class HistoryTest {
         assertEquals(0.0, s.chargedWh, 1e-9)
         assertEquals(10.0, s.maxDischargeA, 1e-9)
         assertEquals(3_600_000L, s.coveredMs)
-        // Розрив 2 хв (застосунок закритий) — не рахується.
-        val gap = listOf(p(0, 5.0), p(120_000, 5.0))
+        // Розрив 15 хв (застосунок закритий, фон вимкнений) — не рахується.
+        // До v0.2.5 межа була 1 хв; з фоновим записом раз на ~5 хв її підняли до 12 хв.
+        val gap = listOf(p(0, 5.0), p(15 * 60_000L, 5.0))
         assertEquals(0.0, HistoryMath.stats(gap).chargedWh, 1e-9)
+        // Фонові точки раз на 5 хв — рахуються: година розряду 10 А = 10 А·год.
+        val bg = (0..12).map { p(it * 5 * 60_000L, -10.0) }
+        assertEquals(10.0, HistoryMath.stats(bg).dischargedAh, 0.01)
         assertEquals(10, s.deltaMaxMv)
     }
 

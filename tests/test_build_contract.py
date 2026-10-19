@@ -105,6 +105,22 @@ class BluetoothContract(unittest.TestCase):
         stop = screen[screen.index("override fun onStop()"):screen.index("override fun save(")]
         self.assertIn("LinkHolder.release(this)", stop)
 
+    def test_background_recording_is_polite(self):
+        """v0.2.5: фон — служба «пристрої поблизу» з тихим сповіщенням; поступається екрану; лише читає (через JbdLink)."""
+        self.assertIn('android:foregroundServiceType="connectedDevice"', MANIFEST)
+        self.assertIn("FOREGROUND_SERVICE_CONNECTED_DEVICE", MANIFEST)
+        self.assertIn("MY_PACKAGE_REPLACED", MANIFEST)  # після оновлення «поверх» запис вмикається сам
+        svc = (APP / "bg/RecordService.kt").read_text(encoding="utf-8")
+        self.assertIn("JbdLink(this, addr, quick = true)", svc)
+        self.assertIn("LinkHolder.holds(addr)", svc)
+        self.assertIn("l.stop()", svc)  # після знімка батарею відпускаємо
+        holder = (APP / "ble/LinkHolder.kt").read_text(encoding="utf-8")
+        self.assertIn("RecordService.yieldTo(address)", holder)
+
+    def test_screen_does_not_rotate(self):
+        # faric 19.10 04:25: «потрібно заборонити переворот екрану».
+        self.assertIn('android:screenOrientation="portrait"', MANIFEST)
+
     def test_back_on_android_16(self):
         main = (APP / "ui/MainActivity.kt").read_text(encoding="utf-8")
         self.assertIn("registerOnBackInvokedCallback", main)

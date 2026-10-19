@@ -46,9 +46,9 @@ def audit(root: Path) -> list[tuple[str, str]]:
             if ch in text:
                 problems.append(("UI-03", f"{rel}: галочка «{ch}» в інтерфейсі"))
 
-        # UI-06: орієнтацію не блокуємо.
+        # UI-06: орієнтація — лише книжкова, і лише через маніфест (не з коду).
         if "setRequestedOrientation" in text:
-            problems.append(("UI-06", f"{rel}: блокування орієнтації"))
+            problems.append(("UI-06", f"{rel}: орієнтацію задають з коду — лише маніфест"))
 
         # UI-07: без фіксованої висоти кнопок/тексту.
         for m in re.finditer(r"\.height\s*=|setHeight\(", text):
@@ -97,10 +97,10 @@ def audit(root: Path) -> list[tuple[str, str]]:
         if "overlay.show(" in text and path.name.endswith("Screen.kt") and "override fun restoreDialog" not in text:
             problems.append(("UI-08", f"{path.relative_to(root).as_posix()}: показує вікно, але не відновлює після повороту"))
 
-    # UI-06: маніфест не блокує орієнтацію.
+    # UI-06: екран не повертається — лише книжкова (рішення faric 19.10.2026 04:25; до того правило було навпаки).
     manifest = root / "android/app/src/main/AndroidManifest.xml"
-    if manifest.exists() and "screenOrientation" in manifest.read_text(encoding="utf-8"):
-        problems.append(("UI-06", "AndroidManifest.xml: screenOrientation заблоковано"))
+    if manifest.exists() and 'android:screenOrientation="portrait"' not in manifest.read_text(encoding="utf-8"):
+        problems.append(("UI-06", "AndroidManifest.xml: немає screenOrientation=\"portrait\" — екран повертатиметься"))
     return problems
 
 
@@ -109,8 +109,8 @@ RULES = {
     "UI-02": "Кольори лише з Palette.kt",
     "UI-03": "Вибране — зелена рамка, без галочок",
     "UI-04": "Зона дотику ≥ 48 dp",
-    "UI-05": "Кожен екран: книжковий і альбомний варіант",
-    "UI-06": "Орієнтацію не блокуємо",
+    "UI-05": "Кожен екран: книжковий і альбомний варіант (планшети, де Android 16 ігнорує заборону повороту)",
+    "UI-06": "Екран не повертається — лише книжкова (faric 19.10)",
     "UI-07": "Довгі підписи переносяться (без фіксованої висоти)",
     "UI-08": "Відкрите вікно переживає поворот екрана",
     "UI-09": "Підписи українською",

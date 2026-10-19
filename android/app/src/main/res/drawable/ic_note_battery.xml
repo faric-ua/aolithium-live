@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Значок сповіщення «Запис у фоні»: батарея з блискавкою, одним кольором (Android сам фарбує). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9,2h6v2h2.5C18.33,4 19,4.67 19,5.5v15c0,0.83 -0.67,1.5 -1.5,1.5h-11C5.67,22 5,21.33 5,20.5v-15C5,4.67 5.67,4 6.5,4H9V2zM7,6v14h10V6H7zM13,7.5l-4,6h2.5L10.5,18.5l4.5,-6.5h-2.5L13,7.5z" />
+</vector>

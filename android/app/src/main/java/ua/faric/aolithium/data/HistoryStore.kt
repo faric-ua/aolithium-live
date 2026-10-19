@@ -9,6 +9,7 @@ import java.util.Date
 import java.util.Locale
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.DemoHistory
+import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.HistoryPoint
 
@@ -70,6 +71,24 @@ class HistoryStore private constructor(context: Context) {
             out.sortBy { it.t }
             main.post { done(out) }
         }
+    }
+
+    /**
+     * Уся історія батареї одним CSV (кнопка «Зберегти CSV» у «Ще»). Кличеться не з головного потоку.
+     * Спершу BOM — щоб Excel побачив українські назви колонок.
+     */
+    fun writeCsv(address: String, out: java.io.OutputStream) {
+        val w = out.bufferedWriter(Charsets.UTF_8)
+        w.write("\uFEFF" + HistoryCsv.HEADER + "\n")
+        val files = dir(address).listFiles { f -> f.name.endsWith(".csv") }.orEmpty().sortedBy { it.name }
+        for (f in files) {
+            try {
+                f.forEachLine { line -> HistoryPoint.parse(line)?.let { w.write(HistoryCsv.row(it) + "\n") } }
+            } catch (e: java.io.IOException) {
+                // пошкоджений файл — пропускаємо
+            }
+        }
+        w.flush()
     }
 
     /** Скільки днів і байт записано (для «Налаштувань»). */

@@ -30,8 +30,13 @@ import ua.faric.aolithium.core.Signal
  *
  * Уся робота з Bluetooth — в одному своєму потоці (Android не любить паралельних операцій GATT);
  * колбеки Android лише перекладають подію в цей потік.
+ *
+ * [quick] — для запису у фоні (v0.2.5, `bg/RecordService`): одна повторна спроба замість трьох, без довгого
+ * «чекати батарею» (autoConnect), а якщо в пошуку батареї не видно — підключення напряму за адресою
+ * (Android 10–11 з фонової служби може не віддавати результати пошуку без дозволу на місцезнаходження у фоні).
+ * Служба сама зупиняє зв'язок після першого знімка.
  */
-class JbdLink(context: Context, override val address: String) : BatteryLink {
+class JbdLink(context: Context, override val address: String, private val quick: Boolean = false) : BatteryLink {
     private val app = context.applicationContext
     private val thread = HandlerThread("jbd-link").apply { start() }
     private val h = Handler(thread.looper)
@@ -62,7 +67,8 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
     private var everLive = false
     private var attempt = 0
     private var pendingConnect = false
-    private val short = BmsMatch.shortAddress(address)
+    private val short = (if (quick) "фон " else "") + BmsMatch.shortAddress(address)
+    private val maxReconnects = if (quick) QUICK_RECONNECTS else MAX_RECONNECTS
 
     private val connectTimeout = Runnable { failConnect("Батарея не відповіла за ${CONNECT_TIMEOUT_MS / 1000} с.") }
     private val answerTimeout = Runnable { onAnswerTimeout() }
@@ -124,7 +130,19 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
             BleScanner.findOne(app, address, FIND_MS) { device ->
                 h.post {
                     if (!running || token != attempt) return@post
-                    if (device == null) {
+                    val direct = if (device == null && quick) {
+                        try {
+                            adapter.getRemoteDevice(address.uppercase())
+                        } catch (e: IllegalArgumentException) {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    if (device == null && direct != null) {
+                        LinkLog.add("$short: у пошуку не видно — пробую напряму за адресою")
+                        h.postDelayed({ connectTo(direct, token) }, AFTER_SCAN_MS)
+                    } else if (device == null) {
                         LinkLog.add("$short: за ${FIND_MS / 1000} с у пошуку не з'явилась")
                         running = false
                         status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
@@ -139,7 +157,7 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
 
     private fun connectTo(device: BluetoothDevice, token: Int) {
         if (!running || token != attempt) return
-        val wait = reconnects >= MAX_RECONNECTS // остання спроба — autoConnect
+        val wait = !quick && reconnects >= MAX_RECONNECTS // остання спроба — autoConnect (у фоні — ні, там є тайм-аут)
         if (wait) LinkLog.add("$short: остання спроба — чекаю, доки Android сам підключиться (до ${WAIT_CONNECT_MS / 1000} с)")
         pendingConnect = true
         main.post {
@@ -187,9 +205,9 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         // 18.10: на A26 при сигналі −97 dBm — код 133 щоразу. Кажемо прямо, що батарея далеко.
         val reason = BleScanner.lastRssi[address]?.takeIf { Signal.tooFar(it) }
             ?.let { "$why Батарея далеко (сигнал ${Signal.describe(it)}) — підійди ближче, на 1–3 м." } ?: why
-        if (reconnects < MAX_RECONNECTS) {
+        if (reconnects < maxReconnects) {
             reconnects++
-            status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $MAX_RECONNECTS)…")
+            status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $maxReconnects)…")
             h.postDelayed({ connect() }, RECONNECT_DELAY_MS * reconnects)
         } else {
             status(LinkStatus.Phase.FAILED, "$reason $BUSY_HINT")
@@ -446,6 +464,7 @@ class JbdLink(context: Context, override val address: String) : BatteryLink {
         const val CONNECT_TIMEOUT_MS = 15_000L
         const val RECONNECT_DELAY_MS = 3_000L
         const val MAX_RECONNECTS = 3
+        const val QUICK_RECONNECTS = 1
         const val AFTER_SCAN_MS = 600L
         const val FIND_MS = 10_000L
         const val WAIT_CONNECT_MS = 30_000L
