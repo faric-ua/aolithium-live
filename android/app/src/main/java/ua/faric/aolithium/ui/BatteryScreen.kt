@@ -20,16 +20,24 @@ import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.ble.LinkStatus
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.CellTrend
+import ua.faric.aolithium.core.ChargerCheck
+import ua.faric.aolithium.core.DailyMin
 import ua.faric.aolithium.core.Fmt
 import ua.faric.aolithium.core.Glossary
 import ua.faric.aolithium.core.Health
 import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.HistoryPoint
+import ua.faric.aolithium.core.Laggard
+import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
+import ua.faric.aolithium.core.SteadyCurrent
+import ua.faric.aolithium.core.TimeLeft
 import ua.faric.aolithium.core.Zones
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
+import ua.faric.aolithium.data.Marks
 
 /**
  * Одна батарея (v0.2.0, faric 18.10 20:47: «внизу менюшечка, по групам поділено… графіки… спідометр»).
@@ -86,6 +94,17 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private var pointsFor: Range? = null
     private var pointsLoadedAt = 0L
     private var historyBytes: Pair<Int, Long>? = null
+    private val marks = Marks(host)
+    /** Струм для «вистачить на» — середній, не скаче (faric 19.10 03:02). */
+    private val steady = SteadyCurrent()
+    /** Живі виміри комірок за ~3 хв — для «за 1 хв». */
+    private val cellSamples = ArrayDeque<Pair<Long, List<Int>>>()
+    /** Історія за [INSIGHT_DAYS] днів — відключення, найнижчий по днях, хто відстає, зарядний. */
+    private var insightPts: List<HistoryPoint>? = null
+    private var insightLoadedAt = 0L
+    /** Остання година — графік різниці на «Комірках». */
+    private var hourPts: List<HistoryPoint>? = null
+    private var hourLoadedAt = 0L
 
     private val handler = Handler(Looper.getMainLooper())
     private val head = ui.column(6)
@@ -127,9 +146,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         link = l
         l.listener = this
         status = l.lastStatus
-        l.lastSnapshot?.let { snapshot = it; snapshotAt = l.lastSnapshotAt }
+        l.lastSnapshot?.let { snapshot = it; snapshotAt = l.lastSnapshotAt; feed(it, l.lastSnapshotAt) }
         render()
         handler.post(ticker)
+        if (tab == Tab.CHARTS) loadInsights()
+        if (tab == Tab.CELLS) loadHour()
     }
 
     override fun onStop() {
@@ -172,6 +193,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     override fun onSnapshot(snapshot: BatterySnapshot, atMs: Long) {
         this.snapshot = snapshot
         snapshotAt = atMs
+        feed(snapshot, atMs)
         if (!remembered && demo == null) {
             remembered = true
             batteries.remember(address, Batteries.scanNames[address] ?: snapshot.model, BmsMatch.Kind.JBD)
@@ -181,9 +203,19 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         if (tab == Tab.CHARTS) {
             // графіки не перемальовуємо щосекунди — лише підвантажуємо нові точки раз на 30 с
             if (atMs - pointsLoadedAt > 30_000) loadHistory()
+            if (atMs - insightLoadedAt > INSIGHT_RELOAD_MS) loadInsights()
             renderHead()
         } else {
+            if (tab == Tab.CELLS && atMs - hourLoadedAt > 60_000) loadHour()
             render()
+        }
+    }
+
+    private fun feed(s: BatterySnapshot, atMs: Long) {
+        steady.add(atMs, s.current)
+        if (s.cellsMv.isNotEmpty() && cellSamples.lastOrNull()?.first != atMs) {
+            cellSamples.addLast(atMs to s.cellsMv)
+            while (cellSamples.isNotEmpty() && cellSamples.first().first < atMs - 180_000L) cellSamples.removeFirst()
         }
     }
 
@@ -244,7 +276,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         styleTabs()
         render(keepScroll = false)
         scroll.scrollTo(0, 0)
-        if (t == Tab.CHARTS) loadHistory()
+        if (t == Tab.CHARTS) {
+            loadHistory()
+            loadInsights()
+        }
+        if (t == Tab.CELLS) loadHour()
         if (t == Tab.MORE) historyBytes = history.size(address)
     }
 
@@ -359,10 +395,17 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             soc = s.soc
             current = s.current
             power = s.power
+            voltage = s.voltage
+            showAmps = marks.gaugeAmps
             caption = "${Fmt.num(s.remainAh, 1)} з ${Fmt.num(s.fullAh, 1)} А·год"
             noData = data == Data.NONE
             setOnClickListener { showInfo("zones") }
         }, ui.matchWrap())
+        // Перемикач великого числа: вати чи ампери (faric 19.10 03:02: «щоб можна було і те дивитися, і те»).
+        gaugeCard.addView(ui.grid(listOf(
+            ui.choice("Вати", !marks.gaugeAmps) { if (marks.gaugeAmps) { marks.gaugeAmps = false; render() } },
+            ui.choice("Ампери", marks.gaugeAmps) { if (!marks.gaugeAmps) { marks.gaugeAmps = true; render() } },
+        )), ui.matchWrap())
         if (data == Data.NONE) {
             gaugeCard.addView(ui.text("Немає даних", 15f, Palette.muted, medium = true).apply { gravity = Gravity.CENTER }, ui.matchWrap())
             gaugeCard.addView(ui.muted("Зони на ободі: червона 0–10 %, помаранчева 10–20 %, зелена 20–90 %, помаранчева 90–100 %. Торкнись — докладно.", 13f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
@@ -375,17 +418,14 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val now = ui.card(8)
         now.addView(labelRow("Зараз", LineIcon.PULSE, null))
         now.addView(fact("Напруга", Fmt.volts(s.voltage), "voltage"))
+        // Стрілки як на спідометрі: віддає — ▲ червоне (енергія йде з батареї), заряджається — ▼ зелене.
         val (curText, curColor) = when (s.flow) {
-            BatterySnapshot.Flow.CHARGING -> "▲ +" + Fmt.amps(s.current) to Palette.success
-            BatterySnapshot.Flow.DISCHARGING -> "▼ −" + Fmt.amps(-s.current) to Palette.danger
+            BatterySnapshot.Flow.CHARGING -> Fmt.amps(s.current) + " ▼ бере" to Palette.success
+            BatterySnapshot.Flow.DISCHARGING -> Fmt.amps(-s.current) + " ▲ віддає" to Palette.danger
             BatterySnapshot.Flow.IDLE -> Fmt.amps(s.current) to Palette.text
         }
         now.addView(fact("Струм", curText, "current", curColor))
-        now.addView(fact("Потужність", Fmt.watts(s.power), "power"))
-        s.hoursLeft?.let {
-            val name = if (s.flow == BatterySnapshot.Flow.CHARGING) "До повної" else "Вистачить на"
-            now.addView(fact(name, "≈ " + Fmt.duration(it), "time"))
-        }
+        now.addView(fact("Потужність", Fmt.watts(kotlin.math.abs(s.power)), "power", curColor))
         if (s.temperatures.isNotEmpty()) {
             val hot = s.temperatures.max()
             now.addView(fact(if (s.temperatures.size == 1) "Температура" else "Температура (макс.)", Fmt.celsius(hot), "temp", tempColor(hot)))
@@ -418,12 +458,92 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         state.addView(row, ui.matchWrap())
 
         val left = mutableListOf<View>(gaugeCard)
+        timeCard(s)?.let { left += it }
         val right = mutableListOf<View>()
         if (s.hasProblem) right += problemCard(s)
         right += now
         right += state
         columns(left, right)
     }
+
+    /**
+     * «Вистачить на» (розряд) або «До повної» (заряд) — faric 19.10 03:02 / 03:31. Струм — середній ([steady]),
+     * число не скаче. Пороги 20 / 10 / 5 %; при заряді — без «до 90 %» (інвертор однаково заряджає, поки плата не зупинить),
+     * натомість «за 1 / 2 год такого заряду +N %» — щоб вирішити, скільки ганяти генератор.
+     */
+    private fun timeCard(s: BatterySnapshot): View? {
+        if (data == Data.NONE) return null
+        val amps = if (data == Data.LIVE) steady.shown ?: s.current else s.current
+        val card = ui.card(8)
+        TimeLeft.discharge(s.remainAh, s.fullAh, amps)?.let { d ->
+            card.addView(labelRow("Вистачить на", LineIcon.BATTERY, "time"))
+            card.addView(numbers(ui.text("≈ " + Fmt.duration(d.totalH), 26f, Palette.text, medium = true)))
+            val to20 = d.toThreshold.first { it.first == 20 }.second
+            card.addView(ui.text(
+                if (to20 != null) "(до 20 % — ${Fmt.duration(to20)})" else "(уже нижче 20 % — час заряджати)",
+                15f, Palette.danger, medium = true,
+            ))
+            card.addView(socStrip(s.soc, charging = false), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(10)))
+            val steps = d.toThreshold.map { (p, h) ->
+                val (fill, color, note) = when (p) {
+                    20 -> Triple(Palette.selectedFill, Palette.success, "спокійно")
+                    10 -> Triple(Palette.warningFill, Palette.warning, "час заряджати")
+                    else -> Triple(Palette.dangerFill, Palette.danger, "не варто нижче")
+                }
+                step("до $p %", h?.let { Fmt.duration(it) } ?: "уже нижче", note, fill, color)
+            }
+            card.addView(ui.grid(steps, perRow = 3, gapDp = 6), ui.matchWrap())
+            card.addView(ui.muted("Рахую з залишку (${Fmt.ampHours(s.remainAh)}) і середнього струму ${Fmt.amps(-amps)} за 2 хв. " +
+                "Число перераховується, лише коли струм стабільно змінився більше ніж на 10 %.", 12.5f))
+            return card
+        }
+        TimeLeft.charge(s.remainAh, s.fullAh, amps)?.let { c ->
+            card.addView(labelRow("До повної", LineIcon.BATTERY, "time"))
+            card.addView(numbers(ui.text(if (c.toFullH <= 0.0) "уже повна" else "≈ " + Fmt.duration(c.toFullH), 26f, Palette.text, medium = true)))
+            card.addView(ui.text("(до 100 % — заряд зупинить сама плата)", 15f, Palette.success, medium = true))
+            card.addView(socStrip(s.soc, charging = true), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(10)))
+            val perH = c.percentPerHour
+            card.addView(ui.grid(listOf(
+                step("за 1 год такого заряду", "+${Fmt.num(minOf(perH, 100.0 - s.soc).coerceAtLeast(0.0), 0)} %",
+                    "≈ ${Fmt.num(amps, 1)} А·год", Palette.selectedFill, Palette.success),
+                step("за 2 год", "+${Fmt.num(minOf(perH * 2, 100.0 - s.soc).coerceAtLeast(0.0), 0)} %",
+                    "≈ ${Fmt.num(amps * 2, 1)} А·год", Palette.selectedFill, Palette.success),
+            ), perRow = 2, gapDp = 6), ui.matchWrap())
+            card.addView(ui.muted("Зручно для генератора: видно, скільки дасть кожна година. Наприкінці заряду струм сам спадає — час уточниться.", 12.5f))
+            return card
+        }
+        return null
+    }
+
+    /** Смужка «де заряд»: при розряді — зелене до 20 %, жовте 10–20, червоне 5–10; при заряді — є / бракує до повної. */
+    private fun socStrip(soc: Int, charging: Boolean): View {
+        val row = ui.row(2)
+        fun seg(w: Float, color: Int) = View(host).apply { background = ui.rounded(color, radiusDp = 4) }.also {
+            if (w > 0) row.addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, w))
+        }
+        if (charging) {
+            seg(soc.toFloat(), Palette.accent)
+            seg((100 - soc).toFloat(), Palette.success)
+        } else {
+            seg((soc - 20).coerceAtLeast(0).toFloat(), Palette.success)
+            seg((minOf(soc, 20) - 10).coerceAtLeast(0).toFloat(), Palette.warning)
+            seg((minOf(soc, 10) - 5).coerceAtLeast(0).toFloat(), Palette.danger)
+            seg(minOf(soc, 5).toFloat(), Palette.dangerFill)
+        }
+        return row
+    }
+
+    private fun step(top: String, value: String, note: String, fill: Int, color: Int): View = ui.column(2).apply {
+        background = ui.rounded(fill, radiusDp = 10)
+        setPadding(ui.dp(8), ui.dp(8), ui.dp(8), ui.dp(8))
+        addView(ui.text(top, 12f, color))
+        addView(numbers(ui.text(Ui.keepUnits(value), 14.5f, color, medium = true)))
+        addView(ui.text(note, 12f, color))
+        isClickable = true
+        setOnClickListener { showInfo("time") }
+    }
+
+    private fun numbers(t: TextView): TextView = ui.numbers(t)
 
     // ---------- «Комірки» ----------
 
@@ -438,19 +558,59 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             cards += card
         } else {
             val card = ui.card(8)
-            card.addView(labelRow("Комірки: ${s.cellsMv.size}", LineIcon.CELLS, "cells"))
-            card.addView(CellBarsView(host).apply { set(s.cellsMv, s.balancingCells, s.minCell, s.maxCell) }, ui.matchWrap())
-            s.deltaMv?.let { d ->
-                card.addView(fact("Різниця", "${Fmt.millivolts(d)} — ${s.deltaVerdict!!.title}", "delta", verdictColor(s)))
-                val hi = s.maxCell!!
-                val lo = s.minCell!!
-                card.addView(fact("Найвища", "№${hi + 1} · ${Fmt.cellVolts(s.cellsMv[hi])}", "cells", Palette.accent))
-                card.addView(fact("Найнижча", "№${lo + 1} · ${Fmt.cellVolts(s.cellsMv[lo])}", "cells", Palette.warning))
+            card.addView(labelRow("Комірки: ${s.cellsMv.size}", LineIcon.CELLS, "cellTrend"))
+            if (data == Data.LIVE && s.flow != BatterySnapshot.Flow.IDLE) {
+                val pill = if (s.flow == BatterySnapshot.Flow.CHARGING) ui.pill("▼ Заряджається · ${Fmt.amps(s.current)}", Ui.Tone.GOOD)
+                else ui.pill("▲ Віддає · ${Fmt.amps(-s.current)}", Ui.Tone.BAD)
+                card.addView(FlowLayout(host, ui.dp(8), ui.dp(6)).apply { addView(pill) }, ui.matchWrap())
+                card.addView(ui.muted("Комірки з'єднані ланцюжком — струм через усі однаковий. А напруга росте по-різному: дивись «за 1 хв».", 13f))
             }
+            val dev = CellTrend.fromAverage(s.cellsMv)
+            val trend = if (data == Data.LIVE) CellTrend.perMinute(cellSamples.toList()) else null
+            val hi = s.maxCell
+            val lo = s.minCell
+            val tiles = s.cellsMv.mapIndexed { i, mv ->
+                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i == hi && hi != lo, isLo = i == lo && hi != lo, balancing = (i + 1) in s.balancingCells)
+            }
+            card.addView(ui.grid(tiles, perRow = if (ui.twoPane && tiles.size > 2) 4 else 2), ui.matchWrap())
+            s.deltaMv?.let { d -> card.addView(fact("Різниця", "${Fmt.millivolts(d)} — ${s.deltaVerdict!!.title}", "delta", verdictColor(s))) }
             s.averageCellV?.let { card.addView(fact("Середня", Fmt.num(it, 3) + " В", "avgcell")) }
-            card.addView(fact("Балансування", if (s.balancingCells.isEmpty()) "ні" else s.balancingCells.joinToString(", ") { "№$it" }, "balance"))
-            card.addView(ui.muted("Стовпчик: від 2,5 В (порожня) до 3,65 В (повна). Жовтий — найнижча, блакитний — найвища, зелений — балансується.", 12f))
+            card.addView(ui.muted("Рамка: блакитна — найвища, помаранчева — найнижча; фіолетова мітка — вирівнюється. " +
+                "За 1 хв: ▲ зелене — напруга росте, ▼ червоне — падає. Смужка — від 2,5 В (порожня) до 3,65 В (повна).", 12f))
             cards += card
+
+            val bal = ui.card(8)
+            bal.addView(labelRow("Як плата вирівнює комірки", LineIcon.CELLS, "balance"))
+            if (s.balancingCells.isEmpty()) {
+                bal.addView(ui.text("Зараз не вирівнює", 15f, Palette.text, medium = true))
+                bal.addView(ui.muted("Плата Aolithium вмикає вирівнювання наприкінці заряду, коли комірки розходяться.", 13.5f))
+            } else {
+                bal.addView(ui.text("Зараз вирівнює: " + s.balancingCells.joinToString(", ") { "№$it" }, 15f, Palette.violet, medium = true))
+                bal.addView(ui.muted("Плата злегка розряджає цю комірку (у тепло, через резистор), поки інші її доганяють.", 13.5f))
+            }
+            bal.addView(ui.muted("Це пасивне вирівнювання: скільки ампер — плата JBD не повідомляє, лише «вирівнює / ні». " +
+                "У Logic Power — активний балансир: перекачує енергію з найвищої комірки в найнижчу і показує струм (буде у версії 0.4).", 12.5f))
+            cards += bal
+
+            val hour = ui.card(8)
+            hour.addView(labelRow("Різниця комірок за 1 год", LineIcon.CHART, "delta"))
+            val hp = hourPts
+            if (hp.isNullOrEmpty()) {
+                hour.addView(ui.muted(if (hp == null) "Завантажую…" else "Ще немає записів за останню годину.", 13f))
+            } else {
+                val to = System.currentTimeMillis()
+                val from = to - 3_600_000L
+                val chart = ChartView(host).apply {
+                    set(listOf(ChartView.Series("Різниця", Palette.accent, HistoryMath.bucket(hp, from, to, 120) { it.deltaMv?.toDouble() })),
+                        from, to, "мВ", 0, min = 0.0, gapMs = HistoryMath.GAP_MS)
+                }
+                hour.addView(chart, ui.matchWrap())
+                val first = hp.firstNotNullOfOrNull { it.deltaMv }
+                val last = hp.lastOrNull()?.deltaMv
+                if (first != null && last != null) hour.addView(ui.muted("Годину тому ${Fmt.millivolts(first)}, зараз ${Fmt.millivolts(last)}. " +
+                    "Наприкінці заряду різниця трохи росте — це нормально. До 30 мВ — рівно.", 12.5f))
+            }
+            cards += hour
         }
         val temps = ui.card(8)
         temps.addView(labelRow("Температура", LineIcon.THERMO, "temp"))
@@ -462,6 +622,72 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         temps.addView(ui.muted("Найкраще 15–35 °C. Нижче 0 °C плата не дасть заряджати.", 12.5f))
         columns(cards, listOf(temps))
+    }
+
+    /** Плитка комірки (прев'ю «комірки як у JK», faric 19.10 02:44). */
+    private fun cellTile(i: Int, mv: Int, dev: Int, perMin: Int?, isHi: Boolean, isLo: Boolean, balancing: Boolean): View {
+        val stroke = when {
+            isHi -> Palette.accent
+            isLo -> Palette.warning
+            else -> Palette.border
+        }
+        val tile = ui.column(4).apply {
+            background = ui.pressable(ui.rounded(Palette.surfaceAlt, stroke, radiusDp = 12, strokeDp = if (isHi || isLo) 2 else 1), 12)
+            setPadding(ui.dp(12), ui.dp(10), ui.dp(12), ui.dp(11))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { showInfo("cellTrend") }
+        }
+        val head = FlowLayout(host, ui.dp(6), ui.dp(4))
+        head.addView(ui.text("№${i + 1}", 13f, Palette.muted, medium = true))
+        if (isHi) head.addView(ui.pill("найвища", Ui.Tone.INFO))
+        if (isLo) head.addView(ui.pill("найнижча", Ui.Tone.WARN))
+        tile.addView(head, ui.matchWrap())
+        tile.addView(numbers(ui.text(Ui.keepUnits(Fmt.cellVolts(mv)), 21f, Palette.text, medium = true)))
+        val k = ((mv - CellBarsView.LOW_MV).toFloat() / (CellBarsView.HIGH_MV - CellBarsView.LOW_MV)).coerceIn(0.03f, 1f)
+        val bar = ui.row().apply { background = ui.rounded(Palette.track, radiusDp = 4) }
+        bar.addView(View(host).apply {
+            background = ui.rounded(when {
+                isHi -> Palette.accent
+                isLo -> Palette.warning
+                else -> Palette.muted
+            }, radiusDp = 4)
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, k))
+        bar.addView(View(host), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f - k))
+        tile.addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(8)))
+        tile.addView(miniRow("від середньої", (if (dev > 0) "+" else if (dev < 0) "−" else "") + "${kotlin.math.abs(dev)} мВ", Palette.text))
+        val (t, c) = when {
+            perMin == null -> (if (data == Data.LIVE) "рахую…" else "—") to Palette.muted
+            perMin > 0 -> "▲ +$perMin мВ" to Palette.success
+            perMin < 0 -> "▼ −${-perMin} мВ" to Palette.danger
+            else -> "без змін" to Palette.muted
+        }
+        tile.addView(miniRow("за 1 хв", t, c))
+        if (balancing) tile.addView(FlowLayout(host, ui.dp(6), ui.dp(4)).apply { addView(ui.pill("≈ вирівнюється", Ui.Tone.VIOLET)) }, ui.matchWrap())
+        return tile
+    }
+
+    private fun miniRow(name: String, value: String, color: Int): View = ui.row(6).apply {
+        addView(ui.text(name, 12.5f, Palette.muted), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        addView(numbers(ui.text(Ui.keepUnits(value), 12.5f, color, medium = true)))
+    }
+
+    private fun loadHour() {
+        val now = System.currentTimeMillis()
+        hourLoadedAt = now
+        history.load(address, now - 3_600_000L, now) { pts ->
+            hourPts = pts
+            if (tab == Tab.CELLS) render()
+        }
+    }
+
+    private fun loadInsights() {
+        val now = System.currentTimeMillis()
+        insightLoadedAt = now
+        history.load(address, now - INSIGHT_DAYS * DailyMin.DAY_MS, now) { pts ->
+            insightPts = pts
+            if (tab == Tab.CHARTS) render()
+        }
     }
 
     // ---------- «Графіки» ----------
@@ -511,7 +737,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             sum.addView(fact("Заряджено", "${Fmt.num(stats.chargedWh, 0)} Вт·год · ${Fmt.num(stats.chargedAh, 1)} А·год", "energy", Palette.success, known = true))
             sum.addView(fact("Віддано", "${Fmt.num(stats.dischargedWh, 0)} Вт·год · ${Fmt.num(stats.dischargedAh, 1)} А·год", "energy", Palette.danger, known = true))
             if (stats.socMin != null) sum.addView(fact("Заряд", "${stats.socMin}–${stats.socMax} %", "soc", known = true))
-            sum.addView(fact("Найбільший струм", "▲ ${Fmt.amps(stats.maxChargeA)} · ▼ ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
+            sum.addView(fact("Найбільший струм", "заряд ${Fmt.amps(stats.maxChargeA)} · розряд ${Fmt.amps(stats.maxDischargeA)}", "current", known = true))
             if (stats.tempMin != null) sum.addView(fact("Температура", "${Fmt.celsius(stats.tempMin)} … ${Fmt.celsius(stats.tempMax!!)}", "temp", known = true))
             stats.deltaMaxMv?.let { sum.addView(fact("Найбільша різниця комірок", Fmt.millivolts(it), "delta", known = true)) }
             val share = (stats.coveredMs * 100 / shown.ms).coerceIn(0, 100)
@@ -540,7 +766,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             set(listOf(ser("Макс.", Palette.warning) { it.tempMax }, ser("Мін.", Palette.accent) { it.tempMin }), from, to, "°C", 1, gapMs = gap)
         }
         val dChart = ChartView(host).apply { set(listOf(ser("Різниця", Palette.warning) { it.deltaMv?.toDouble() }), from, to, "мВ", 0, min = 0.0, gapMs = gap) }
-        val cellColors = listOf(Palette.accent, Palette.success, Palette.warning, Palette.violet)
+        // Без зеленого й червоного: тут вони означають заряд / розряд.
+        val cellColors = listOf(Palette.warning, Palette.accent, Palette.violet, Palette.text)
         val cellsN = pts.lastOrNull()?.cellsMv?.size ?: 0
         val cChart = ChartView(host).apply {
             set((0 until cellsN).map { i -> ser("№${i + 1}", cellColors[i % cellColors.size]) { p -> p.cellsMv.getOrNull(i)?.div(1000.0) } }, from, to, "В", 3, gapMs = gap)
@@ -550,8 +777,121 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val right = listOf(chartCard("Напруга, В", LineIcon.PULSE, "voltage", vChart), chartCard("Температура, °C", LineIcon.THERMO, "temp", tChart,
             listOf("макс." to Palette.warning, "мін." to Palette.accent)), chartCard("Різниця комірок, мВ", LineIcon.CELLS, "delta", dChart),
             chartCard("Комірки, В", LineIcon.CELLS, "cells", cChart, (0 until cellsN).map { "№${it + 1}" to cellColors[it % cellColors.size] }))
-        columns(left, right)
+        val ins = insightCards()
+        columns(ins.take(2) + left, right + ins.drop(2))
         body.addView(ui.muted("Торкнись графіка й веди пальцем — побачиш значення в будь-який момент.", 12.5f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
+    }
+
+    /**
+     * Картки за останні [INSIGHT_DAYS] днів (не залежать від вибраного періоду): відключення світла,
+     * найнижчий заряд по днях, хто відстає наприкінці заряду, зарядний. Аналіз скрінів Logic Power faric 19.10.
+     */
+    private fun insightCards(): List<View> {
+        val pts = insightPts
+        val out = ArrayList<View>()
+        val now = System.currentTimeMillis()
+        val day = java.text.SimpleDateFormat("dd.MM", java.util.Locale.ROOT)
+        val hm = java.text.SimpleDateFormat("HH:mm", java.util.Locale.ROOT)
+        val dayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT)
+
+        // ---- відключення ----
+        val oc = ui.card(8)
+        oc.addView(labelRow("Відключення світла", LineIcon.BOLT, "outages"))
+        if (pts == null) {
+            oc.addView(ui.muted("Завантажую історію…", 13f))
+            out += oc
+            return out
+        }
+        val outages = Outages.find(pts)
+        if (outages.isEmpty()) {
+            oc.addView(ui.muted("За ${INSIGHT_DAYS} днів у записаній історії відключень не знайдено. Застосунок помічає їх сам: батарея " +
+                "кілька хвилин віддає струм — світла нема; знову заряджається чи стоїть — світло є. Записується, поки застосунок відкритий " +
+                "(запис у фоні — наступна версія).", 13f))
+        } else {
+            val week = outages.filter { it.end > now - 7 * DailyMin.DAY_MS }
+            val sumBox = ArrayList<View>()
+            sumBox += summaryTile("за 7 днів", "${week.size} " + Fmt.plural(week.size, "відключення", "відключення", "відключень"))
+            sumBox += summaryTile("без світла", Fmt.duration(week.sumOf { it.durationMs } / 3_600_000.0))
+            sumBox += summaryTile("віддала", if (week.sumOf { it.wh } >= 1000) Fmt.num(week.sumOf { it.wh } / 1000, 1) + " кВт·год" else Fmt.num(week.sumOf { it.wh }, 0) + " Вт·год")
+            sumBox += summaryTile("найнижче", (week.minOfOrNull { it.socTo }?.let { "$it %" } ?: "—"))
+            oc.addView(ui.grid(sumBox, perRow = 2, gapDp = 6), ui.matchWrap())
+            for (o in outages.sortedByDescending { it.start }.take(5)) {
+                // Остання точка історії — ще розряд, і вона свіжа: відключення триває зараз.
+                val ongoing = o.ongoing && now - o.end < 5 * 60_000L
+                val box = ui.column(4).apply {
+                    background = ui.rounded(Palette.surfaceAlt, if (ongoing) Palette.danger else Palette.border, radiusDp = 12)
+                    setPadding(ui.dp(12), ui.dp(10), ui.dp(12), ui.dp(10))
+                    isClickable = true
+                    setOnClickListener { showInfo("outages") }
+                }
+                val title = if (ongoing) "Зараз — світла нема, з ${hm.format(java.util.Date(o.start))}"
+                else "${day.format(java.util.Date(o.start))} ${hm.format(java.util.Date(o.start))} → ${hm.format(java.util.Date(o.end))}"
+                box.addView(miniRow(title, Fmt.duration((if (ongoing) now - o.start else o.durationMs) / 3_600_000.0), if (ongoing) Palette.danger else Palette.text).also {
+                    ((it as LinearLayout).getChildAt(0) as TextView).apply { setTextColor(if (ongoing) Palette.danger else Palette.text); textSize = 14f }
+                })
+                box.addView(miniRow("${o.socFrom} % → ${o.socTo} %", "${Fmt.num(o.ah, 1)} А·год ≈ ${Fmt.num(o.wh, 0)} Вт·год", Palette.muted))
+                box.addView(miniRow("в середньому ${Fmt.watts(o.avgW)}", "пік ${Fmt.watts(o.peakW)}", Palette.muted))
+                oc.addView(box, ui.matchWrap())
+            }
+            oc.addView(ui.muted("Видно лише години, коли застосунок записував (зараз — поки відкритий).", 12.5f))
+        }
+        out += oc
+
+        // ---- найнижчий заряд по днях ----
+        val days = DailyMin.of(pts, java.util.TimeZone.getDefault().getOffset(now).toLong()).takeLast(10)
+        val dc = ui.card(8)
+        dc.addView(labelRow("Найнижчий заряд по днях", LineIcon.CHART, "dailyMin"))
+        if (days.isEmpty()) {
+            dc.addView(ui.muted("Ще немає записаних днів.", 13f))
+        } else {
+            val gen = marks.generatorDays(address)
+            val keys = days.map { dayKey.format(java.util.Date(it.dayStart + 12 * 3_600_000L)) }
+            val bars = DayBarsView(host).apply {
+                set(days.mapIndexed { i, d -> DayBarsView.Bar(day.format(java.util.Date(d.dayStart + 12 * 3_600_000L)).take(2), d.minSoc, keys[i] in gen) })
+                onDay = { i ->
+                    val on = marks.toggleGenerator(address, keys[i])
+                    host.toast(day.format(java.util.Date(days[i].dayStart + 12 * 3_600_000L)) + if (on) " — позначено: генератор" else " — позначку знято")
+                    render()
+                }
+            }
+            dc.addView(bars, ui.matchWrap())
+            dc.addView(ui.muted("Торкнись дня — позначити «Г» (працював генератор). Для батареї світло й генератор однакові, тож сам застосунок їх не розрізнить.", 12.5f))
+        }
+        out += dc
+
+        // ---- хто відстає ----
+        Laggard.find(pts)?.let { r ->
+            val lc = ui.card(8)
+            lc.addView(labelRow("Хто відстає наприкінці заряду", LineIcon.CELLS, "laggard"))
+            r.leader?.let { lead ->
+                lc.addView(fact("Найчастіше найнижча", "№${lead + 1} · ${r.lowestCount[lead]} з ${r.episodes}", "laggard", Palette.warning, known = true))
+            }
+            lc.addView(fact("Різниця в кінці заряду", "${r.deltas.min()}–${r.deltas.max()} мВ", "laggard",
+                if (r.deltas.max() >= BatterySnapshot.Verdict.WATCH_FROM_MV) Palette.warning else Palette.success, known = true))
+            lc.addView(ui.muted("Це не поломка: одна комірка вгорі трохи «менша», плата її підтягує. Тривожно, якщо різниця в кінці заряду росте від тижня до тижня.", 12.5f))
+            out += lc
+        }
+
+        // ---- зарядний ----
+        ChargerCheck.of(pts)?.let { c ->
+            val cc = ui.card(8)
+            cc.addView(labelRow("Зарядний", LineIcon.BOLT, "charger"))
+            val n = pts.lastOrNull()?.cellsMv?.size?.takeIf { it > 0 } ?: 4
+            val perCell = Fmt.num(c.maxV / n, 2) + " В"
+            val color = if (c.verdict == ChargerCheck.Verdict.OK) Palette.success else Palette.warning
+            cc.addView(fact("Найвища напруга на заряді", "${Fmt.volts(c.maxV)} · ${perCell} на комірку", "charger", color, known = true))
+            cc.addView(fact("Оцінка", c.verdict.title, "charger", color, known = true))
+            cc.addView(ui.muted("За ${INSIGHT_DAYS} днів записаної історії. Для 4 комірок LiFePO4 норма — 13,8–14,6 В (3,45–3,65 В на комірку). Орієнтир, не діагноз.", 12.5f))
+            out += cc
+        }
+        return out
+    }
+
+    private fun summaryTile(top: String, value: String): View = ui.column(2).apply {
+        background = ui.rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12)
+        setPadding(ui.dp(11), ui.dp(9), ui.dp(11), ui.dp(9))
+        addView(ui.text(top, 12f, Palette.muted))
+        addView(numbers(ui.text(Ui.keepUnits(value), 17f, Palette.text, medium = true)))
     }
 
     // ---------- «Плата» ----------
@@ -885,5 +1225,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val DLG_LOG = "log"
         const val DLG_FORGET = "forget"
         const val LOG_SHOW_CHARS = 6_000
+        const val INSIGHT_DAYS = 14L
+        const val INSIGHT_RELOAD_MS = 5 * 60_000L
     }
 }

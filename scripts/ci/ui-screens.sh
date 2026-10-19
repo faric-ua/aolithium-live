@@ -48,16 +48,26 @@ scroll_down
 shot p03b-now-idle-scrolled
 start --es demo CHARGING
 shot p04-now-charging 4
+scroll_down
+shot p04b-now-charging-scrolled
+start --es demo DISCHARGING
+shot p04c-now-discharging 4
+scroll_down
+shot p04d-now-discharging-scrolled
 start --es demo COLD
 shot p05-now-cold 4
 start --es demo CHARGING --es dialog tab:CELLS
 shot p06-cells 4
+scroll_down
+shot p06b-cells-scrolled
 start --es demo IDLE --es dialog tab:CHARTS:D1
 shot p07-charts 5
 scroll_down
 shot p07b-charts-scrolled
 scroll_down
 shot p07c-charts-scrolled2
+scroll_down
+shot p07d-charts-scrolled3
 start --es demo IDLE --es dialog tab:BOARD
 shot p08-board 4
 scroll_down

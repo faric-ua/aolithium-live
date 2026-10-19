@@ -13,8 +13,9 @@ import ua.faric.aolithium.core.Fmt
 import ua.faric.aolithium.core.Zones
 
 /**
- * «Спідометр» заряду (faric 18.10 20:47): посередині «100 %», під ним струм зі стрілкою
- * (▲ зелений — заряджається, ▼ червоний — віддає) і потужність; обід поділено на зони
+ * «Спідометр» заряду (faric 18.10 20:47): посередині «100 %», під ним потужність або струм ([showAmps],
+ * перемикач «Вати / Ампери»). faric 19.10 03:02: віддає (світла нема) — число червоне і стрілка, що «тече» вгору
+ * (енергія йде з батареї); заряджається — зелене, стрілка тече вниз (енергія йде в батарею). Обід поділено на зони
  * ([Zones]: червона / помаранчева / зелена / помаранчева), а **стрілка-трикутник іде по зовнішньому
  * контуру обода** й показує, де зараз заряд. Усередині обода — дуга заповнення кольору зони.
  */
@@ -32,6 +33,17 @@ class GaugeView(context: Context) : View(context) {
             invalidate()
         }
     var power: Double = 0.0
+        set(value) {
+            field = value
+            invalidate()
+        }
+    var voltage: Double = 0.0
+        set(value) {
+            field = value
+            invalidate()
+        }
+    /** Велике число — ампери (true) чи вати (false, як просив faric — «скільки ват віддає»). */
+    var showAmps: Boolean = false
         set(value) {
             field = value
             invalidate()
@@ -61,6 +73,9 @@ class GaugeView(context: Context) : View(context) {
     private val big = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.text; textAlign = Paint.Align.CENTER; typeface = Ui.MEDIUM; fontFeatureSettings = "tnum" }
     private val amp = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; typeface = Ui.MEDIUM; fontFeatureSettings = "tnum" }
     private val small = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.muted; textAlign = Paint.Align.CENTER; fontFeatureSettings = "tnum" }
+    private val arrowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 2.6f * dp; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+    }
     private val box = RectF()
     private val path = Path()
 
@@ -144,26 +159,39 @@ class GaugeView(context: Context) : View(context) {
         val yBig = cy + big.textSize * 0.15f
         canvas.drawText("$soc %", cx, yBig, big)
 
-        val (arrow, color) = when {
-            current > IDLE -> "▲ +" to Palette.success
-            current < -IDLE -> "▼ −" to Palette.danger
-            else -> "" to Palette.muted
+        val flow = when {
+            current > IDLE -> 1
+            current < -IDLE -> -1
+            else -> 0
+        }
+        val color = when (flow) {
+            1 -> Palette.success
+            -1 -> Palette.danger
+            else -> Palette.muted
         }
         amp.color = color
-        amp.textSize = sp(19f)
-        val ampText = arrow + Fmt.amps(kotlin.math.abs(current))
-        fit(amp, ampText, inner * 0.8f)
-        val yAmp = yBig + amp.textSize * 1.35f
-        canvas.drawText(ampText, cx, yAmp, amp)
+        amp.textSize = sp(24f)
+        val absA = kotlin.math.abs(current)
+        val absW = kotlin.math.abs(power)
+        val mainText = if (showAmps) Fmt.amps(absA) else Fmt.watts(absW)
+        val arrowW = if (flow != 0) 22 * dp else 0f
+        fit(amp, mainText, inner * 0.78f - arrowW)
+        val yAmp = yBig + amp.textSize * 1.3f
+        val textW = amp.measureText(mainText)
+        val xText = cx - arrowW / 2
+        canvas.drawText(mainText, xText, yAmp, amp)
+        if (flow != 0) drawFlowArrow(canvas, xText + textW / 2 + 13 * dp, yAmp - amp.textSize * 0.36f, flow, color)
 
-        // 3-й рядок — потужність (коли є струм); ємність — окремо внизу, у прорізі між кінцями дуги,
-        // щоб не налазити на поділки «0» і «100» (знімки CI 18.10).
+        // 3-й рядок — друге число, напруга й напрям
         small.textSize = sp(13f)
-        if (kotlin.math.abs(current) > IDLE) {
-            val w = Fmt.watts(kotlin.math.abs(power))
-            fit(small, w, inner * 0.6f)
-            canvas.drawText(w, cx, yAmp + small.textSize * 1.45f, small)
+        val other = if (showAmps) Fmt.watts(absW) else Fmt.amps(absA)
+        val line3 = when (flow) {
+            1 -> "$other · бере заряд"
+            -1 -> "$other · віддає"
+            else -> if (voltage > 0) Fmt.volts(voltage) + " · стоїть" else "стоїть"
         }
+        fit(small, line3, inner * 0.72f)
+        canvas.drawText(line3, cx, yAmp + small.textSize * 1.5f, small)
         if (caption.isNotEmpty()) {
             small.textSize = sp(13f)
             val gapWidth = (2 * rFill * cos(Math.toRadians(30.0))).toFloat() * 0.7f
@@ -171,6 +199,34 @@ class GaugeView(context: Context) : View(context) {
             val yCap = cy + (rFill * sin(Math.toRadians(30.0))).toFloat() + fillStroke / 2 + small.textSize
             canvas.drawText(caption, cx, minOf(yCap, height - 4 * dp), small)
         }
+    }
+
+    /**
+     * Стрілка, що «тече»: [dir] −1 — вгору (батарея віддає), 1 — вниз (заряджається). Повільно рухається й тане;
+     * якщо в телефоні вимкнено анімації — стоїть на місці.
+     */
+    private fun drawFlowArrow(canvas: Canvas, x: Float, yMid: Float, dir: Int, color: Int) {
+        val h = 18 * dp
+        val travel = 7 * dp
+        val animate = android.animation.ValueAnimator.areAnimatorsEnabled()
+        val phase = if (animate) (android.os.SystemClock.uptimeMillis() % FLOW_MS) / FLOW_MS.toFloat() else 0.5f
+        // dir −1 (вгору): зміщення від +travel до −travel; dir 1 (вниз): навпаки
+        val shift = (phase - 0.5f) * 2 * travel * (if (dir < 0) -1 else 1)
+        val alpha = if (animate) (255 * (1 - kotlin.math.abs(phase - 0.5f) * 2).coerceIn(0.25f, 1f)).toInt() else 255
+        arrowPaint.color = color
+        arrowPaint.alpha = alpha
+        val top = yMid - h / 2 + shift
+        val bottom = yMid + h / 2 + shift
+        val head = 5.5f * dp
+        canvas.drawLine(x, top, x, bottom, arrowPaint)
+        if (dir < 0) {
+            canvas.drawLine(x, top, x - head, top + head, arrowPaint)
+            canvas.drawLine(x, top, x + head, top + head, arrowPaint)
+        } else {
+            canvas.drawLine(x, bottom, x - head, bottom - head, arrowPaint)
+            canvas.drawLine(x, bottom, x + head, bottom - head, arrowPaint)
+        }
+        if (animate && isShown) postInvalidateDelayed(FRAME_MS)
     }
 
     private fun fit(p: Paint, text: String, maxWidth: Float) {
@@ -182,6 +238,8 @@ class GaugeView(context: Context) : View(context) {
         const val MAX_DP = 300
         const val MIN_DP = 170
         const val IDLE = 0.05
+        private const val FLOW_MS = 1600L
+        private const val FRAME_MS = 40L
         private const val START = 150f
         private const val SWEEP = 240f
         private val TICKS = listOf(0, 20, 50, 90, 100)

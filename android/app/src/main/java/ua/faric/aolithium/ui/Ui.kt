@@ -211,6 +211,7 @@ class Ui(val ctx: Context) {
         WARN(Palette.warning, Palette.warningFill),
         BAD(Palette.danger, Palette.dangerFill),
         INFO(Palette.accent, Palette.accentFill),
+        VIOLET(Palette.violet, Palette.violetFill),
         NEUTRAL(Palette.muted, Palette.surfaceAlt),
     }
 
