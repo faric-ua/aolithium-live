@@ -25,8 +25,11 @@ interface BatteryLink {
     }
 }
 
-/** Стан зв'язку. [message] — пояснення людською мовою (для помилок — що робити). */
-data class LinkStatus(val phase: Phase, val message: String = "") {
+/**
+ * Стан зв'язку. [message] — пояснення людською мовою (для помилок — що робити).
+ * [attempt] / [ofAttempts] — котрий повтор з усіх (T25: «повтор 2 з 3» в одному рядку, без розбору тексту).
+ */
+data class LinkStatus(val phase: Phase, val message: String = "", val attempt: Int = 0, val ofAttempts: Int = 0) {
     enum class Phase(val title: String) {
         IDLE("Не підключено"),
         CONNECTING("Підключаюсь…"),

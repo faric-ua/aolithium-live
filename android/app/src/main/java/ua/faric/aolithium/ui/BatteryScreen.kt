@@ -36,6 +36,7 @@ import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.HistoryPoint
 import ua.faric.aolithium.core.Laggard
+import ua.faric.aolithium.core.LinkLine
 import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.SteadyCurrent
@@ -84,6 +85,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private val history = HistoryStore.get(host)
     private val demo = DemoLink.sceneOf(address)
     private var link: BatteryLink? = null
+    /** Лише для знімків CI в демо (ключ «status:…»): стан зв'язку не міняється сам. */
+    private var frozenStatus: LinkStatus? = null
     private var status = LinkStatus.IDLE
     private var snapshot: BatterySnapshot? = null
     private var snapshotAt = 0L
@@ -134,12 +137,21 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         addView(body, ui.matchWrap())
     })
     private val tabButtons = LinkedHashMap<Tab, TextView>()
-    private val updated = ui.muted("", 12.5f)
+    /** Рядок «Зв'язок» (T25): будується один раз, далі міняються лише слова й колір — висота стала. */
+    private val linkPill = ui.pill("", Ui.Tone.NEUTRAL).apply { maxLines = 1 }
+    private val linkDetail = oneLine(ui.muted("", 13f))
+    private val linkSecond = oneLine(ui.muted("", 12.5f))
+    private val linkRetry = ui.iconButton(LineIcon.REPEAT, "Ще раз", Ui.Kind.PRIMARY) { reconnect() }.apply {
+        maxLines = 1
+        textSize = 14f
+        setPadding(ui.dp(12), ui.dp(6), ui.dp(12), ui.dp(6))
+    }
+    private val linkStrip: View = buildLinkStrip()
     override val view: View
 
     private val ticker = object : Runnable {
         override fun run() {
-            renderUpdated()
+            updateLinkStrip()
             handler.postDelayed(this, 1_000)
         }
     }
@@ -164,7 +176,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val l = LinkHolder.acquire(host, address)
         link = l
         l.listener = this
-        status = l.lastStatus
+        status = frozenStatus ?: l.lastStatus
         l.lastSnapshot?.let { snapshot = it; snapshotAt = l.lastSnapshotAt; feed(it, l.lastSnapshotAt) }
         render()
         handler.post(ticker)
@@ -196,10 +208,19 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         when {
             key == DLG_RENAME -> showRename()
             key == DLG_LOG -> showLog()
+            key == DLG_LINK -> showLinkInfo()
             key == DLG_FORGET -> showForget()
             key == DLG_CLEAR -> showClearHistory()
             key.startsWith(DLG_INFO) -> showInfo(key.removePrefix(DLG_INFO))
             key == DLG_WIDGETS -> showWidgetPreview()
+            // CI, лише демо: «status:LOST» — заморозити стан зв'язку, щоб зняти всі стани (T25: спідометр не їздить)
+            key.startsWith("status:") && demo != null -> {
+                val p = LinkStatus.Phase.entries.firstOrNull { it.name == key.removePrefix("status:") } ?: return false
+                val retrying = p == LinkStatus.Phase.LOST || p == LinkStatus.Phase.CONNECTING
+                frozenStatus = LinkStatus(p, if (p == LinkStatus.Phase.FAILED) DemoLink.FAILED_SAMPLE else "",
+                    if (retrying) 2 else 0, if (retrying) 3 else 0)
+                onStatus(frozenStatus!!)
+            }
             // debug/CI: «tab:CHARTS» або «tab:CHARTS:D1» (вкладка й період графіків)
             key.startsWith("tab:") -> {
                 val parts = key.split(':')
@@ -214,7 +235,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     // ---------- BatteryLink.Listener ----------
 
     override fun onStatus(status: LinkStatus) {
-        this.status = status
+        this.status = frozenStatus ?: status
         renderHead()
         if (tab != Tab.CHARTS) render()
     }
@@ -325,12 +346,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         renderHead()
         body.removeAllViews()
         val s = snapshot ?: stale?.first ?: BatterySnapshot.EMPTY
-        if (tab != Tab.MORE && tab != Tab.CHARTS) {
-            when {
-                data != Data.LIVE -> body.addView(offlineCard(), ui.matchWrap())
-                status.phase != LinkStatus.Phase.LIVE -> body.addView(statusCard(), ui.matchWrap())
-            }
-        }
+        // T25: картки «Зв'язок» у вмісті більше нема — стан зв'язку живе в рядку сталої висоти вгорі (renderHead).
         when (tab) {
             Tab.NOW -> renderNow(s)
             Tab.CELLS -> renderCells(s)
@@ -340,37 +356,6 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         body.addView(ui.muted(host.versionLine, 12f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
         if (keepScroll && y > 0) scroll.post { scroll.scrollTo(0, y) }
-    }
-
-    /**
-     * Зв'язку зараз нема: що відбувається з підключенням + чиї числа нижче (останні від … / прочерки).
-     * Усі вкладки при цьому доступні.
-     */
-    private fun offlineCard(): View {
-        val failed = status.phase == LinkStatus.Phase.FAILED || status.phase == LinkStatus.Phase.NO_ANSWER
-        val card = when {
-            failed -> ui.card(fill = Palette.dangerFill, stroke = Palette.danger)
-            status.phase == LinkStatus.Phase.LOST -> ui.card(fill = Palette.warningFill, stroke = Palette.warning)
-            else -> ui.card()
-        }
-        card.addView(labelRow("Зв'язок", LineIcon.BLUETOOTH, "onelink"))
-        card.addView(ui.text(status.phase.title, 17f, Palette.text, medium = true))
-        val msg = status.message.ifBlank {
-            when (status.phase) {
-                LinkStatus.Phase.CONNECTING -> "Підключаюсь до батареї. Зазвичай 2–5 секунд, якщо вона поруч (1–3 м)."
-                LinkStatus.Phase.READING -> "Підключились, читаю дані плати…"
-                else -> ""
-            }
-        }
-        if (msg.isNotBlank()) card.addView(ui.muted(msg, 14f))
-        val st = stale
-        card.addView(ui.text(
-            if (st != null) "Нижче — останні дані від ${stamp(st.second)} (${Fmt.ago(System.currentTimeMillis() - st.second)}). Наживо — коли з'явиться зв'язок."
-            else "З цією батареєю ще не було зв'язку — замість чисел прочерки. Усі вкладки можна дивитись.",
-            14f, Palette.warning,
-        ))
-        if (failed || status.phase == LinkStatus.Phase.LOST || status.phase == LinkStatus.Phase.IDLE) card.addView(retryRow(), ui.matchWrap())
-        return card
     }
 
     private fun stamp(ms: Long) = java.text.SimpleDateFormat("dd.MM HH:mm", java.util.Locale.ROOT).format(java.util.Date(ms))
@@ -395,28 +380,114 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun renderHead() {
         head.removeAllViews()
         head.addView(ui.title(title, 21f))
-        val row = FlowLayout(host, ui.dp(8), ui.dp(6))
-        row.addView(ui.pill(status.phase.title, tone(status.phase)))
-        (updated.parent as? ViewGroup)?.removeView(updated)
-        row.addView(updated)
-        head.addView(row, ui.matchWrap())
-        renderUpdated()
+        (linkStrip.parent as? ViewGroup)?.removeView(linkStrip)
+        head.addView(linkStrip, ui.matchWrap())
+        updateLinkStrip()
     }
 
-    private fun renderUpdated() {
-        updated.text = when {
-            snapshotAt != 0L -> "оновлено " + Fmt.ago(System.currentTimeMillis() - snapshotAt)
-            stale != null -> "останні дані від " + stamp(stale.second)
-            else -> "даних ще нема"
+    /**
+     * T25 (відео faric 19.10 22:12): статус зв'язку — **два рядки по одному рядку тексту** у рамці сталої висоти.
+     * Слова довші за ширину обрізаються «…» (повністю — у вікні за торканням), кнопка «Ще раз» лише ховається
+     * (INVISIBLE, місце лишається), тож на «підключаюсь / читаю / втрачено / на зв'язку» спідометр під рядком не зсувається.
+     */
+    private fun buildLinkStrip(): View {
+        val lines = ui.column(6)
+        val top = ui.row(8).apply { gravity = Gravity.CENTER_VERTICAL }
+        top.addView(linkPill)
+        top.addView(linkDetail, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        top.addView(ui.text(INFO, 16f, Palette.accent))
+        lines.addView(top, ui.matchWrap())
+        lines.addView(linkSecond, ui.matchWrap())
+        return ui.row(10).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            isBaselineAligned = false
+            setPadding(ui.dp(12), ui.dp(8), ui.dp(8), ui.dp(8))
+            minimumHeight = ui.dp(LINK_STRIP_DP)
+            addView(lines, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(linkRetry)
+            isClickable = true
+            isFocusable = true
+            contentDescription = "Зв'язок: що відбувається"
+            setOnClickListener { showLinkInfo() }
         }
     }
 
-    private fun tone(p: LinkStatus.Phase) = when (p) {
-        LinkStatus.Phase.LIVE -> Ui.Tone.GOOD
-        LinkStatus.Phase.CONNECTING, LinkStatus.Phase.READING -> Ui.Tone.INFO
-        LinkStatus.Phase.LOST, LinkStatus.Phase.NO_ANSWER -> Ui.Tone.WARN
-        LinkStatus.Phase.FAILED -> Ui.Tone.BAD
-        LinkStatus.Phase.IDLE -> Ui.Tone.NEUTRAL
+    private fun oneLine(tv: TextView): TextView = tv.apply {
+        maxLines = 1
+        setSingleLine(true)
+        ellipsize = android.text.TextUtils.TruncateAt.END
+    }
+
+    private fun linkModel(): LinkLine.Model {
+        val now = System.currentTimeMillis()
+        return LinkLine.build(
+            state = LinkLine.State.valueOf(status.phase.name),
+            attempt = status.attempt,
+            ofAttempts = status.ofAttempts,
+            message = status.message,
+            rssi = if (demo == null) BleScanner.lastRssi[address] else null,
+            liveAt = if (snapshot != null) snapshotAt else 0L,
+            liveStamp = if (snapshot != null) stamp(snapshotAt) else "",
+            savedAt = stale?.second ?: 0L,
+            savedStamp = stale?.second?.let { stamp(it) } ?: "",
+            now = now,
+            demo = demo != null,
+        )
+    }
+
+    private fun updateLinkStrip() {
+        val m = linkModel()
+        val t = when (m.tone) {
+            LinkLine.Tone.GOOD -> Ui.Tone.GOOD
+            LinkLine.Tone.INFO -> Ui.Tone.INFO
+            LinkLine.Tone.WARN -> Ui.Tone.WARN
+            LinkLine.Tone.BAD -> Ui.Tone.BAD
+            LinkLine.Tone.NEUTRAL -> Ui.Tone.NEUTRAL
+        }
+        if (linkPill.text.toString() != m.pill) linkPill.text = m.pill
+        linkPill.setTextColor(t.color)
+        linkPill.background = ui.rounded(t.fill, radiusDp = 20)
+        if (linkDetail.text.toString() != m.detail) linkDetail.text = m.detail
+        if (linkSecond.text.toString() != m.second) linkSecond.text = m.second
+        linkSecond.setTextColor(if (snapshot == null && status.phase != LinkStatus.Phase.LIVE) Palette.warning else Palette.muted)
+        linkRetry.visibility = if (m.retry) View.VISIBLE else View.INVISIBLE
+        val (fill, stroke) = when (m.tone) {
+            LinkLine.Tone.BAD -> Palette.dangerFill to Palette.danger
+            LinkLine.Tone.WARN -> Palette.warningFill to Palette.warning
+            else -> Palette.surface to Palette.border
+        }
+        linkStrip.background = ui.pressable(ui.rounded(fill, stroke, radiusDp = 14), 14)
+    }
+
+    /** Повне пояснення зв'язку — те, що раніше стояло в картці й штовхало екран (T25). */
+    private fun showLinkInfo() {
+        val m = linkModel()
+        val box = ui.column(10)
+        box.addView(ui.pill(m.pill, Ui.Tone.NEUTRAL).apply { setTextColor(Palette.text) })
+        val msg = status.message.ifBlank {
+            when (status.phase) {
+                LinkStatus.Phase.CONNECTING -> "Підключаюсь до батареї. Зазвичай 2–5 секунд, якщо вона поруч (1–3 м)."
+                LinkStatus.Phase.READING -> "Підключились, читаю дані плати…"
+                LinkStatus.Phase.LIVE -> "Дані приходять наживо, раз на 2 секунди."
+                else -> "Натисни «Підключити ще раз»."
+            }
+        }
+        box.addView(ui.text(msg, 15f, Palette.text))
+        box.addView(ui.muted(m.second.replaceFirstChar { it.uppercase() } + ".", 14f))
+        box.addView(ui.muted(Glossary.get("onelink")?.what ?: "", 14f))
+        val dlg = host.overlay.dialog(
+            "Зв'язок", "",
+            actions = listOf("Підключити ще раз" to Ui.Kind.PRIMARY, "Журнал зв'язку" to Ui.Kind.NORMAL, "Закрити" to Ui.Kind.QUIET),
+            onAction = { i ->
+                host.overlay.dismiss()
+                when (i) {
+                    0 -> reconnect()
+                    1 -> showLog()
+                }
+            },
+            extra = box,
+        )
+        host.overlay.show(DLG_LINK, dlg)
     }
 
     // ---------- «Зараз» ----------
@@ -1164,43 +1235,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     // ---------- спільні картки ----------
 
-    private fun waitingCard(): View {
-        val failed = status.phase == LinkStatus.Phase.FAILED || status.phase == LinkStatus.Phase.NO_ANSWER
-        val card = if (failed) ui.card(fill = Palette.dangerFill, stroke = Palette.danger) else ui.card()
-        card.addView(labelRow("Зв'язок", LineIcon.BLUETOOTH, "onelink"))
-        card.addView(ui.text(status.phase.title, 18f, Palette.text, medium = true))
-        val msg = status.message.ifBlank {
-            when (status.phase) {
-                LinkStatus.Phase.CONNECTING -> "Підключаюсь до батареї. Зазвичай 2–5 секунд."
-                LinkStatus.Phase.READING -> "Підключились, читаю дані плати…"
-                else -> ""
-            }
-        }
-        if (msg.isNotBlank()) card.addView(ui.muted(msg, 14f))
-        if (failed || status.phase == LinkStatus.Phase.LOST) card.addView(retryRow(), ui.matchWrap())
-        return card
-    }
-
-    private fun statusCard(): View {
-        val card = ui.card(fill = Palette.warningFill, stroke = Palette.warning)
-        card.addView(ui.text(status.phase.title, 16f, Palette.text, medium = true))
-        if (status.message.isNotBlank()) card.addView(ui.muted(status.message, 14f))
-        card.addView(ui.muted("Нижче — останні отримані дані.", 13f))
-        if (status.phase != LinkStatus.Phase.CONNECTING && status.phase != LinkStatus.Phase.READING) card.addView(retryRow(), ui.matchWrap())
-        return card
-    }
-
-    private fun retryRow(): View = ui.grid(listOf(
-        ui.iconButton(LineIcon.REPEAT, "Підключити ще раз", Ui.Kind.PRIMARY) { reconnect() },
-        ui.button("Журнал зв'язку", Ui.Kind.QUIET) { showLog() },
-    ))
-
     private fun reconnect() {
         LinkHolder.release(this)
         val l = LinkHolder.restart(host, address)
         link = l
         l.listener = this
-        status = l.lastStatus
+        status = frozenStatus ?: l.lastStatus
         render()
     }
 
@@ -1438,6 +1478,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val KEY_DRAFT = "renameDraft"
         const val DLG_RENAME = "rename"
         const val DLG_LOG = "log"
+        /** Вікно «Зв'язок» з повним поясненням (T25). */
+        const val DLG_LINK = "link"
+        /** Мінімальна висота рядка «Зв'язок»: кнопка «Ще раз» (48 dp) + відступи — ховається, але місце тримає. */
+        const val LINK_STRIP_DP = 64
         /** Як виглядатиме віджет (debug/CI: знімки емулятора; на домашньому екрані емулятора віджет не поставиш). */
         const val DLG_WIDGETS = "widgets"
         const val DLG_FORGET = "forget"

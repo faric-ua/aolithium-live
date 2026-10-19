@@ -79,6 +79,9 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
     companion object {
         const val ADDRESS_PREFIX = "demo:"
 
+        /** Приклад довгого пояснення для знімка стану «Не вдалось» (T25). */
+        const val FAILED_SAMPLE = "Не вдалось підключитись (код 133). Батарея далеко (сигнал -90 dBm, слабкий) — підійди ближче, на 1–3 м."
+
         fun sceneOf(address: String): DemoFrames.Scene? =
             if (!address.startsWith(ADDRESS_PREFIX)) null
             else DemoFrames.Scene.entries.firstOrNull { it.name == address.removePrefix(ADDRESS_PREFIX) }

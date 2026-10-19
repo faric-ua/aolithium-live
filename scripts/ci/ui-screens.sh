@@ -86,6 +86,13 @@ start --es demo DISCHARGING --es dialog widgets
 shot p17-widget-discharging 10
 start --es demo CHARGING --es dialog widgets
 shot p17b-widget-charging 10
+# T25 (відео faric 19.10 22:12): рядок «Зв'язок» сталої висоти — на всіх станах спідометр на тому самому місці.
+for st in CONNECTING READING LOST FAILED LIVE; do
+  start --es demo DISCHARGING --es dialog "status:$st"
+  shot "p18-link-$st" 4
+done
+start --es demo DISCHARGING --es dialog link
+shot p18-link-info 3
 # Без зв'язку й без збережених даних (faric 18.10 21:48): усі вкладки з прочерками.
 start --es demo OFFLINE
 shot p14-offline-now 6
@@ -118,6 +125,10 @@ start --es demo IDLE --es dialog tab:CELLS
 shot p12b-cells-font130 4
 start --es page HOME
 shot p13-home-font130
+for st in LOST LIVE; do
+  start --es demo DISCHARGING --es dialog "status:$st"
+  shot "p18-link-$st-font130" 4
+done
 adb shell settings put system font_scale 1.0
 
 # Падіння лише нашого застосунку (системні застосунки емулятора теж іноді падають — їх не рахуємо).

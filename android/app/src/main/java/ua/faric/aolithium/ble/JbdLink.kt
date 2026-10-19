@@ -116,7 +116,7 @@ class JbdLink(context: Context, override val address: String, private val quick:
             return
         }
         resetSession()
-        status(LinkStatus.Phase.CONNECTING)
+        status(LinkStatus.Phase.CONNECTING, attempt = reconnects)
         val token = ++attempt
         val known = BleScanner.seen[address]
         if (known != null) {
@@ -207,7 +207,7 @@ class JbdLink(context: Context, override val address: String, private val quick:
             ?.let { "$why Батарея далеко (сигнал ${Signal.describe(it)}) — підійди ближче, на 1–3 м." } ?: why
         if (reconnects < maxReconnects) {
             reconnects++
-            status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $maxReconnects)…")
+            status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $maxReconnects)…", reconnects)
             h.postDelayed({ connect() }, RECONNECT_DELAY_MS * reconnects)
         } else {
             status(LinkStatus.Phase.FAILED, "$reason $BUSY_HINT")
@@ -443,8 +443,8 @@ class JbdLink(context: Context, override val address: String, private val quick:
         h.postDelayed(nextCycle, POLL_MS)
     }
 
-    private fun status(phase: LinkStatus.Phase, message: String = "") {
-        val s = LinkStatus(phase, message)
+    private fun status(phase: LinkStatus.Phase, message: String = "", attempt: Int = 0) {
+        val s = LinkStatus(phase, message, attempt, if (attempt > 0) maxReconnects else 0)
         if (s == lastStatus) return
         lastStatus = s
         main.post { listener?.onStatus(s) }
