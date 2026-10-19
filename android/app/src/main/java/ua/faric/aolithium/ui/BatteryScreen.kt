@@ -108,6 +108,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     /** Історія за [INSIGHT_DAYS] днів — відключення, найнижчий по днях, хто відстає, зарядний. */
     private var insightPts: List<HistoryPoint>? = null
     private var insightLoadedAt = 0L
+    /** Хто зараз «найвища» / «найнижча» — липкі між оновленнями (T19, відео faric 19.10 13:57). */
+    private var hiCell: Int? = null
+    /** Розмір підписів у плитках комірок, якщо довелось зменшити (шрифт 1.3); 0 — звичайний. */
+    private var miniCaptionPx = 0f
+    private var loCell: Int? = null
     /** Остання година — графік різниці на «Комірках». */
     private var hourPts: List<HistoryPoint>? = null
     private var hourLoadedAt = 0L
@@ -582,10 +587,13 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
             val dev = CellTrend.fromAverage(s.cellsMv)
             val trend = if (data == Data.LIVE) CellTrend.perMinute(cellSamples.toList()) else null
-            val hi = s.maxCell
-            val lo = s.minCell
+            val (hi, lo) = CellTrend.extremes(s.cellsMv, hiCell, loCell)
+            hiCell = hi
+            loCell = lo
+            // Якщо хоч одна вирівнюється — місце під мітку є в кожній плитці, щоб усі були однієї висоти.
+            val anyBalancing = s.cellsMv.indices.any { (it + 1) in s.balancingCells }
             val tiles = s.cellsMv.mapIndexed { i, mv ->
-                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i == hi && hi != lo, isLo = i == lo && hi != lo, balancing = (i + 1) in s.balancingCells)
+                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i == hi, isLo = i == lo, balancing = (i + 1) in s.balancingCells, anyBalancing = anyBalancing)
             }
             card.addView(ui.grid(tiles, perRow = if (ui.twoPane && tiles.size > 2) 4 else 2), ui.matchWrap())
             s.deltaMv?.let { d -> card.addView(fact("Різниця", "${Fmt.millivolts(d)} — ${s.deltaVerdict!!.title}", "delta", verdictColor(s))) }
@@ -639,8 +647,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         columns(cards, listOf(temps))
     }
 
-    /** Плитка комірки (прев'ю «комірки як у JK», faric 19.10 02:44). */
-    private fun cellTile(i: Int, mv: Int, dev: Int, perMin: Int?, isHi: Boolean, isLo: Boolean, balancing: Boolean): View {
+    /**
+     * Плитка комірки (прев'ю «комірки як у JK», faric 19.10 02:44).
+     * T19 (відео 19.10 13:57 — плитки «пливли»): кожна плитка однієї висоти, що б не показувала — рядок «№ + мітка»
+     * завжди однієї висоти й в один рядок, «від середньої» — завжди два рядки, числа праворуч — однакової ширини.
+     */
+    private fun cellTile(i: Int, mv: Int, dev: Int, perMin: Int?, isHi: Boolean, isLo: Boolean, balancing: Boolean, anyBalancing: Boolean): View {
         val stroke = when {
             isHi -> Palette.accent
             isLo -> Palette.warning
@@ -648,15 +660,28 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         val tile = ui.column(4).apply {
             background = ui.pressable(ui.rounded(Palette.surfaceAlt, stroke, radiusDp = 12, strokeDp = if (isHi || isLo) 2 else 1), 12)
-            setPadding(ui.dp(12), ui.dp(10), ui.dp(12), ui.dp(11))
+            setPadding(ui.dp(10), ui.dp(10), ui.dp(10), ui.dp(11))
             isClickable = true
             isFocusable = true
             setOnClickListener { showInfo("cellTrend") }
         }
-        val head = FlowLayout(host, ui.dp(6), ui.dp(4))
-        head.addView(ui.text("№${i + 1}", 13f, Palette.muted, medium = true))
-        if (isHi) head.addView(ui.pill("найвища", Ui.Tone.INFO))
-        if (isLo) head.addView(ui.pill("найнижча", Ui.Tone.WARN))
+        val head = ui.row(6).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = ui.dp(HEAD_DP)
+        }
+        head.addView(ui.text("№${i + 1}", 13f, Palette.muted, medium = true).apply { maxLines = 1 })
+        val mark = when {
+            isHi -> ui.pill("найвища", Ui.Tone.INFO)
+            isLo -> ui.pill("найнижча", Ui.Tone.WARN)
+            else -> null
+        }
+        mark?.apply {
+            textSize = 11.5f
+            setPadding(ui.dp(7), ui.dp(2), ui.dp(7), ui.dp(3))
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            head.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { gravity = Gravity.CENTER_VERTICAL })
+        }
         tile.addView(head, ui.matchWrap())
         tile.addView(numbers(ui.text(Ui.keepUnits(Fmt.cellVolts(mv)), 21f, Palette.text, medium = true)))
         val k = ((mv - CellBarsView.LOW_MV).toFloat() / (CellBarsView.HIGH_MV - CellBarsView.LOW_MV)).coerceIn(0.03f, 1f)
@@ -670,21 +695,59 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, k))
         bar.addView(View(host), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f - k))
         tile.addView(bar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ui.dp(8)))
-        tile.addView(miniRow("від середньої", (if (dev > 0) "+" else if (dev < 0) "−" else "") + "${kotlin.math.abs(dev)} мВ", Palette.text))
+        tile.addView(miniRow("від\nсередньої", (if (dev > 0) "+" else if (dev < 0) "−" else "") + "${kotlin.math.abs(dev)} мВ", Palette.text, lines = 2))
+        val shownPerMin = perMin?.let { CellTrend.shown(it) }
         val (t, c) = when {
-            perMin == null -> (if (data == Data.LIVE) "рахую…" else "—") to Palette.muted
-            perMin > 0 -> "▲ +$perMin мВ" to Palette.success
-            perMin < 0 -> "▼ −${-perMin} мВ" to Palette.danger
+            shownPerMin == null -> (if (data == Data.LIVE) "рахую…" else "—") to Palette.muted
+            shownPerMin > 0 -> "▲ +$shownPerMin мВ" to Palette.success
+            shownPerMin < 0 -> "▼ −${-shownPerMin} мВ" to Palette.danger
             else -> "без змін" to Palette.muted
         }
         tile.addView(miniRow("за 1 хв", t, c))
-        if (balancing) tile.addView(FlowLayout(host, ui.dp(6), ui.dp(4)).apply { addView(ui.pill("≈ вирівнюється", Ui.Tone.VIOLET)) }, ui.matchWrap())
+        if (anyBalancing) {
+            val pill = ui.pill("≈ вирівнюється", Ui.Tone.VIOLET).apply {
+                textSize = 11.5f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                // Не вирівнюється — місце лишається (невидиме), щоб плитки в ряду були однієї висоти.
+                visibility = if (balancing) View.VISIBLE else View.INVISIBLE
+            }
+            tile.addView(pill, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
         return tile
     }
 
-    private fun miniRow(name: String, value: String, color: Int): View = ui.row(6).apply {
-        addView(ui.text(name, 12.5f, Palette.muted), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        addView(numbers(ui.text(Ui.keepUnits(value), 12.5f, color, medium = true)))
+    /**
+     * «назва … значення». Назва — рівно [lines] рядків (переноси задані в тексті, не залежать від числа),
+     * значення — завжди однієї ширини (найширше можливе «▼ −88 мВ»), тож нічого не переливається.
+     */
+    private fun miniRow(name: String, value: String, color: Int, lines: Int = 1): View = ui.row(6).apply {
+        gravity = Gravity.CENTER_VERTICAL
+        addView(ui.text(name, 12f, Palette.muted).apply {
+            maxLines = lines
+            minLines = lines
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            // Найдовше слово не влазить (шрифт 1.3, вузький телефон) — трохи зменшуємо шрифт, а не обрізаємо
+            // «середнь…» (знімок CI 19.10). Усі плитки однієї ширини — тож і шрифт однаковий у всіх.
+            // Розмір запам'ятовуємо: плитки перебудовуються кожні 2 с — без цього шрифт щоразу «стрибав» би 12 → менше.
+            if (miniCaptionPx > 0f) setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, miniCaptionPx)
+            val longest = name.split('\n', ' ').maxBy { it.length }
+            addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ ->
+                val tv = v as TextView
+                val avail = (r - l - tv.paddingLeft - tv.paddingRight).toFloat()
+                val need = tv.paint.measureText(longest)
+                if (avail > 0 && need > avail && tv.textSize > ui.dp(9)) {
+                    val size = maxOf(ui.dp(9).toFloat(), tv.textSize * avail / need * 0.98f)
+                    miniCaptionPx = if (miniCaptionPx > 0f) minOf(miniCaptionPx, size) else size
+                    tv.post { tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, miniCaptionPx) }
+                }
+            }
+        }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val v = numbers(ui.text(Ui.keepUnits(value), 12.5f, color, medium = true))
+        v.maxLines = 1
+        v.gravity = Gravity.END
+        v.minWidth = kotlin.math.ceil(listOf(Ui.keepUnits("▼ −20 мВ"), "без змін", "рахую…").maxOf { v.paint.measureText(it) }).toInt()
+        addView(v)
     }
 
     private fun loadHour() {
@@ -1294,6 +1357,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val DLG_FORGET = "forget"
         const val LOG_SHOW_CHARS = 6_000
         const val INSIGHT_DAYS = 14L
+        /** Висота рядка «№ + мітка» у плитці комірки — з міткою й без однакова (T19). */
+        const val HEAD_DP = 24
         const val INSIGHT_RELOAD_MS = 5 * 60_000L
     }
 }

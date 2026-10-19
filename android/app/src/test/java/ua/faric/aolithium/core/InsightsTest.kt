@@ -57,6 +57,30 @@ class InsightsTest {
         )
         assertEquals(listOf(2, 7, 5, 4), CellTrend.perMinute(samples))
         assertNull(CellTrend.perMinute(samples.take(1)))
+        // ±1 мВ — шум плати (точність 1 мВ), показуємо «без змін».
+        assertEquals(0, CellTrend.shown(1))
+        assertEquals(0, CellTrend.shown(-1))
+        assertEquals(-2, CellTrend.shown(-2))
+    }
+
+    @Test
+    fun extremesAreSticky() {
+        // Відео faric 19.10 13:57: №4 3,333 → 3,334 → 3,333… — «найнижча» не стрибає на №3.
+        val a = listOf(3336, 3337, 3334, 3333)
+        assertEquals(1 to 3, CellTrend.extremes(a, null, null))
+        val b = listOf(3336, 3337, 3334, 3334)
+        assertEquals(1 to 3, CellTrend.extremes(b, 1, 3))
+        // Без попередньої — перша з рівних (як і було).
+        assertEquals(1 to 2, CellTrend.extremes(b, null, null))
+        // Інша нижча на 2 мВ — мітка переходить.
+        assertEquals(1 to 2, CellTrend.extremes(listOf(3336, 3337, 3332, 3334), 1, 3))
+        // Найвища так само: №1 3,337 = №2 3,337 — лишається №2.
+        assertEquals(1 to 3, CellTrend.extremes(listOf(3337, 3337, 3335, 3333), 1, 3))
+        // Усі однакові — без міток; одна комірка — без міток.
+        assertEquals(null to null, CellTrend.extremes(listOf(3335, 3335, 3335, 3335), 1, 3))
+        assertEquals(null to null, CellTrend.extremes(listOf(3335), null, null))
+        // Лише 1 мВ між двома: попередня найвища не може стати й найнижчою.
+        assertEquals(0 to 1, CellTrend.extremes(listOf(3336, 3335), 0, 0))
     }
 
     @Test

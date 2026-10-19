@@ -126,11 +126,16 @@ class GaugeView(context: Context) : View(context) {
         fill.color = if (soc < 20) toneColor(Zones.of(soc).tone) else Palette.accent
         if (soc > 0 && !noData) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
 
-        // поділки 0 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення
+        // поділки 0 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення. Центр підпису відсуваємо від дуги на
+        // половину його ширини/висоти в напрямку дуги — інакше широке «100» торкалось дуги (скрін faric 19.10 04:41, T18).
         val rTick = rFill - fillStroke / 2 - 12 * dp
+        val rEdge = rFill - fillStroke / 2 - 5 * dp
         for (v in TICKS) {
             val a = Math.toRadians(angleOf(v.toFloat()).toDouble())
-            canvas.drawText("$v", cx + (rTick * cos(a)).toFloat(), cy + (rTick * sin(a)).toFloat() + tick.textSize / 3, tick)
+            val halfW = tick.measureText("$v") / 2
+            val halfH = tick.textSize * 0.38f
+            val r = minOf(rTick, rEdge - halfW * kotlin.math.abs(cos(a)).toFloat() - halfH * kotlin.math.abs(sin(a)).toFloat())
+            canvas.drawText("$v", cx + (r * cos(a)).toFloat(), cy + (r * sin(a)).toFloat() + halfH, tick)
         }
 
         if (noData) {
@@ -152,12 +157,13 @@ class GaugeView(context: Context) : View(context) {
         canvas.drawPath(path, needle)
         canvas.drawPath(path, needleEdge)
 
-        // текст у центрі
+        // текст у центрі. T18 (скрін faric 19.10 04:41): рядки «13,36 В · стоїть» і «92,2 з 92,3 А·год» сиділи один
+        // на одному — підпис стояв за геометрією дуги, а 3-й рядок — за висотою шрифтів. Тепер спершу рахуємо всі
+        // рядки по черзі (кожен нижче попереднього), а якщо низ не влазить — увесь блок піднімаємо.
         val inner = (rTick - 10 * dp) * 2f
         big.textSize = sp(48f)
         fit(big, "$soc %", inner * 0.9f)
-        val yBig = cy + big.textSize * 0.15f
-        canvas.drawText("$soc %", cx, yBig, big)
+        var yBig = cy + big.textSize * 0.15f
 
         val flow = when {
             current > IDLE -> 1
@@ -176,11 +182,7 @@ class GaugeView(context: Context) : View(context) {
         val mainText = if (showAmps) Fmt.amps(absA) else Fmt.watts(absW)
         val arrowW = if (flow != 0) 22 * dp else 0f
         fit(amp, mainText, inner * 0.78f - arrowW)
-        val yAmp = yBig + amp.textSize * 1.3f
-        val textW = amp.measureText(mainText)
-        val xText = cx - arrowW / 2
-        canvas.drawText(mainText, xText, yAmp, amp)
-        if (flow != 0) drawFlowArrow(canvas, xText + textW / 2 + 13 * dp, yAmp - amp.textSize * 0.36f, flow, color)
+        var yAmp = yBig + amp.textSize * 1.3f
 
         // 3-й рядок — друге число, напруга й напрям
         small.textSize = sp(13f)
@@ -191,14 +193,36 @@ class GaugeView(context: Context) : View(context) {
             else -> if (voltage > 0) Fmt.volts(voltage) + " · стоїть" else "стоїть"
         }
         fit(small, line3, inner * 0.72f)
-        canvas.drawText(line3, cx, yAmp + small.textSize * 1.5f, small)
+        val size3 = small.textSize
+        var y3 = yAmp + size3 * 1.5f
+
+        // 4-й рядок — підпис (А·год) між кінцями дуги, але завжди нижче 3-го рядка на повний рядок
+        val capPaint = Paint(small)
+        var yCap = 0f
         if (caption.isNotEmpty()) {
-            small.textSize = sp(13f)
+            capPaint.textSize = sp(13f)
             val gapWidth = (2 * rFill * cos(Math.toRadians(30.0))).toFloat() * 0.7f
-            fit(small, caption, gapWidth)
-            val yCap = cy + (rFill * sin(Math.toRadians(30.0))).toFloat() + fillStroke / 2 + small.textSize
-            canvas.drawText(caption, cx, minOf(yCap, height - 4 * dp), small)
+            fit(capPaint, caption, gapWidth)
+            val geometric = cy + (rFill * sin(Math.toRadians(30.0))).toFloat() + fillStroke / 2 + capPaint.textSize
+            yCap = maxOf(geometric, y3 + size3 * 0.35f + capPaint.textSize * LINE_GAP)
         }
+        val bottom = (if (caption.isNotEmpty()) yCap else y3) + small.textSize * 0.3f
+        val overflow = bottom - (height - 2 * dp)
+        if (overflow > 0) {
+            yBig -= overflow
+            yAmp -= overflow
+            y3 -= overflow
+            yCap -= overflow
+        }
+
+        canvas.drawText("$soc %", cx, yBig, big)
+        val textW = amp.measureText(mainText)
+        val xText = cx - arrowW / 2
+        canvas.drawText(mainText, xText, yAmp, amp)
+        if (flow != 0) drawFlowArrow(canvas, xText + textW / 2 + 13 * dp, yAmp - amp.textSize * 0.36f, flow, color)
+        small.textSize = size3
+        canvas.drawText(line3, cx, y3, small)
+        if (caption.isNotEmpty()) canvas.drawText(caption, cx, yCap, capPaint)
     }
 
     /**
@@ -238,6 +262,8 @@ class GaugeView(context: Context) : View(context) {
         const val MAX_DP = 300
         const val MIN_DP = 170
         const val IDLE = 0.05
+        /** Відстань між базовими лініями 3-го і 4-го рядків — у висотах шрифту (T18: було ~0,9 — налазили). */
+        private const val LINE_GAP = 1.1f
         private const val FLOW_MS = 1600L
         private const val FRAME_MS = 40L
         private const val START = 150f

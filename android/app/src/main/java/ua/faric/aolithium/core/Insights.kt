@@ -108,6 +108,34 @@ object CellTrend {
         val dt = (now - old.first).toDouble()
         return cur.indices.map { i -> ((cur[i] - old.second[i]) * 60_000.0 / dt).roundToInt() }
     }
+
+    /**
+     * Плата міряє з точністю 1 мВ, тож ±1 мВ за хвилину — шум, а не зміна: показуємо «без змін».
+     * (Відео faric 19.10 13:57: «за 1 хв» скакало «▼ −1 мВ» ↔ «без змін» кожні 2 с.)
+     */
+    const val NOISE_MV = 1
+
+    fun shown(perMin: Int): Int = if (abs(perMin) <= NOISE_MV) 0 else perMin
+
+    /**
+     * Найвища й найнижча комірка — «липкі» (T19). Мітка переходить на іншу комірку, лише коли та вища / нижча
+     * за попередню щонайменше на [STICKY_MV]; рівні й на 1 мВ відмінні — лишаємо, де була. Без цього при
+     * 3,334 / 3,334 / 3,333 рамка «найнижча» стрибала №3 ↔ №4 кожні 2 с (відео faric 19.10 13:57).
+     * Усі комірки однакові (різниця 0) — міток нема. Повертає (найвища, найнижча) — індекси або null.
+     */
+    const val STICKY_MV = 2
+
+    fun extremes(cellsMv: List<Int>, prevHi: Int?, prevLo: Int?): Pair<Int?, Int?> {
+        if (cellsMv.size < 2) return null to null
+        val max = cellsMv.max()
+        val min = cellsMv.min()
+        if (max == min) return null to null
+        val hi = prevHi?.takeIf { it in cellsMv.indices && cellsMv[it] > max - STICKY_MV && cellsMv[it] != min }
+            ?: cellsMv.indexOf(max)
+        val lo = prevLo?.takeIf { it in cellsMv.indices && cellsMv[it] < min + STICKY_MV && it != hi && cellsMv[it] != max }
+            ?: cellsMv.withIndex().filter { it.index != hi }.minBy { it.value }.index
+        return hi to lo
+    }
 }
 
 /**
