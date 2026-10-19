@@ -38,6 +38,9 @@ class BackgroundTest {
         assertEquals("04:35 — Bluetooth вимкнено", Background.status(Background.Result(at, false, note = Background.Skip.BLUETOOTH_OFF.text), kyiv))
         assertEquals("ще не було", Background.status(null))
         assertEquals("A: чекаю першого запису", Background.line("A", null))
+        // T21: у сповіщенні час — у верхньому рядку, не в тексті.
+        assertEquals("Aolithium: 64 % · віддає 4,10 А", Background.line("Aolithium", ok, kyiv, withTime = false))
+        assertEquals("A: нема зв'язку — батарея далеко чи зайнята іншим телефоном", Background.line("A", fail, kyiv, withTime = false))
     }
 
     @Test

@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -39,6 +40,7 @@ import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.SteadyCurrent
 import ua.faric.aolithium.core.TimeLeft
+import ua.faric.aolithium.core.WidgetModel
 import ua.faric.aolithium.core.Zones
 import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
@@ -46,6 +48,8 @@ import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
 import ua.faric.aolithium.data.Marks
+import ua.faric.aolithium.widget.WidgetArt
+import ua.faric.aolithium.widget.Widgets
 
 /**
  * Одна батарея (v0.2.0, faric 18.10 20:47: «внизу менюшечка, по групам поділено… графіки… спідометр»).
@@ -195,6 +199,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             key == DLG_FORGET -> showForget()
             key == DLG_CLEAR -> showClearHistory()
             key.startsWith(DLG_INFO) -> showInfo(key.removePrefix(DLG_INFO))
+            key == DLG_WIDGETS -> showWidgetPreview()
             // debug/CI: «tab:CHARTS» або «tab:CHARTS:D1» (вкладка й період графіків)
             key.startsWith("tab:") -> {
                 val parts = key.split(':')
@@ -224,7 +229,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         history.record(address, snapshot, atMs)
         lastStore.save(address, snapshot, atMs)
-        if (demo == null) Notifier.onSnapshot(host, address, snapshot, atMs)
+        if (demo == null) {
+            Notifier.onSnapshot(host, address, snapshot, atMs)
+            Widgets.onData(host, fromScreen = true)
+        }
         if (tab == Tab.CHARTS) {
             // графіки не перемальовуємо щосекунди — лише підвантажуємо нові точки раз на 30 с
             if (atMs - pointsLoadedAt > 30_000) loadHistory()
@@ -1273,6 +1281,33 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     // ---------- вікна ----------
 
+    /** Віджет з цими ж даними: великий і малий, плюс «нема даних» і «ще не було зв'язку» — для перевірки малюнка. */
+    private fun showWidgetPreview() {
+        val now = System.currentTimeMillis()
+        val box = ui.column(10)
+        val dens = host.resources.displayMetrics.density
+        fun add(label: String, m: WidgetModel.Model, wDp: Int, hDp: Int) {
+            box.addView(ui.muted(label, 12.5f))
+            val img = ImageView(host).apply {
+                setImageBitmap(WidgetArt.draw(m, wDp, hDp, dens))
+                adjustViewBounds = true
+            }
+            box.addView(img, if (wDp > hDp) ui.matchWrap() else android.widget.LinearLayout.LayoutParams(ui.dp(wDp), ui.dp(hDp)))
+        }
+        val s = snapshot
+        add("Великий 4 × 2", WidgetModel.of(title, s, snapshotAt.takeIf { s != null }, now), 320, 160)
+        add("Малий 2 × 2", WidgetModel.of(title, s, snapshotAt.takeIf { s != null }, now), 160, 160)
+        add("Нема даних 2 год", WidgetModel.of(title, s, now - 2 * 3_600_000L, now), 320, 160)
+        add("Ще не було зв'язку", WidgetModel.of(title, null, null, now), 160, 160)
+        val dlg = host.overlay.dialog(
+            "Віджет", "",
+            actions = listOf("Закрити" to Ui.Kind.QUIET),
+            onAction = { host.overlay.dismiss() },
+            extra = box,
+        )
+        host.overlay.show(DLG_WIDGETS, dlg)
+    }
+
     private fun showInfo(id: String) {
         val e = Glossary.get(id) ?: return
         val box = ui.column(10)
@@ -1396,6 +1431,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val KEY_DRAFT = "renameDraft"
         const val DLG_RENAME = "rename"
         const val DLG_LOG = "log"
+        /** Як виглядатиме віджет (debug/CI: знімки емулятора; на домашньому екрані емулятора віджет не поставиш). */
+        const val DLG_WIDGETS = "widgets"
         const val DLG_FORGET = "forget"
         const val LOG_SHOW_CHARS = 6_000
         const val INSIGHT_DAYS = 14L

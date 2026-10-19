@@ -81,6 +81,11 @@ scroll_down
 shot p09b-more-dictionary
 scroll_down
 shot p09c-more-alerts
+# Віджет (v0.3.1): на домашній екран емулятора не поставиш — показуємо той самий малюнок у вікні.
+start --es demo DISCHARGING --es dialog widgets
+shot p17-widget-discharging 6
+start --es demo CHARGING --es dialog widgets
+shot p17b-widget-charging 6
 # Без зв'язку й без збережених даних (faric 18.10 21:48): усі вкладки з прочерками.
 start --es demo OFFLINE
 shot p14-offline-now 6
