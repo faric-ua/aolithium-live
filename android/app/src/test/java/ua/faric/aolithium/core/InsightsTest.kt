@@ -64,23 +64,24 @@ class InsightsTest {
     }
 
     @Test
-    fun extremesAreSticky() {
-        // Відео faric 19.10 13:57: №4 3,333 → 3,334 → 3,333… — «найнижча» не стрибає на №3.
+    fun extremesAreTrueAndStickyOnlyBetweenEqual() {
+        // Відео faric 19.10 13:57: №4 3,333 → 3,334 → 3,333… — «найнижча» не стрибає на №3, коли вони рівні.
         val a = listOf(3336, 3337, 3334, 3333)
         assertEquals(1 to 3, CellTrend.extremes(a, null, null))
         val b = listOf(3336, 3337, 3334, 3334)
         assertEquals(1 to 3, CellTrend.extremes(b, 1, 3))
-        // Без попередньої — перша з рівних (як і було).
+        // Без попередньої — перша з рівних.
         assertEquals(1 to 2, CellTrend.extremes(b, null, null))
-        // Інша нижча на 2 мВ — мітка переходить.
-        assertEquals(1 to 2, CellTrend.extremes(listOf(3336, 3337, 3332, 3334), 1, 3))
+        // Скрін faric 19.10 22:06 (T24): 3,332 / 3,331 / 3,330 / 3,329 — найнижча №4, хоч раніше була №3.
+        assertEquals(0 to 3, CellTrend.extremes(listOf(3332, 3331, 3330, 3329), 0, 2))
+        // Інша нижча навіть на 1 мВ — мітка переходить (число на плитці видно).
+        assertEquals(1 to 2, CellTrend.extremes(listOf(3336, 3337, 3333, 3334), 1, 3))
         // Найвища так само: №1 3,337 = №2 3,337 — лишається №2.
         assertEquals(1 to 3, CellTrend.extremes(listOf(3337, 3337, 3335, 3333), 1, 3))
-        // Усі однакові — без міток; одна комірка — без міток.
+        // Усі однакові або різниця 1 мВ (точність плати) — без міток; одна комірка — без міток.
         assertEquals(null to null, CellTrend.extremes(listOf(3335, 3335, 3335, 3335), 1, 3))
+        assertEquals(null to null, CellTrend.extremes(listOf(3336, 3335, 3335, 3336), 0, 1))
         assertEquals(null to null, CellTrend.extremes(listOf(3335), null, null))
-        // Лише 1 мВ між двома: попередня найвища не може стати й найнижчою.
-        assertEquals(0 to 1, CellTrend.extremes(listOf(3336, 3335), 0, 0))
     }
 
     @Test

@@ -116,7 +116,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     /** Історія за [INSIGHT_DAYS] днів — відключення, найнижчий по днях, хто відстає, зарядний. */
     private var insightPts: List<HistoryPoint>? = null
     private var insightLoadedAt = 0L
-    /** Хто зараз «найвища» / «найнижча» — липкі між оновленнями (T19, відео faric 19.10 13:57). */
+    /** Хто зараз «найвища» / «найнижча» — справжні, «липкі» лише між рівними (T19, T24). */
     private var hiCell: Int? = null
     /** Розмір підписів у плитках комірок, якщо довелось зменшити (шрифт 1.3); 0 — звичайний. */
     private var miniCaptionPx = 0f
