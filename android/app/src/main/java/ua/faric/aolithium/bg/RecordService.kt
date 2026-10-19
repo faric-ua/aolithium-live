@@ -18,7 +18,6 @@ import android.os.PowerManager
 import ua.faric.aolithium.R
 import ua.faric.aolithium.ble.BatteryLink
 import ua.faric.aolithium.ble.BtAccess
-import ua.faric.aolithium.ble.JbdLink
 import ua.faric.aolithium.ble.LinkHolder
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.ble.LinkStatus
@@ -36,7 +35,7 @@ import ua.faric.aolithium.widget.Widgets
  * Запис у фоні (v0.2.5, TODO T3). Поки увімкнено хоч для однієї батареї — висить тихе сповіщення
  * (без нього Android, особливо Samsung, зупиняє фонову роботу за кілька хвилин).
  *
- * Раз на [Background.EVERY_MS]: для кожної увімкненої батареї — коротке підключення (`JbdLink` у режимі quick),
+ * Раз на [Background.EVERY_MS]: для кожної увімкненої батареї — коротке підключення (`JbdLink` або `JkLink` у режимі quick, `LinkHolder.create`),
  * один знімок → історія (`HistoryStore`) і «останні дані» (`LastSnapshot`) → відключення. Батарея зайнята
  * лише кілька секунд, тож Aolithium на іншому телефоні теж підключиться.
  *
@@ -235,7 +234,7 @@ class RecordService : Service() {
             h.post { readNext() }
             return
         }
-        val l = JbdLink(this, addr, quick = true)
+        val l = LinkHolder.create(this, addr, quick = true)
         link = l
         linkAddress = addr
         l.listener = object : BatteryLink.Listener {

@@ -87,5 +87,12 @@ class Batteries(context: Context) {
 
         /** Назви з останнього пошуку (у пам'яті): запам'ятати батарею з назвою, коли вона вперше відповість. */
         val scanNames = HashMap<String, String>()
+
+        /** Тип плати з пошуку (v0.4: JBD чи JK) — щоб відкрити батарею потрібним зв'язком ще до «Моїх батарей». */
+        val scanKinds = HashMap<String, BmsMatch.Kind>()
+
+        /** Тип плати: з пошуку, інакше з «Моїх батарей», інакше JBD (як було до v0.4). */
+        fun kindOf(context: Context, address: String): BmsMatch.Kind =
+            scanKinds[address] ?: Batteries(context).find(address)?.kind?.takeIf { it != BmsMatch.Kind.OTHER } ?: BmsMatch.Kind.JBD
     }
 }

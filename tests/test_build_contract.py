@@ -83,8 +83,16 @@ class BluetoothContract(unittest.TestCase):
         jbd = (APP / "core/Jbd.kt").read_text(encoding="utf-8")
         self.assertIn("val READ_COMMANDS = setOf(CMD_BASIC, CMD_CELLS, CMD_HARDWARE, CMD_ERROR_COUNTS)", jbd)
         self.assertIn("require(cmd in READ_COMMANDS)", jbd)
-        writers = [p for p in kotlin_sources() if "writeCharacteristic(" in p.read_text(encoding="utf-8")]
-        self.assertEqual(["JbdLink.kt"], [p.name for p in writers])
+        writers = sorted(p.name for p in kotlin_sources() if "writeCharacteristic(" in p.read_text(encoding="utf-8"))
+        self.assertEqual(["JbdLink.kt", "JkLink.kt"], writers)
+        # v0.4: JK BMS — лише «хто ти» (0x97) і «комірки» (0x96), зібрані Jk.readCommand; решта команд JK — запис.
+        jk = (APP / "core/Jk.kt").read_text(encoding="utf-8")
+        self.assertIn("val READ_COMMANDS = setOf(CMD_DEVICE_INFO, CMD_CELL_INFO)", jk)
+        self.assertIn("require(cmd in READ_COMMANDS)", jk)
+        jk_link = (APP / "ble/JkLink.kt").read_text(encoding="utf-8")
+        self.assertIn("val bytes = Jk.readCommand(cmd)", jk_link)
+        self.assertNotIn("responseFrame", jk_link)
+        self.assertNotIn("JkDemo", jk_link)
         link = (APP / "ble/JbdLink.kt").read_text(encoding="utf-8")
         self.assertIn("val bytes = Jbd.readCommand(cmd)", link)
         self.assertNotIn("responseFrame", link)
@@ -93,6 +101,11 @@ class BluetoothContract(unittest.TestCase):
 
     def test_both_gatt_callbacks(self):
         # Android 13+ і старші кличуть різні onCharacteristicChanged.
+        for name in ("ble/JbdLink.kt", "ble/JkLink.kt"):
+            link = (APP / name).read_text(encoding="utf-8")
+            self.assertIn("c: BluetoothGattCharacteristic, value: ByteArray)", link, name)
+            self.assertIn("if (Build.VERSION.SDK_INT >= 33) return", link, name)
+            self.assertIn("BluetoothDevice.TRANSPORT_LE", link, name)
         link = (APP / "ble/JbdLink.kt").read_text(encoding="utf-8")
         self.assertIn("c: BluetoothGattCharacteristic, value: ByteArray)", link)
         self.assertIn("if (Build.VERSION.SDK_INT >= 33) return", link)
@@ -111,7 +124,9 @@ class BluetoothContract(unittest.TestCase):
         self.assertIn("FOREGROUND_SERVICE_CONNECTED_DEVICE", MANIFEST)
         self.assertIn("MY_PACKAGE_REPLACED", MANIFEST)  # після оновлення «поверх» запис вмикається сам
         svc = (APP / "bg/RecordService.kt").read_text(encoding="utf-8")
-        self.assertIn("JbdLink(this, addr, quick = true)", svc)
+        self.assertIn("LinkHolder.create(this, addr, quick = true)", svc)  # v0.4: JBD чи JK — один вибір
+        holder = (APP / "ble/LinkHolder.kt").read_text(encoding="utf-8")
+        self.assertIn("JkLink(ctx, address, quick) else JbdLink(ctx, address, quick)", holder)
         self.assertIn("LinkHolder.holds(addr)", svc)
         self.assertIn("l.stop()", svc)  # після знімка батарею відпускаємо
         holder = (APP / "ble/LinkHolder.kt").read_text(encoding="utf-8")

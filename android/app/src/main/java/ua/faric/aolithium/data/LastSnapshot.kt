@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import ua.faric.aolithium.core.BatterySnapshot
+import ua.faric.aolithium.core.JkExtra
 import ua.faric.aolithium.core.Protection
 import ua.faric.aolithium.core.Ymd
 
@@ -41,6 +42,23 @@ class LastSnapshot(context: Context) {
         .put("model", s.model ?: "").put("cc", s.cellCount)
         .put("cnt", s.errorCounts?.let { list -> JSONArray(list.map { JSONArray().put(it.first).put(it.second) }) } ?: JSONArray())
         .put("hasCnt", s.errorCounts != null)
+        .apply { s.jk?.let { put("jk", encodeJk(it)) } }
+
+    /** v0.4: частина JK — щоб і без зв'язку було видно балансир, опір дротів, ключі. */
+    private fun encodeJk(j: JkExtra) = JSONObject()
+        .put("lay", j.layout).put("bi", j.balanceCurrent).put("ba", j.balancerAction).put("wire", JSONArray(j.wireMohm))
+        .put("mos", j.mosTemp ?: JSONObject.NULL).put("soh", j.soh).put("cap", j.cycleCapacityAh).put("run", j.runtimeSec)
+        .put("heat", j.heatingOn).put("hi", j.heatingCurrent).put("plug", j.chargerPlugged).put("stage", j.chargeStage ?: -1)
+        .put("hw", j.hw ?: "").put("sn", j.serial ?: "")
+
+    private fun decodeJk(o: JSONObject): JkExtra = JkExtra(
+        layout = o.optString("lay"), balanceCurrent = o.optDouble("bi", 0.0), balancerAction = o.optInt("ba"),
+        wireMohm = o.optJSONArray("wire")?.let { a -> (0 until a.length()).map { a.getInt(it) } }.orEmpty(),
+        mosTemp = if (o.isNull("mos")) null else o.optDouble("mos"), soh = o.optInt("soh"), cycleCapacityAh = o.optDouble("cap", 0.0),
+        runtimeSec = o.optLong("run"), heatingOn = o.optBoolean("heat"), heatingCurrent = o.optDouble("hi", 0.0),
+        chargerPlugged = o.optBoolean("plug"), chargeStage = o.optInt("stage", -1).takeIf { it >= 0 },
+        hw = o.optString("hw").ifBlank { null }, serial = o.optString("sn").ifBlank { null },
+    )
 
     private fun decode(o: JSONObject): BatterySnapshot {
         fun ints(k: String) = o.optJSONArray(k)?.let { a -> (0 until a.length()).map { a.getInt(it) } }.orEmpty()
@@ -58,6 +76,7 @@ class LastSnapshot(context: Context) {
             balancingCells = ints("bal"), protections = prot, unknownProtectionBits = ints("unk"), chargeOn = o.getBoolean("chg"),
             dischargeOn = o.getBoolean("dis"), firmware = o.optString("fw").ifBlank { null }, made = made,
             model = o.optString("model").ifBlank { null }, errorCounts = counts, cellCount = o.optInt("cc"),
+            jk = o.optJSONObject("jk")?.let { decodeJk(it) },
         )
     }
 

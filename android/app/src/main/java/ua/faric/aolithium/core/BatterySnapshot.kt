@@ -4,7 +4,7 @@ import kotlin.math.abs
 
 /**
  * Усе, що відомо про батарею в одну мить — однаково для будь-якої плати
- * (зараз JBD/Aolithium; пізніше JK BMS/Logic Power — той самий екран).
+ * (JBD/Aolithium і з v0.4 JK BMS/Logic Power — той самий екран). Те, що вміє лише JK, — у [jk].
  */
 data class BatterySnapshot(
     val voltage: Double,
@@ -26,6 +26,8 @@ data class BatterySnapshot(
     val model: String?,
     val errorCounts: List<Pair<String, Int>>?,
     val cellCount: Int,
+    /** Лише для JK BMS (балансир, опір дротів, ключі, нагрів, здоров'я); для JBD — null. */
+    val jk: JkExtra? = null,
 ) {
     val power: Double get() = voltage * current
 
@@ -89,6 +91,51 @@ data class BatterySnapshot(
             temperatures = emptyList(), balancingCells = emptyList(), protections = emptyList(), unknownProtectionBits = emptyList(),
             chargeOn = false, dischargeOn = false, firmware = null, made = null, model = null, errorCounts = null, cellCount = 0,
         )
+
+        /**
+         * Зібрати з кадрів JK BMS (v0.4). [device] — якщо плата відповіла «хто ти».
+         * «Вирівнюються» — найвища й найнижча комірки: активний балансир JK переливає з найвищої в найнижчу.
+         */
+        fun fromJk(c: JkCells, device: JkDevice?): BatterySnapshot {
+            val hi = c.cellsMv.withIndex().maxByOrNull { it.value }?.index
+            val lo = c.cellsMv.withIndex().minByOrNull { it.value }?.index
+            return BatterySnapshot(
+                voltage = c.voltage,
+                current = c.current,
+                soc = c.soc,
+                remainAh = c.remainAh,
+                fullAh = c.fullAh,
+                cycles = c.cycles,
+                cellsMv = c.cellsMv,
+                temperatures = c.temperatures,
+                balancingCells = if (c.balancerAction != 0 && hi != null && lo != null && hi != lo) listOf(hi + 1, lo + 1) else emptyList(), // з 1, як у JBD
+                protections = Protection.fromJkMask(c.errorMask),
+                unknownProtectionBits = Protection.unknownJkBits(c.errorMask),
+                chargeOn = c.chargeOn,
+                dischargeOn = c.dischargeOn,
+                firmware = device?.sw?.takeIf { it.isNotBlank() },
+                made = null,
+                model = (device?.name?.takeIf { it.isNotBlank() } ?: device?.model)?.takeIf { it.isNotBlank() },
+                errorCounts = null,
+                cellCount = c.cellsMv.size,
+                jk = JkExtra(
+                    layout = c.layout.title,
+                    balanceCurrent = c.balanceCurrent,
+                    balancerAction = c.balancerAction,
+                    wireMohm = c.wireMohm,
+                    mosTemp = c.mosTemp,
+                    soh = c.soh,
+                    cycleCapacityAh = c.cycleCapacityAh,
+                    runtimeSec = c.runtimeSec,
+                    heatingOn = c.heatingOn,
+                    heatingCurrent = c.heatingCurrent,
+                    chargerPlugged = c.chargerPlugged,
+                    chargeStage = c.chargeStage,
+                    hw = device?.hw?.takeIf { it.isNotBlank() },
+                    serial = device?.serial?.takeIf { it.isNotBlank() },
+                ),
+            )
+        }
 
         /** Струм менше 0,05 А вважаємо «стоїть». */
         const val IDLE_A = 0.05

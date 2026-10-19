@@ -246,7 +246,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         feed(snapshot, atMs)
         if (!remembered && demo == null) {
             remembered = true
-            batteries.remember(address, Batteries.scanNames[address] ?: snapshot.model, BmsMatch.Kind.JBD)
+            batteries.remember(address, Batteries.scanNames[address] ?: snapshot.model, Batteries.kindOf(host, address))
         }
         history.record(address, snapshot, atMs)
         lastStore.save(address, snapshot, atMs)
@@ -687,6 +687,21 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             cards += card
 
             val bal = ui.card(8)
+            val jk = s.jk
+            if (jk != null) {
+                // v0.4: активний балансир JK — каже струм і напрям (з найвищої в найнижчу), прев'ю екран 3.
+                bal.addView(labelRow("Балансир JK", LineIcon.CELLS, "jkbalance"))
+                if (jk.balancing && s.balancingCells.size == 2) {
+                    bal.addView(ui.text("Переливає: з №${s.balancingCells[0]} у №${s.balancingCells[1]}", 15f, Palette.violet, medium = true))
+                    bal.addView(fact("Струм балансира", Fmt.num(kotlin.math.abs(jk.balanceCurrent), 2) + " А", "jkbalance"))
+                    bal.addView(ui.muted(if (jk.balancerAction == 2) "Вирівнює під час розряду." else "Вирівнює під час заряду.", 13.5f))
+                } else {
+                    bal.addView(ui.text("Зараз не переливає", 15f, Palette.text, medium = true))
+                    s.deltaMv?.let { bal.addView(ui.muted("Різниця ${Fmt.millivolts(it)}. Балансир вмикається сам, коли комірки розійдуться більше за поріг у налаштуваннях плати.", 13.5f)) }
+                }
+                bal.addView(ui.muted("Активний: бере енергію з найвищої комірки й віддає найнижчій — без нагріву. На плитках — фіолетова мітка «вирівнюється».", 12.5f))
+                cards += bal
+            } else {
             bal.addView(labelRow("Як плата вирівнює комірки", LineIcon.CELLS, "balance"))
             if (s.balancingCells.isEmpty()) {
                 bal.addView(ui.text("Зараз не вирівнює", 15f, Palette.text, medium = true))
@@ -696,8 +711,22 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 bal.addView(ui.muted("Плата злегка розряджає цю комірку (у тепло, через резистор), поки інші її доганяють.", 13.5f))
             }
             bal.addView(ui.muted("Це пасивне вирівнювання: скільки ампер — плата JBD не повідомляє, лише «вирівнює / ні». " +
-                "У Logic Power — активний балансир: перекачує енергію з найвищої комірки в найнижчу і показує струм (буде у версії 0.4).", 12.5f))
+                "У Logic Power — активний балансир: перекачує енергію з найвищої комірки в найнижчу і показує струм.", 12.5f))
             cards += bal
+            }
+
+            // v0.4: опір дроту кожної комірки (лише JK), прев'ю екран 4.
+            s.jk?.takeIf { it.wireMohm.isNotEmpty() }?.let { j ->
+                val wire = ui.card(8)
+                wire.addView(labelRow("Опір дротів комірок", LineIcon.CELLS, "wire"))
+                val typical = j.wireMohm.sorted()[j.wireMohm.size / 2]
+                j.wireMohm.forEachIndexed { i, r ->
+                    val odd = typical > 0 && r > typical * 3 / 2
+                    wire.addView(fact("Комірка ${i + 1}", "$r мОм", "wire", if (odd) Palette.warning else Palette.text))
+                }
+                wire.addView(ui.muted("Мають бути схожі. Помітно більший — підтягни чи почисти контакт цієї комірки.", 12.5f))
+                cards += wire
+            }
 
             val hour = ui.card(8)
             hour.addView(labelRow("Різниця комірок за 1 год", LineIcon.CHART, "delta"))
@@ -726,6 +755,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         )
         s.temperatures.forEachIndexed { i, t ->
             temps.addView(fact("Датчик ${i + 1}", Fmt.celsius(t), "temp", tempColor(t)))
+        }
+        s.jk?.let { j ->
+            j.mosTemp?.let { temps.addView(fact("Ключі плати (MOS)", Fmt.celsius(it), "mos", if (it >= 70) Palette.warning else Palette.text)) }
+            temps.addView(fact("Підігрів", if (j.heatingOn) "гріє · " + Fmt.num(j.heatingCurrent, 2) + " А" else "вимкнено", "heating"))
         }
         temps.addView(ui.muted("Найкраще 15–35 °C. Нижче 0 °C плата не дасть заряджати.", 12.5f))
         columns(cards, listOf(temps))
@@ -1067,14 +1100,32 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         Health.sohPercent(s.fullAh, rated)?.let { health.addView(fact("Від етикетки", "$it %", "soh", if (it >= 80) Palette.success else Palette.warning)) }
         health.addView(fact("Залишок", Fmt.ampHours(s.remainAh), "remain"))
         health.addView(fact("Цикли", s.cycles.toString(), "cycles"))
-        health.addView(fact("Енергія повної", "≈ " + Fmt.num(s.fullAh * 12.8 / 1000, 2) + " кВт·год", "energy"))
+        // Номінал LiFePO4 — 3,2 В на комірку (Aolithium 4 комірки = 12,8 В; Logic Power — скільки комірок у плати).
+        val nominalV = if (s.cellCount > 0) s.cellCount * 3.2 else 12.8
+        health.addView(fact("Енергія повної", "≈ " + Fmt.num(s.fullAh * nominalV / 1000, 2) + " кВт·год", "energy"))
+        s.jk?.let { j ->
+            health.addView(fact("Здоров'я (каже плата)", "${j.soh} %", "jksoh", if (j.soh >= 80) Palette.success else Palette.warning))
+            if (j.cycleCapacityAh > 0) health.addView(fact("Пройдено всього", Fmt.num(j.cycleCapacityAh, 0) + " А·год", "cyclecap"))
+            j.stageTitle?.let { health.addView(fact("Етап заряду", it, "stage")) }
+        }
 
         val board = ui.card(8)
         board.addView(labelRow("Плата", LineIcon.CHIP, "board"))
-        board.addView(fact("Тип", "JBD (Jiabaida)", "board", known = true))
+        val jkx = s.jk
+        if (jkx != null || Batteries.kindOf(host, address) == BmsMatch.Kind.JK && demo == null) {
+            board.addView(fact("Тип", "JK BMS (Jikong)", "jkboard", known = true))
+        } else {
+            board.addView(fact("Тип", "JBD (Jiabaida)", "board", known = true))
+        }
         s.model?.let { board.addView(fact("Назва плати", it, "model")) } ?: if (data == Data.NONE) board.addView(fact("Назва плати", DASH, "model")) else Unit
         s.firmware?.let { board.addView(fact("Версія програми", it, "firmware")) }
         s.made?.let { board.addView(fact("Дата виготовлення", it.toString(), "made")) }
+        jkx?.let { j ->
+            j.hw?.let { board.addView(fact("Версія заліза", it, "jkboard")) }
+            board.addView(fact("Формат даних", j.layout, "jkboard"))
+            if (j.runtimeSec > 0) board.addView(fact("Час роботи плати", Fmt.runtime(j.runtimeSec), "runtime"))
+            board.addView(fact("Зарядний", if (j.chargerPlugged) "підключено" else "не підключено", "jkboard"))
+        }
         board.addView(fact("Комірок", s.cellCount.toString(), "cells"))
         board.addView(fact("Датчиків температури", s.temperatures.size.toString(), "temp"))
         if (demo == null) {
@@ -1084,7 +1135,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
         val right = ArrayList<View>()
         if (s.hasProblem) right += problemCard(s)
-        if (s.errorCounts == null) {
+        if (s.errorCounts == null && s.jk == null) {
             val c = ui.card(8)
             c.addView(labelRow("Захисти за весь час", LineIcon.LIST, "counters"))
             c.addView(ui.muted("Скільки разів плата вмикала кожен захист — з'явиться після підключення.", 13f))
@@ -1221,7 +1272,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun setBackground(on: Boolean) {
         if (on == bg.isOn(address)) return
         bg.set(address, on)
-        if (on && batteries.find(address) == null) batteries.remember(address, Batteries.scanNames[address], BmsMatch.Kind.JBD)
+        if (on && batteries.find(address) == null) batteries.remember(address, Batteries.scanNames[address], Batteries.kindOf(host, address))
         RecordService.ensure(host)
         if (on) {
             if (BtAccess.missingPermissions(host).isNotEmpty()) host.requestAccess() else host.requestNotifications()
@@ -1420,7 +1471,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             actions = listOf("Зберегти" to Ui.Kind.PRIMARY, "Скасувати" to Ui.Kind.QUIET),
             onAction = { i ->
                 if (i == 0) {
-                    if (batteries.find(address) == null) batteries.remember(address, Batteries.scanNames[address], BmsMatch.Kind.JBD)
+                    if (batteries.find(address) == null) batteries.remember(address, Batteries.scanNames[address], Batteries.kindOf(host, address))
                     batteries.rename(address, field.text.toString())
                     renderHead()
                 }
