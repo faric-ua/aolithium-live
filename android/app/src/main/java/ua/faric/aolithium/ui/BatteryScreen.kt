@@ -1282,7 +1282,13 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     // ---------- вікна ----------
 
     /** Віджет з цими ж даними: великий і малий, плюс «нема даних» і «ще не було зв'язку» — для перевірки малюнка. */
-    private fun showWidgetPreview() {
+    private fun showWidgetPreview(tries: Int = 0) {
+        // Демо дає перший знімок через секунду-дві після відкриття — дочекатись, інакше всі картинки «порожні»
+        // (знімки CI 19.10 21:07 так і вийшли).
+        if (snapshot == null && demo != null && tries < 10) {
+            handler.postDelayed({ showWidgetPreview(tries + 1) }, 1_000)
+            return
+        }
         val now = System.currentTimeMillis()
         val box = ui.column(10)
         val dens = host.resources.displayMetrics.density
@@ -1294,10 +1300,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
             box.addView(img, if (wDp > hDp) ui.matchWrap() else android.widget.LinearLayout.LayoutParams(ui.dp(wDp), ui.dp(hDp)))
         }
-        val s = snapshot
-        add("Великий 4 × 2", WidgetModel.of(title, s, snapshotAt.takeIf { s != null }, now), 320, 160)
-        add("Малий 2 × 2", WidgetModel.of(title, s, snapshotAt.takeIf { s != null }, now), 160, 160)
-        add("Нема даних 2 год", WidgetModel.of(title, s, now - 2 * 3_600_000L, now), 320, 160)
+        val s = snapshot ?: stale?.first
+        val at = if (snapshot != null) snapshotAt else stale?.second
+        add("Великий 4 × 2", WidgetModel.of(title, s, at, now), 320, 160)
+        add("Малий 2 × 2", WidgetModel.of(title, s, at, now), 160, 160)
+        add("Нема даних 2 год", WidgetModel.of(title, s, (at ?: now) - 2 * 3_600_000L, now), 320, 160)
         add("Ще не було зв'язку", WidgetModel.of(title, null, null, now), 160, 160)
         val dlg = host.overlay.dialog(
             "Віджет", "",

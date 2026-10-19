@@ -67,8 +67,12 @@ object WidgetArt {
             if (center) textAlign = Paint.Align.CENTER
         }
 
-    private fun fit(text: String, p: TextPaint, width: Float): String =
-        TextUtils.ellipsize(text, p, width.coerceAtLeast(1f), TextUtils.TruncateAt.END).toString()
+    /** Не влазить — спершу трохи зменшити шрифт (до 78 %), і лише тоді обрізати «…». */
+    private fun fit(text: String, p: TextPaint, width: Float): String {
+        val base = p.textSize
+        while (p.measureText(text) > width && p.textSize > base * 0.78f) p.textSize *= 0.95f
+        return TextUtils.ellipsize(text, p, width.coerceAtLeast(1f), TextUtils.TruncateAt.END).toString()
+    }
 
     /** Кільце із зарядом і відсотком посередині. */
     private fun ring(c: Canvas, m: WidgetModel.Model, cx: Float, cy: Float, diameter: Float, scale: Float, showNote: Boolean) {
@@ -130,7 +134,8 @@ object WidgetArt {
     private fun wide(c: Canvas, m: WidgetModel.Model, w: Float, h: Float, d: Float) {
         val pad = 16 * d
         val scale = min(1.4f, (h / d) / 170f)
-        val diameter = min(h - 2 * pad, w * 0.36f)
+        // Кільце не ширше третини віджета — праворуч має влізти «вистачить ≈ 9 год 50 хв до 20 %».
+        val diameter = min(min(h - 2 * pad, w * 0.3f), 118 * d * scale)
         ring(c, m, pad + diameter / 2, h / 2, diameter, diameter / (118 * d) * d, showNote = true)
         val x = pad + diameter + 14 * d
         val width = w - x - pad
@@ -139,7 +144,8 @@ object WidgetArt {
         val power = paint((if (m.tone == WidgetModel.Tone.STALE || m.tone == WidgetModel.Tone.EMPTY) 22 else 28) * f, powerColor(m.tone), medium = true)
         val status = paint(14 * f, statusColor(m.tone), medium = true)
         val small = paint(13 * f, Palette.muted)
-        val lines = listOf(name to m.name, power to m.power, status to m.status, small to m.line1, small to m.line2)
+        val small2 = paint(13 * f, Palette.muted)
+        val lines = listOf(name to m.name, power to m.power, status to m.status, small to m.line1, small2 to m.line2)
             .filter { it.second.isNotBlank() }
         val gap = 5 * f
         val total = lines.sumOf { (it.first.textSize * 1.15f).toDouble() }.toFloat() + gap * (lines.size - 1)
