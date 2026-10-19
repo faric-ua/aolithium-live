@@ -10,8 +10,9 @@ import ua.faric.aolithium.core.DemoFrames
  * Той самий текст — `docs/ua/USER_GUIDE.md` у репо (міняти разом).
  * Альбомна (≥ 600 dp) — дві колонки карток.
  */
-class HelpScreen(host: MainActivity, @Suppress("UNUSED_PARAMETER") state: Bundle?) : Screen(host) {
+class HelpScreen(host: MainActivity, state: Bundle?) : Screen(host) {
     override val view: View
+    private val scroll: android.widget.ScrollView
 
     init {
         val cards = listOf(
@@ -78,7 +79,18 @@ class HelpScreen(host: MainActivity, @Suppress("UNUSED_PARAMETER") state: Bundle
                 addView(version(), ui.matchWrap())
             }
         }
-        view = ui.scroll(body)
+        scroll = ui.scroll(body)
+        view = scroll
+        // T26: повернулись з демо — на те саме місце (кнопки демо внизу довідки).
+        state?.getInt(KEY_SCROLL, 0)?.takeIf { it > 0 }?.let { y -> scroll.post { scroll.scrollTo(0, y) } }
+    }
+
+    override fun save(out: Bundle) {
+        out.putInt(KEY_SCROLL, scroll.scrollY)
+    }
+
+    private companion object {
+        const val KEY_SCROLL = "scrollY"
     }
 
     private fun card(icon: LineIcon, title: String, lines: List<String>): View = ui.card(8).apply {
