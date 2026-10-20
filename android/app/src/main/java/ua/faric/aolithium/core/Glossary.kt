@@ -450,11 +450,11 @@ object Glossary {
         e("history", Group.CHARTS, tr("Як записується історія", "How history is recorded"), null,
             tr("Поки застосунок відкритий і на зв'язку, він раз на 10 секунд записує заряд, напругу, струм, температуру й комірки " +
                 "у пам'ять телефона (окремо для кожної батареї). З увімкненим «Запис у фоні» («Ще») — ще й раз на ~5 хв, коли " +
-                "застосунок закритий. Інтернет не потрібен, нікуди не передається. Зберігається 90 днів. «Зберегти CSV» — уся " +
+                "застосунок закритий. Інтернет для цього не потрібен, історія нікуди не передається. Зберігається 90 днів. «Зберегти CSV» — уся " +
                 "історія батареї одним файлом-таблицею (відкривається в Таблицях Google чи Excel).",
                 "While the app is open and connected, every 10 seconds it records charge, voltage, current, temperature " +
                     "and cells to the phone memory (separately for each battery). With \"Background recording\" on (\"More\"), " +
-                    "also every ~5 min when the app is closed. No internet is needed, nothing is sent anywhere. " +
+                    "also every ~5 min when the app is closed. No internet is needed for this, history is not sent anywhere. " +
                     "Kept for 90 days. \"Save CSV\" — the whole battery history in one table file " +
                     "(opens in Google Sheets or Excel)."),
             tr("Розрив на графіку — запису не було понад 12 хв (застосунок закритий і фон вимкнений, або батарея далеко).",

@@ -11,7 +11,11 @@
         android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- Інтернету застосунку не потрібно: дані батареї нікуди не йдуть. -->
+    <!-- T37: інтернет — ЛИШЕ для оновлення застосунку з Google Диска автора (прочитати файл версії й APK; телефон
+         автора — ще й перевірити, що опублікована версія дійшла). Дані батареї нікуди не йдуть. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- T37: відкрити вікно Android «Оновити» для перевіреного APK. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Запис у фоні (v0.2.5): служба з тихим сповіщенням, будильник раз на 5 хв, перезапуск після увімкнення
          телефона й оновлення застосунку; короткий «не спати» лише на час одного читання. -->
@@ -44,6 +48,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- T37: перевірений APK оновлення (cache/updates/) — вікну встановлення Android. Свій провайдер замість
+             androidx FileProvider (бібліотек у застосунку нема): лише читання, лише цей файл. -->
+        <provider
+            android:name=".update.UpdateApkProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <service
             android:name=".bg.RecordService"

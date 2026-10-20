@@ -285,7 +285,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </div>
 
     <div class="facts">
-      <span class="fact uk"><b>Bluetooth</b>, без інтернету</span><span class="fact en"><b>Bluetooth</b>, no internet</span>
+      <span class="fact uk"><b>Bluetooth</b>; інтернет — лише для оновлень</span><span class="fact en"><b>Bluetooth</b>; internet only for updates</span>
       <span class="fact uk">лише <b>читає</b> плату</span><span class="fact en"><b>read-only</b></span>
       <span class="fact uk">запис <b>у фоні</b></span><span class="fact en"><b>background</b> recording</span>
       <span class="fact uk"><b>українська</b> · English</span><span class="fact en"><span lang="uk">Українська</span> · <b>English</b></span>
@@ -334,15 +334,16 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <div class="group-head"><h3 class="uk">Довідка</h3><h3 class="en">Reference</h3><span></span></div>
     <ul class="tiles">
       <li><a class="tile" href="#numbers"><span class="badge"><svg class="ic"><use href="#i-pulse"/></svg></span><span><b class="uk">Що означають числа</b><b class="en">What the numbers mean</b><span class="d uk">норми, і як це звалось в Aolithium 1.3</span><span class="d en">normal ranges, and Aolithium 1.3 names</span></span><span class="chev">›</span></a></li>
-      <li><a class="tile" href="#install"><span class="badge"><svg class="ic"><use href="#i-cloud"/></svg></span><span><b class="uk">Встановити й оновити</b><b class="en">Install and update</b><span class="d uk">меню Termux, телефон без Termux</span><span class="d en">Termux menu, phone without Termux</span></span><span class="chev">›</span></a></li>
-      <li><a class="tile" href="#safety"><span class="badge"><svg class="ic"><use href="#i-lock"/></svg></span><span><b class="uk">Безпека й приватність</b><b class="en">Safety and privacy</b><span class="d uk">лише читання, без інтернету</span><span class="d en">read-only, no internet</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#install"><span class="badge"><svg class="ic"><use href="#i-cloud"/></svg></span><span><b class="uk">Встановити й оновити</b><b class="en">Install and update</b><span class="d uk">меню Termux, телефон без Termux, Google Диск</span><span class="d en">Termux menu, phone without Termux, Google Drive</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#update"><span class="badge"><svg class="ic"><use href="#i-cloud"/></svg></span><span><b class="uk">Оновити з Google Диска</b><b class="en">Update from Google Drive</b><span class="d uk">перевірити й встановити; автору — опублікувати</span><span class="d en">check and install; for the author — publish</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#safety"><span class="badge"><svg class="ic"><use href="#i-lock"/></svg></span><span><b class="uk">Безпека й приватність</b><b class="en">Safety and privacy</b><span class="d uk">лише читання, дані нікуди не йдуть</span><span class="d en">read-only, data goes nowhere</span></span><span class="chev">›</span></a></li>
       <li><a class="tile" href="#changes"><span class="badge"><svg class="ic"><use href="#i-clock"/></svg></span><span><b class="uk">Що змінилось</b><b class="en">What's new</b><span class="d uk">усі версії по порядку</span><span class="d en">all versions in order</span></span><span class="chev">›</span></a></li>
     </ul>
   </section>
 
   <div class="foot">
-    <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Застосунок не має навіть дозволу на інтернет. Без реклами й аналітики.</p>
-    <p class="en">Battery data stays on the phone and is not sent anywhere. The app does not even have the internet permission. No ads, no analytics.</p>
+    <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
+    <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
     <p>Aolithium Live __VERSION__ · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
@@ -382,8 +383,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>Unrestricted in background</b></td><td>so Android does not pause background recording (optional)</td></tr>
     </table>
   </div>
-  <p class="note uk">Реєстрації, акаунта й інтернету не треба. Застосунок ставиться поруч з Aolithium 1.3 і нічого в ньому не чіпає.</p>
-  <p class="note en">No sign-up, no account, no internet. The app installs next to Aolithium 1.3 and does not touch it.</p>
+  <p class="note uk">Реєстрації й акаунта не треба. Інтернет — лише для оновлень застосунку (див. «Оновити з Google Диска»); батареї він не потрібен. Застосунок ставиться поруч з Aolithium 1.3 і нічого в ньому не чіпає.</p>
+  <p class="note en">No sign-up, no account. The internet is used only for app updates (see "Update from Google Drive"); the battery does not need it. The app installs next to Aolithium 1.3 and does not touch it.</p>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/home.webp" alt="Головна: Мої батареї і пошук поруч"><figcaption>Головна: «Мої батареї» і «Шукати батареї поруч».</figcaption></figure>
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/home.webp" alt="Home: My batteries and search nearby"><figcaption>Home: "My batteries" and "Find batteries nearby".</figcaption></figure>
 </section>
@@ -1002,8 +1003,105 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">На A26: меню <b>AOLITHIUM LIVE</b> → <b>4</b> — там покроково, як поставити через браузер (скачати APK з GitHub і дозволити встановлення з браузера).</p>
     <p class="en">On the A26: menu <b>AOLITHIUM LIVE</b> → <b>4</b> — step by step how to install through the browser (download the APK from GitHub and allow installs from the browser).</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v__VERSION__ · build …». Ця інструкція — для версії __VERSION__.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v__VERSION__ · build …". This guide is for version __VERSION__.</p>
+  <div class="panel stack-s">
+    <h3 class="uk">З Google Диска автора (будь-який телефон)</h3><h3 class="en">From the author's Google Drive (any phone)</h3>
+    <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
+    <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
+  </div>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v__VERSION__ · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії __VERSION__.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v__VERSION__ · build …", and the "Installed" line in the "App update" card. This guide is for version __VERSION__.</p>
+</section>
+
+<!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
+<section id="update" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Оновити з Google Диска</h2><h2 class="en">Update from Google Drive</h2>
+    <p class="page-lead uk">Нова версія ставиться <b>поверх</b>: батареї, історія й налаштування лишаються. Головна, унизу — картка «Оновлення застосунку».</p>
+    <p class="page-lead en">A new version installs <b>over</b> the old one: batteries, history and settings stay. Home screen, at the bottom — the "App update" card.</p>
+  </div>
+  <figure class="diagram">
+    <svg viewBox="0 0 360 412">
+      <defs>
+        <marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="d-arrow"/></marker>
+        <marker id="ar7a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="d-arrow-acc"/></marker>
+      </defs>
+      <text class="d-m uk" x="0" y="12">ТЕЛЕФОН АВТОРА</text><text class="d-m en" x="0" y="12">AUTHOR'S PHONE</text>
+      <text class="d-m uk" x="194" y="12">GOOGLE ДИСК</text><text class="d-m en" x="194" y="12">GOOGLE DRIVE</text>
+      <rect class="d-acc" x="0" y="20" width="166" height="54" rx="12"/>
+      <text class="d-t uk" x="83" y="43" text-anchor="middle">Опублікувати</text><text class="d-t en" x="83" y="43" text-anchor="middle">Publish</text>
+      <text class="d-s uk" x="83" y="61" text-anchor="middle">зараз або самому</text><text class="d-s en" x="83" y="61" text-anchor="middle">now or automatically</text>
+      <path class="d-line" d="M166 47H190" marker-end="url(#ar7)"/>
+      <rect class="d-box" x="194" y="20" width="166" height="24" rx="8"/><text class="d-m" x="204" y="36">Aolithium Live.apk</text>
+      <rect class="d-box" x="194" y="50" width="166" height="24" rx="8"/>
+      <text class="d-m uk" x="204" y="66">файл версії .json</text><text class="d-m en" x="204" y="66">version file .json</text>
+      <path class="d-dash" d="M215 74V88H120V80" marker-end="url(#ar7a)"/>
+      <text class="d-tacc uk" x="83" y="104" text-anchor="middle">перевірка через інтернет</text><text class="d-tacc en" x="83" y="104" text-anchor="middle">check over the internet</text>
+      <text class="d-m uk" x="0" y="126">ІНШИЙ ТЕЛЕФОН</text><text class="d-m en" x="0" y="126">OTHER PHONE</text>
+      <path class="d-line" d="M300 74V130" marker-end="url(#ar7)"/>
+      <rect class="d-box" x="40" y="134" width="280" height="40" rx="12"/>
+      <text class="d-t uk" x="180" y="159" text-anchor="middle">Перевірити оновлення</text><text class="d-t en" x="180" y="159" text-anchor="middle">Check for updates</text>
+      <path class="d-line" d="M180 174V192" marker-end="url(#ar7)"/>
+      <rect class="d-box" x="40" y="196" width="280" height="48" rx="12"/>
+      <text class="d-t uk" x="180" y="217" text-anchor="middle">Є нова версія</text><text class="d-t en" x="180" y="217" text-anchor="middle">A new version is available</text>
+      <text class="d-s uk" x="180" y="234" text-anchor="middle">«Завантажити й встановити»</text><text class="d-s en" x="180" y="234" text-anchor="middle">"Download and install"</text>
+      <path class="d-line" d="M180 244V262" marker-end="url(#ar7)"/>
+      <rect class="d-ok" x="40" y="266" width="280" height="80" rx="12"/>
+      <text class="d-tok uk" x="180" y="288" text-anchor="middle">5 перевірок файлу</text><text class="d-tok en" x="180" y="288" text-anchor="middle">5 file checks</text>
+      <text class="d-s uk" x="180" y="308" text-anchor="middle">розмір · SHA-256 · той самий застосунок</text><text class="d-s en" x="180" y="308" text-anchor="middle">size · SHA-256 · the same app</text>
+      <text class="d-s uk" x="180" y="326" text-anchor="middle">новіша версія · той самий ключ підпису</text><text class="d-s en" x="180" y="326" text-anchor="middle">newer version · the same signing key</text>
+      <path class="d-line" d="M180 346V364" marker-end="url(#ar7)"/>
+      <rect class="d-acc" x="40" y="368" width="280" height="40" rx="12"/>
+      <text class="d-t uk" x="180" y="393" text-anchor="middle">Вікно Android «Оновити»</text><text class="d-t en" x="180" y="393" text-anchor="middle">Android "Update" window</text>
+    </svg>
+    <figcaption class="uk">Через інтернет іде лише запит файлів з Диска автора. Про батарею — нічого.</figcaption>
+    <figcaption class="en">Only a request for files from the author's Drive goes over the internet. Nothing about the battery.</figcaption>
+  </figure>
+
+  <h3 class="uk">Перевірити й встановити</h3><h3 class="en">Check and install</h3>
+  <ol class="steps uk">
+    <li><span>Головна, унизу картка «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span>. Застосунок без входу в Google читає маленький файл версії на Диску автора.</span></li>
+    <li><span>«Є нова версія» → <span class="btn prim">Завантажити й встановити</span>. Застосунок завантажує й перевіряє файл; щось не так — нічого не ставить і пише чому.</span></li>
+    <li><span>Уперше Android попросить «Дозволити з цього джерела» → увімкни → «Назад». Встановлення продовжиться саме.</span></li>
+    <li><span>Вікно Android «Оновити» → <b>Оновити</b>. Якщо Google Play Захист попередить — «Усе одно встановити».</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>Home screen, the "App update" card at the bottom → <span class="btn prim">Check for updates</span>. Without signing in to Google, the app reads a small version file on the author's Drive.</span></li>
+    <li><span>"A new version is available" → <span class="btn prim">Download and install</span>. The app downloads and checks the file; if something is wrong, it installs nothing and says why.</span></li>
+    <li><span>The first time, Android asks to "Allow from this source" → turn it on → "Back". The installation continues by itself.</span></li>
+    <li><span>The Android "Update" window → <b>Update</b>. If Google Play Protect warns — "Install anyway".</span></li>
+  </ol>
+  <div class="grid2">
+    <div class="panel stack-s">
+      <h3 class="uk">Перевіряти самому раз на день</h3><h3 class="en">Check by itself once a day</h3>
+      <p class="uk"><span class="btn sel">Так</span> (так і стоїть спершу) — під час відкриття застосунку, тихо. Скаже лише тоді, коли є нова версія. <span class="btn norm">Ні</span> — лише кнопкою.</p>
+      <p class="en"><span class="btn sel">Yes</span> (the default) — when the app opens, quietly. It speaks up only when there is a new version. <span class="btn norm">No</span> — only with the button.</p>
+    </div>
+    <div class="panel stack-s">
+      <h3 class="uk">Інше посилання</h3><h3 class="en">Another link</h3>
+      <p class="uk">Автор каже, що вийшла новіша, а тут «У тебе остання версія»? Скопіюй посилання від автора → <span class="btn norm">Інше посилання</span> у тому ж вікні або в картці. Посилання — на файл <span class="mono">aolithium-live-onovlennia.json</span>, не на APK.</p>
+      <p class="en">The author says a newer one is out, but here it says "You have the latest version"? Copy the link from the author → <span class="btn norm">Another link</span> in the same window or in the card. The link is to the <span class="mono">aolithium-live-onovlennia.json</span> file, not to the APK.</p>
+    </div>
+  </div>
+  <p class="note uk">Перший раз посилання вставляється вручну — автор надсилає його («Поділитися посиланням на оновлення»). Коли автор налаштує файли, посилання вбудують у наступну версію, і далі вставляти нічого не треба. Застосунок пробує і збережене, і вбудоване посилання та бере найновішу версію.</p>
+  <p class="note en">The first time the link is pasted by hand — the author sends it ("Share the update link"). Once the author sets up the files, the link is built into the next version, and after that nothing needs pasting. The app tries both the saved and the built-in link and takes the newest version.</p>
+
+  <h3 class="uk">Для автора: опублікувати версію</h3><h3 class="en">For the author: publish a version</h3>
+  <ol class="steps uk">
+    <li><span>У тій самій картці — <span class="btn norm">Опублікувати цю версію на Диск (автор)</span>.</span></li>
+    <li><span>Один раз: кроки 1–2 — створити два файли на Диску (у вікні вибору ☰ → «Google Диск» → папка → «Зберегти»); кроки 3–4 — у застосунку Диск ⋮ біля файлу → «Надати доступ» → «Усі, хто має посилання» → «Копіювати посилання» → назад і натиснути крок.</span></li>
+    <li><span>Далі після кожної нової версії — лише <span class="btn prim">Опублікувати зараз</span>. Застосунок кладе свій встановлений APK у ті самі файли — посилання не змінюється. Google Диск вивантажує їх у фоні, тож застосунок ще кілька хвилин сам перевіряє через інтернет, що інші телефони бачать саме цю версію: «Опубліковано й перевірено» — дійшло; «НЕ ДІЙШЛО до Диска» — відкрий Google Диск, перевір інтернет і натисни ще раз.</span></li>
+    <li><span><b>Публікувати автоматично</b> → <span class="btn sel">Так</span> (спершу — «Ні») — тоді й натискати нічого не треба: відкрив застосунок новою версією — телефон сам кладе її на Диск і перевіряє. Тихо, без вікон; результат — рядком у картці «Оновлення застосунку».</span></li>
+    <li><span><span class="btn norm">Поділитися посиланням на оновлення</span> — надіслати посилання в чат (щоб його вбудували) або комусь вручну.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>In the same card — <span class="btn norm">Publish this version to Drive (author)</span>.</span></li>
+    <li><span>Once: steps 1–2 — create two files on Drive (in the picker ☰ → "Google Drive" → folder → "Save"); steps 3–4 — in the Drive app ⋮ next to the file → "Share" → "Anyone with the link" → "Copy link" → back, and tap the step.</span></li>
+    <li><span>After each new version — only <span class="btn prim">Publish now</span>. The app puts its installed APK into the same files, so the link does not change. Google Drive uploads them in the background, so for a few more minutes the app checks over the internet that other phones see exactly this version: "Published and checked" — it arrived; "DID NOT REACH Drive" — open Google Drive, check the internet and tap again.</span></li>
+    <li><span><b>Publish automatically</b> → <span class="btn sel">Yes</span> (at first — "No") — then there is nothing to tap: open the app with a new version and the phone puts it on Drive and checks it by itself. Quietly, without windows; the result is a line in the "App update" card.</span></li>
+    <li><span><span class="btn norm">Share the update link</span> — send the link to the chat (to have it built in) or to someone by hand.</span></li>
+  </ol>
+  <p class="warn uk"><b>Жовте попередження у вікні публікації?</b> Файл версії на Диску не той, що вбудований у застосунок. Інші телефони його не побачать — напиши в чат, перш ніж створювати файли заново.</p>
+  <p class="warn en"><b>A yellow warning in the publish window?</b> The version file on Drive is not the one built into the app. Other phones will not see it. Write to the chat before creating the files again.</p>
 </section>
 
 <!-- ================= 17. БЕЗПЕКА ================= -->
@@ -1035,13 +1133,13 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </figure>
   <ul class="dots uk">
     <li><b>Нічого не змінює в платі:</b> ні налаштувань, ні ключів заряду й розряду. Зміна налаштувань колись можлива лише після резервної копії й окремого «так».</li>
-    <li><b>Без інтернету:</b> у застосунку немає навіть дозволу на інтернет. Історія, батареї й налаштування — лише в телефоні.</li>
+    <li><b>Інтернет — лише для оновлень:</b> застосунок читає з Google Диска автора файл версії й APK (картка «Оновлення застосунку»), а перед встановленням перевіряє файл. Історія, батареї й налаштування — лише в телефоні, нікуди не надсилаються.</li>
     <li><b>Ділишся лише ти:</b> CSV зберігається туди, куди вибереш; журнал зв'язку йде, лише коли натиснеш «Поділитися».</li>
     <li><b>Звідки знання:</b> протоколи плат відкриті — бібліотеки aiobmsble, esphome-jbd-bms і esphome-jk-bms (Apache-2.0). Код Aolithium не копіювався й не розбирався.</li>
   </ul>
   <ul class="dots en">
     <li><b>Changes nothing in the BMS:</b> no settings, no charge or discharge switches. Changing settings may come one day, only after a backup and a separate "yes".</li>
-    <li><b>No internet:</b> the app does not even have the internet permission. History, batteries and settings stay on the phone only.</li>
+    <li><b>Internet only for updates:</b> the app reads the version file and the APK from the author's Google Drive ("App update" card) and checks the file before installing. History, batteries and settings stay on the phone only and are not sent anywhere.</li>
     <li><b>Only you share:</b> CSV is saved where you choose; the connection log leaves only when you tap "Share".</li>
     <li><b>Where the knowledge comes from:</b> the BMS protocols are open — the aiobmsble, esphome-jbd-bms and esphome-jk-bms libraries (Apache-2.0). The Aolithium code was not copied or taken apart.</li>
   </ul>

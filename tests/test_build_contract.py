@@ -74,9 +74,24 @@ class BluetoothContract(unittest.TestCase):
         self.assertIn("android.permission.BLUETOOTH_CONNECT", MANIFEST)
         self.assertIn('android:allowBackup="false"', MANIFEST)
 
-    def test_no_internet(self):
-        # Дані батареї нікуди не йдуть.
-        self.assertNotIn("android.permission.INTERNET", MANIFEST)
+    def test_internet_only_for_drive_update(self):
+        # Дані батареї нікуди не йдуть. До T37 тут було «INTERNET у маніфесті нема взагалі». З T37 (faric 20.10,
+        # оновлення з Google Диска, як у Track Catcher) дозвіл є — але лише разом з функцією оновлення, і мережею
+        # в коді користується лише update/DriveHttp.kt, тільки з адресами Google Диска.
+        self.assertIn("android.permission.INTERNET", MANIFEST)
+        self.assertIn("android.permission.REQUEST_INSTALL_PACKAGES", MANIFEST)
+        self.assertIn('android:name=".update.UpdateApkProvider"', MANIFEST)
+        self.assertRegex(MANIFEST, r'UpdateApkProvider"\s+android:authorities="\$\{applicationId\}\.updates"\s+android:exported="false"')
+        self.assertIn("const val VISIBLE", (APP / "core/UpdateFeature.kt").read_text(encoding="utf-8"))
+        net = re.compile(r"openConnection|java\.net\.|\bSocket\b|HttpURLConnection|WebSocket|okhttp")
+        users = sorted(p.relative_to(APP).as_posix() for p in kotlin_sources() if net.search(p.read_text(encoding="utf-8")))
+        self.assertEqual(["update/DriveHttp.kt"], users)
+        drive = (APP / "core/DriveUpdate.kt").read_text(encoding="utf-8") + (APP / "update/DriveHttp.kt").read_text(encoding="utf-8")
+        self.assertEqual({"drive.google.com", "drive.usercontent.google.com"}, set(re.findall(r"https://([a-z0-9.-]+)/", drive)))
+        # Шари, що говорять з батареєю й тримають її дані, мережі не бачать узагалі.
+        for layer in ("ble", "bg", "data", "widget"):
+            for p in (APP / layer).rglob("*.kt"):
+                self.assertNotIn("DriveHttp", p.read_text(encoding="utf-8"), p.name)
 
     def test_app_only_reads_the_board(self):
         """Застосунок лише читає: у плату йдуть тільки команди читання, зібрані Jbd.readCommand."""
@@ -149,6 +164,10 @@ class BluetoothContract(unittest.TestCase):
             "isLocationEnabled": 28,
             "writeDescriptor(cccd, value)": 33,
             "writeCharacteristic(c, bytes, type)": 33,
+            # T37 (оновлення з Диска): ключ підпису й номер збірки APK — новим способом лише з Android 9.
+            "GET_SIGNING_CERTIFICATES": 28,
+            "longVersionCode": 28,
+            "signingInfo": 28,
         }
         for p in kotlin_sources():
             text = p.read_text(encoding="utf-8")
