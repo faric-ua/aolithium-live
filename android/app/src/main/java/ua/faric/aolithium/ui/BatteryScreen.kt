@@ -1096,7 +1096,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun summaryTile(top: String, value: String): View = ui.column(2).apply {
         background = ui.rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12)
         setPadding(ui.dp(11), ui.dp(9), ui.dp(11), ui.dp(9))
-        addView(ui.text(top, 12f, Palette.muted).apply { oneLine(this) }, ui.matchWrap())
+        addView(oneLine(ui.text(top, 12f, Palette.muted)), ui.matchWrap())
         val v = numbers(ui.text(Ui.keepUnits(value), 17f, Palette.text, medium = true))
         oneLine(v)
         if (summaryValuePx > 0f) v.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, summaryValuePx)
@@ -1111,12 +1111,6 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
         }
         addView(v, ui.matchWrap())
-    }
-
-    private fun oneLine(t: TextView) {
-        t.maxLines = 1
-        t.setSingleLine(true)
-        t.ellipsize = android.text.TextUtils.TruncateAt.END
     }
 
     // ---------- «Плата» ----------
