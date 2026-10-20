@@ -20,6 +20,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import ua.faric.aolithium.BuildConfig
 import ua.faric.aolithium.core.DriveUpdate
+import ua.faric.aolithium.core.VersionLine
 import ua.faric.aolithium.core.UpdateFeature
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.update.DriveHttp
@@ -104,7 +105,7 @@ class UpdateUi(private val host: MainActivity) {
     private val prefs: SharedPreferences = host.getSharedPreferences("update", Context.MODE_PRIVATE)
 
     private val installedCode: Long get() = BuildConfig.VERSION_CODE.toLong()
-    private val versionText: String get() = "${BuildConfig.VERSION_NAME} · " + tr("збірка", "build") + " ${BuildConfig.VERSION_CODE}"
+    private val versionText: String get() = VersionLine.text(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toLong(), tr("збірка", "build"))
 
     // ---------- картка на головній ----------
 
@@ -115,7 +116,7 @@ class UpdateUi(private val host: MainActivity) {
             .apply { contentDescription = tr("Інструкція: оновлення", "Guide: updates") },
             LinearLayout.LayoutParams(ui.dp(Ui.MIN_TOUCH_DP), ViewGroup.LayoutParams.WRAP_CONTENT))
         addView(head, ui.matchWrap())
-        addView(ui.fact(tr("Встановлено", "Installed"), versionText), ui.matchWrap())
+        addView(ui.factOneLine(tr("Встановлено", "Installed"), versionText), ui.matchWrap())
         addView(ui.muted(
             if (manifestId() == null) tr(
                 "Посилання на оновлення ще не задано — натисни «Перевірити оновлення» й встав посилання від автора.",
