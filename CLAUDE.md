@@ -78,6 +78,7 @@
 | Віджет (v0.3.1): що писати — без Android, малюнок — Canvas, оновлення | `core/WidgetModel.kt` (+ тест), `widget/WidgetArt.kt`, `widget/Widgets.kt`, `res/xml/widget_*.xml` |
 | «Мої батареї» (пам'ять телефона) | `…/data/Batteries.kt` |
 | Екрани | `…/ui/` (`Palette.kt` — кольори, `Ui.kt` — кнопки/картки; `Overlay`, `LineIcon`, `FlowLayout` — з Track Catcher) |
+| Інструкція (T7): одне джерело обома мовами → сторінка в застосунку (значок ? на головній) | `docs/guide/guide.html` → `scripts/build_guide.py` → `assets/guide/index.html`; картинки — `scripts/guide_images.py`; показ — `ui/GuideScreen.kt`; тест — `tests/test_guide.py` |
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |
 | CI | `.github/workflows/android.yml` (тести, лінтер, збірка, реліз), `checks.yml`, `ui-screens.yml` |
 | Мова інтерфейсу (T12): `tr()`, вибір, перемикачі | `core/Lang.kt`, `data/LangSettings.kt`, `AolithiumApp.kt`, `docs/LANG_EN.md` |
@@ -98,5 +99,10 @@
 - Python: `python3 -m unittest discover -s tests`, `python3 scripts/audit_ui.py`, `python3 scripts/audit_repo.py`.
 - Логи Actions недоступні — усе важливе CI виводить анотаціями: `gh api repos/faric-ua/aolithium-live/check-runs/<id>/annotations`.
 - Знімки екранів без телефона: пуш у `diag/ui-screens` → емулятор (демо-режим) → PNG у гілці `diag/ui-screens-out`.
+- **Інструкція (T7, як у Track Catcher):** текст — лише в `docs/guide/guide.html`, кожен шматок парою `class="uk"` / `class="en"`
+  (тест стереже пари й відсутність кирилиці в англійській). Після правки — `python3 scripts/build_guide.py`. Новий екран чи
+  змінився вигляд — свіжі знімки: пуш у `diag/ui-screens*` → `python3 scripts/guide_images.py <ui-screens>` (набір `g-uk-*`,
+  `g-en-*` у `scripts/ci/ui-screens.sh`). Нова можливість — абзац / рядок / плитка в наявній групі, стиль не міняти.
+  Той самий файл — артефакт «Інструкція Aolithium Live» (`--fragment`, картинки поруч).
 - Ключ підпису: **свій** (`~/.android/aolithium-live.jks`, секрети `AL_*`), створює телефон (меню 7). Не ключ Track Catcher.
 - Пакет `ua.faric.aolithium` (debug — `.dev`); стоїть поруч з оригінальним `com.ao.lithium` 1.3, нічого в ньому не чіпає.

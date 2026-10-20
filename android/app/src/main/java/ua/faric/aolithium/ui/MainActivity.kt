@@ -55,6 +55,12 @@ class MainActivity : Activity() {
     private var returnTo: Page? = null
     /** Розділ інструкції, який відкрити (напр. «background»); null — зміст або там, де була. */
     private var helpSection: String? = null
+    /**
+     * Відкрити інструкцію наново (на [helpSection]), а не там, де залишили. Стан скидаємо в [show] уже ПІСЛЯ того, як
+     * збережено стан поточного екрана: інакше, коли інструкція відкрита й просять інший розділ, вона щойно зберегла б
+     * себе і відкрилась на старому місці (знімки CI p11c/p11e, 20.10).
+     */
+    private var freshHelp = false
     private var screen: Screen? = null
     private val screenStates = Bundle()
     private var started = false
@@ -176,8 +182,8 @@ class MainActivity : Activity() {
 
     /** Інструкція. [section] — відкрити одразу цей розділ («home» — зміст); null — там, де її залишили. */
     fun openHelp(section: String? = null) {
-        if (section != null) screenStates.remove(stateKey(Page.HELP, null))
         helpSection = section?.takeIf { it != "home" }
+        freshHelp = section != null
         show(Page.HELP, null)
     }
 
@@ -193,6 +199,10 @@ class MainActivity : Activity() {
         if (p != page || screen != null) returnTo = if (p == Page.BATTERY && page == Page.HELP) Page.HELP else null
         page = p
         batteryAddress = if (p == Page.BATTERY) address else null
+        if (p == Page.HELP && freshHelp) {
+            screenStates.remove(stateKey(p, null))
+            freshHelp = false
+        }
         val state = screenStates.getBundle(stateKey(p, batteryAddress))
         val s = when (p) {
             Page.HOME -> HomeScreen(this, state)
