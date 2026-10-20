@@ -102,6 +102,13 @@ shot p19f-jk-board-scrolled
 start --es page HELP
 scroll_down; scroll_down; scroll_down
 shot p19g-help-demos
+# T29: у демо JK — своя історія (305 А·год, розкид комірок як на «Комірках»), а не Aolithium.
+start --es demo JK --es dialog tab:CHARTS:D1
+shot p19h-jk-charts 5
+scroll_down
+shot p19i-jk-charts-scrolled
+scroll_down
+shot p19j-jk-charts-scrolled2
 # T25 (відео faric 19.10 22:12): рядок «Зв'язок» сталої висоти — на всіх станах спідометр на тому самому місці.
 for st in CONNECTING READING LOST FAILED LIVE; do
   start --es demo DISCHARGING --es dialog "status:$st"
@@ -145,6 +152,13 @@ for st in LOST LIVE; do
   start --es demo DISCHARGING --es dialog "status:$st"
   shot "p18-link-$st-font130" 4
 done
+# T30 (скрін faric 20.10 03:27): плитки «Відключення світла» — значення в один рядок і зі шрифтом 1.3.
+start --es demo IDLE --es dialog tab:CHARTS:D1
+shot p20-charts-font130 5
+scroll_down
+shot p20b-charts-font130-scrolled
+scroll_down
+shot p20c-charts-font130-scrolled2
 adb shell settings put system font_scale 1.0
 
 # Падіння лише нашого застосунку (системні застосунки емулятора теж іноді падають — їх не рахуємо).

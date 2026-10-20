@@ -40,6 +40,7 @@ import ua.faric.aolithium.core.LinkLine
 import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.SteadyCurrent
+import ua.faric.aolithium.core.TextFit
 import ua.faric.aolithium.core.TimeLeft
 import ua.faric.aolithium.core.WidgetModel
 import ua.faric.aolithium.core.Zones
@@ -123,6 +124,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private var hiCell: Int? = null
     /** Розмір підписів у плитках комірок, якщо довелось зменшити (шрифт 1.3); 0 — звичайний. */
     private var miniCaptionPx = 0f
+    /** T30: спільний розмір значень у плитках підсумків (0 — ще не зменшували) і самі значення поточного ряду. */
+    private var summaryValuePx = 0f
+    private val summaryValues = ArrayList<TextView>()
     private var loCell: Int? = null
     /** Остання година — графік різниці на «Комірках». */
     private var hourPts: List<HistoryPoint>? = null
@@ -1000,11 +1004,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val outages = Outages.find(pts)
         if (outages.isEmpty()) {
             oc.addView(ui.muted("За ${INSIGHT_DAYS} днів у записаній історії відключень не знайдено. Застосунок помічає їх сам: батарея " +
-                "кілька хвилин віддає струм — світла нема; знову заряджається чи стоїть — світло є. Записується, поки застосунок відкритий " +
-                "(запис у фоні — наступна версія).", 13f))
+                "кілька хвилин віддає струм — світла нема; знову заряджається чи стоїть — світло є. Записується, поки застосунок відкритий, " +
+                "а з «Записом у фоні» («Ще») — і коли закритий.", 13f))
         } else {
             val week = outages.filter { it.end > now - 7 * DailyMin.DAY_MS }
             val sumBox = ArrayList<View>()
+            summaryValues.clear()
             sumBox += summaryTile("за 7 днів", "${week.size} " + Fmt.plural(week.size, "відключення", "відключення", "відключень"))
             sumBox += summaryTile("без світла", Fmt.duration(week.sumOf { it.durationMs } / 3_600_000.0))
             sumBox += summaryTile("віддала", if (week.sumOf { it.wh } >= 1000) Fmt.num(week.sumOf { it.wh } / 1000, 1) + " кВт·год" else Fmt.num(week.sumOf { it.wh }, 0) + " Вт·год")
@@ -1028,7 +1033,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 box.addView(miniRow("в середньому ${Fmt.watts(o.avgW)}", "пік ${Fmt.watts(o.peakW)}", Palette.muted))
                 oc.addView(box, ui.matchWrap())
             }
-            oc.addView(ui.muted("Видно лише години, коли застосунок записував (зараз — поки відкритий).", 12.5f))
+            oc.addView(ui.muted("Видно лише години, коли застосунок записував (відкритий або «Запис у фоні»).", 12.5f))
         }
         out += oc
 
@@ -1082,11 +1087,36 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         return out
     }
 
+    /**
+     * Плитка «підпис / значення» (підсумки відключень). T30: обидва рядки — рівно в один рядок, щоб плитки в ряду були
+     * однієї висоти. Значення не влазить — спершу менший шрифт (`TextFit`, однаковий у всіх плитках ряду), і лише якщо
+     * й мінімальний не влазить — «…». Розмір запам'ятовуємо (`summaryValuePx`), як `miniCaptionPx`: картки
+     * перебудовуються — без цього шрифт щоразу «стрибав» би 17 → менше.
+     */
     private fun summaryTile(top: String, value: String): View = ui.column(2).apply {
         background = ui.rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12)
         setPadding(ui.dp(11), ui.dp(9), ui.dp(11), ui.dp(9))
-        addView(ui.text(top, 12f, Palette.muted))
-        addView(numbers(ui.text(Ui.keepUnits(value), 17f, Palette.text, medium = true)))
+        addView(ui.text(top, 12f, Palette.muted).apply { oneLine(this) }, ui.matchWrap())
+        val v = numbers(ui.text(Ui.keepUnits(value), 17f, Palette.text, medium = true))
+        oneLine(v)
+        if (summaryValuePx > 0f) v.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, summaryValuePx)
+        summaryValues += v
+        v.addOnLayoutChangeListener { view, l, _, r, _, _, _, _, _ ->
+            val tv = view as TextView
+            val avail = (r - l - tv.paddingLeft - tv.paddingRight).toFloat()
+            val size = TextFit.size(tv.textSize, tv.paint.measureText(tv.text.toString()), avail, ui.dp(SUMMARY_MIN_DP).toFloat())
+            if (size < tv.textSize - 0.5f) {
+                summaryValuePx = TextFit.shared(summaryValuePx, size)
+                tv.post { for (o in summaryValues) o.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, summaryValuePx) }
+            }
+        }
+        addView(v, ui.matchWrap())
+    }
+
+    private fun oneLine(t: TextView) {
+        t.maxLines = 1
+        t.setSingleLine(true)
+        t.ellipsize = android.text.TextUtils.TruncateAt.END
     }
 
     // ---------- «Плата» ----------
@@ -1540,6 +1570,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val INSIGHT_DAYS = 14L
         /** Висота рядка «№ + мітка» у плитці комірки — з міткою й без однакова (T19). */
         const val HEAD_DP = 24
+        /** T30: значення плитки підсумків — не дрібніше (далі вже «…»). */
+        const val SUMMARY_MIN_DP = 12
         const val INSIGHT_RELOAD_MS = 5 * 60_000L
     }
 }
