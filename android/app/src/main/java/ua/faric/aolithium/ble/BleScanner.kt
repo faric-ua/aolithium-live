@@ -106,6 +106,7 @@ class BleScanner(context: Context) {
         val ids = if (mfr == null) emptyList() else (0 until mfr.size()).map { mfr.keyAt(it) }
         val address = r.device.address
         seen[address] = r.device
+        seenAt[address] = System.currentTimeMillis()
         val kind = BmsMatch.kind(address, name, services, ids)
         val old = found[address]
         val smooth = Signal.smooth(smoothed[address], r.rssi)
@@ -166,6 +167,11 @@ class BleScanner(context: Context) {
          */
         val seen = java.util.concurrent.ConcurrentHashMap<String, BluetoothDevice>()
 
+        /** T46: коли кожен пристрій востаннє бачили в ефірі — старий запис гірший за свіжий пошук (`core/ConnectPlan`). */
+        val seenAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+        fun seenAgoMs(address: String, now: Long = System.currentTimeMillis()): Long? = seenAt[address]?.let { now - it }
+
         /** Коротко пошукати одну адресу. [done] — у головному потоці, null — не знайшлась за [timeoutMs]. */
         fun findOne(context: Context, address: String, timeoutMs: Long, done: (BluetoothDevice?) -> Unit) {
             val main = Handler(Looper.getMainLooper())
@@ -193,6 +199,7 @@ class BleScanner(context: Context) {
                     main.post {
                         if (result.device.address.equals(address, ignoreCase = true)) {
                             seen[result.device.address] = result.device
+                            seenAt[result.device.address] = System.currentTimeMillis()
                             lastRssi[result.device.address] = result.rssi
                             finish(result.device)
                         }

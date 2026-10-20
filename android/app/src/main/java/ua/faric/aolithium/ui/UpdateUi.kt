@@ -209,7 +209,7 @@ class UpdateUi(private val host: MainActivity) {
         val jsonLink = jsonId.isNotBlank()
 
         val box = ui.column(10)
-        box.addView(ui.title(tr("Публікація версії на Диск", "Publishing a version to Drive"), 19f))
+        box.addView(Overlay.header(ui.title(tr("Публікація версії на Диск", "Publishing a version to Drive"), 19f)))
         box.addView(ui.muted(
             tr("Ця версія: ", "This version: ") + versionText + "\n" + (if (pick) tr(
                 "Один раз: вибрати два готові файли на Диску (кроки 1–2), посилання вже вбудовані. " +
@@ -327,10 +327,10 @@ class UpdateUi(private val host: MainActivity) {
         if (apkReady || jsonReady || apkLink || jsonLink) {
             box.addView(ui.button(tr("Почати налаштування заново", "Start the setup again"), Ui.Kind.QUIET) { confirmReset() }, ui.matchWrap())
         }
-        box.addView(ui.button(tr("Закрити", "Close"), Ui.Kind.QUIET) {
+        box.addView(Overlay.footer(ui.button(tr("Закрити", "Close"), Ui.Kind.QUIET) {
             host.overlay.dismiss()
             host.updateChanged()
-        }, ui.matchWrap())
+        }), ui.matchWrap())
         host.overlay.show(KEY_DIALOG_PUBLISH, box, keepScroll = keepScroll)
     }
 
@@ -995,7 +995,7 @@ class UpdateUi(private val host: MainActivity) {
 
     private fun showProgress() {
         val box = ui.column(14)
-        box.addView(ui.title(Updater.progressTitle, 19f))
+        box.addView(Overlay.header(ui.title(Updater.progressTitle, 19f)))
         // Track Catcher (faric 18.10 05:10, відео): кнопка стрибала вниз, коли замість «Копіюю APK…» з'являвся підсумок
         // на 5 рядків. Місце під текст — одразу на весь підсумок: вікно не міняє висоти, кнопка стоїть на місці.
         val status = ui.text(Updater.progressText, 15f, Palette.muted).apply { minLines = PROGRESS_LINES }
@@ -1010,7 +1010,7 @@ class UpdateUi(private val host: MainActivity) {
             host.updateChanged()
         }
         // «Закрити» — у правий кут вікна, ближче до правої руки (Track Catcher T53).
-        box.addView(close, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+        box.addView(Overlay.footer(close), LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             gravity = Gravity.END
         })
         Updater.progressView = status
