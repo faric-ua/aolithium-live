@@ -10,7 +10,7 @@ echo "   Відкрий у браузері (Chrome) адресу:"
 echo
 echo "   github.com/$AL_SLUG/releases/latest"
 echo
-echo "   Внизу «Assets» → Aolithium-Live-v…apk → завантажити → відкрити → «Встановити»."
+echo "   Унизу «Assets» → Aolithium-Live-v…apk → завантажити → відкрити → «Встановити»."
 echo "   Android спитає дозвіл ставити з браузера — дозволити."
 echo
 echo "СПОСІБ 2 — передати файл з цього телефона"

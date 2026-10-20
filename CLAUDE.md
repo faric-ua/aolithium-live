@@ -97,6 +97,7 @@
   https://github.com/Reginer/aosp-android-jar aosp && git -C aosp sparse-checkout set android-36` (20.10).
 - **Мова (T12):** кожен текст для людини — `tr("укр", "англ")`; одиниці — `Fmt.V/A/W/AH…`; словник і пастки —
   `docs/LANG_EN.md`; сторож — `scripts/audit_lang.py` (CI).
+- **Правопис (T38):** українські терміни й граматика — `docs/SPELLING.md` (правильно / не так, спірне — спитати faric).
 - Python: `python3 -m unittest discover -s tests`, `python3 scripts/audit_ui.py`, `python3 scripts/audit_repo.py`.
 - Логи Actions недоступні — усе важливе CI виводить анотаціями: `gh api repos/faric-ua/aolithium-live/check-runs/<id>/annotations`.
 - Знімки екранів без телефона: пуш у `diag/ui-screens` → емулятор (демо-режим) → PNG у гілці `diag/ui-screens-out`.

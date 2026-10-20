@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import ua.faric.aolithium.core.BatterySnapshot
+import ua.faric.aolithium.core.JbdParser
 import ua.faric.aolithium.core.JkExtra
 import ua.faric.aolithium.core.Protection
 import ua.faric.aolithium.core.Ymd
@@ -66,8 +67,12 @@ class LastSnapshot(context: Context) {
         val made = o.optString("made").split('-').takeIf { it.size == 3 }?.let { p ->
             runCatching { Ymd(p[0].toInt(), p[1].toInt(), p[2].toInt()) }.getOrNull()
         }
+        // T38: назви лічильників — ключі в порядку протоколу; збережені до 0.4.5 мали «Переразряд…» — беремо нинішні за номером.
+        val names = JbdParser.ERROR_COUNT_NAMES
         val counts = if (!o.optBoolean("hasCnt")) null else o.optJSONArray("cnt")?.let { a ->
-            (0 until a.length()).map { i -> a.getJSONArray(i).let { it.getString(0) to it.getInt(1) } }
+            (0 until a.length()).map { i ->
+                a.getJSONArray(i).let { (if (a.length() == names.size) names[i] else it.getString(0)) to it.getInt(1) }
+            }
         }
         val prot = o.optJSONArray("prot")?.let { a -> (0 until a.length()).mapNotNull { i -> Protection.entries.firstOrNull { it.name == a.getString(i) } } }.orEmpty()
         return BatterySnapshot(

@@ -89,7 +89,7 @@ class GaugeView(context: Context) : View(context) {
             else -> tr("струму майже нема", "almost no current")
         }
         val zone = Zones.of(soc).title.lowercase()
-        contentDescription = tr("Заряд $soc відсотків, $zone, $dir", "Charge $soc percent, $zone, $dir")
+        contentDescription = tr("Заряд $soc %, $zone, $dir", "Charge $soc percent, $zone, $dir")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

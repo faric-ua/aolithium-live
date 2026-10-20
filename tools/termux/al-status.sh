@@ -9,7 +9,7 @@ echo
 info "Репо на телефоні: $(git branch --show-current) · $(git rev-parse --short HEAD) · версія v$(al_version)"
 if git fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main" 2>/dev/null; then
   behind="$(git rev-list --count HEAD..refs/remotes/origin/main 2>/dev/null || echo 0)"
-  if [ "$behind" = "0" ]; then ok "Меню актуальне"; else warn "На GitHub новіше на $behind коміт(и) — пункт 1"; fi
+  if [ "$behind" = "0" ]; then ok "Меню найновіше"; else warn "На GitHub новіше на $behind коміт(и) — пункт 1"; fi
 fi
 echo
 if al_gh_ready; then
