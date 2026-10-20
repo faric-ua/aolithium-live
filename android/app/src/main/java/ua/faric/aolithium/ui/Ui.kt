@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import ua.faric.aolithium.core.TextFit
 import ua.faric.aolithium.core.tr
 
 /**
@@ -52,6 +53,24 @@ class Ui(val ctx: Context) {
         }
 
     fun title(s: CharSequence, sizeSp: Float = 20f): TextView = text(s, sizeSp, Palette.text, medium = true)
+
+    /**
+     * Текст рівно в один рядок: не влазить — спершу менший шрифт (`TextFit`, не дрібніше [minSp]), далі «…».
+     * T33: назва «Aolithium Live» угорі головної переносилась на 2 рядки, коли поруч «Довідка» й «EN» (українська
+     * ширша), — і вся сторінка під нею стрибала при перемиканні мови.
+     */
+    fun fitOneLine(tv: TextView, minSp: Float): TextView = tv.apply {
+        maxLines = 1
+        setSingleLine(true)
+        ellipsize = TextUtils.TruncateAt.END
+        val minPx = android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, minSp, ctx.resources.displayMetrics)
+        addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ ->
+            val t = v as TextView
+            val avail = (r - l - t.paddingLeft - t.paddingRight).toFloat()
+            val size = TextFit.size(t.textSize, t.paint.measureText(t.text.toString()), avail, minPx)
+            if (size < t.textSize - 0.5f) t.post { t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, size) }
+        }
+    }
 
     fun muted(s: CharSequence, sizeSp: Float = 13f): TextView = text(s, sizeSp, Palette.muted)
 

@@ -140,14 +140,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     /** Історія за [INSIGHT_DAYS] днів — відключення, найнижчий по днях, хто відстає, зарядний. */
     private var insightPts: List<HistoryPoint>? = null
     private var insightLoadedAt = 0L
-    /** Хто зараз «найвища» / «найнижча» — справжні, «липкі» лише між рівними (T19, T24). */
-    private var hiCell: Int? = null
     /** Розмір підписів у плитках комірок, якщо довелось зменшити (шрифт 1.3); 0 — звичайний. */
     private var miniCaptionPx = 0f
     /** T30: спільний розмір значень у плитках підсумків (0 — ще не зменшували) і самі значення поточного ряду. */
     private var summaryValuePx = 0f
     private val summaryValues = ArrayList<TextView>()
-    private var loCell: Int? = null
     /** Остання година — графік різниці на «Комірках». */
     private var hourPts: List<HistoryPoint>? = null
     private var hourLoadedAt = 0L
@@ -739,17 +736,15 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 else ui.pill(tr("▲ Віддає · ${Fmt.amps(-s.current)}", "▲ Discharging · ${Fmt.amps(-s.current)}"), Ui.Tone.BAD)
                 card.addView(FlowLayout(host, ui.dp(8), ui.dp(6)).apply { addView(pill) }, ui.matchWrap())
                 card.addView(ui.muted(tr("Комірки з'єднані ланцюжком — струм через усі однаковий. А напруга росте по-різному: дивись «за 1 хв».",
-                    "Cells are in series — the same current flows through all. But voltage grows differently: see \"per 1 min\"."), 13f))
+                    "Cells are in series — the same current flows through all. But voltage grows differently: see \"per min\"."), 13f))
             }
             val dev = CellTrend.fromAverage(s.cellsMv)
             val trend = if (data == Data.LIVE) CellTrend.perMinute(cellSamples.toList()) else null
-            val (hi, lo) = CellTrend.extremes(s.cellsMv, hiCell, loCell)
-            hiCell = hi
-            loCell = lo
+            val (hi, lo) = CellTrend.marks(s.cellsMv)
             // Якщо хоч одна вирівнюється — місце під мітку є в кожній плитці, щоб усі були однієї висоти.
             val anyBalancing = s.cellsMv.indices.any { (it + 1) in s.balancingCells }
             val tiles = s.cellsMv.mapIndexed { i, mv ->
-                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i == hi, isLo = i == lo, balancing = (i + 1) in s.balancingCells, anyBalancing = anyBalancing)
+                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i in hi, isLo = i in lo, balancing = (i + 1) in s.balancingCells, anyBalancing = anyBalancing)
             }
             card.addView(ui.grid(tiles, perRow = if (ui.twoPane && tiles.size > 2) 4 else 2), ui.matchWrap())
             s.deltaMv?.let { d -> card.addView(fact(tr("Різниця", "Difference"), "${Fmt.millivolts(d)} — ${s.deltaVerdict!!.title}",
@@ -915,7 +910,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             shownPerMin < 0 -> "▼ −${-shownPerMin} ${Fmt.MV}" to Palette.danger
             else -> tr("без змін", "no change") to Palette.muted
         }
-        tile.addView(miniRow(tr("за 1 хв", "per 1 min"), t, c))
+        tile.addView(miniRow(tr("за 1 хв", "per min"), t, c))
         if (anyBalancing) {
             val pill = ui.pill(tr("≈ вирівнюється", "≈ balancing"), Ui.Tone.VIOLET).apply {
                 textSize = 11.5f
@@ -1206,7 +1201,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 val often = cellNo(lead + 1) + " · " + tr("${r.lowestCount[lead]} з ${r.episodes}", "${r.lowestCount[lead]} of ${r.episodes}")
                 lc.addView(fact(tr("Найчастіше найнижча", "Most often lowest"), often, "laggard", Palette.warning, known = true))
             }
-            lc.addView(fact(tr("Різниця в кінці заряду", "Difference at end of charge"), "${r.deltas.min()}–${r.deltas.max()} ${Fmt.MV}", "laggard",
+            lc.addView(fact(tr("Різниця в кінці заряду", "Difference at end of charge"), (if (r.deltas.min() == r.deltas.max()) "${r.deltas.min()}" else "${r.deltas.min()}–${r.deltas.max()}") + " ${Fmt.MV}", "laggard",
                 if (r.deltas.max() >= BatterySnapshot.Verdict.WATCH_FROM_MV) Palette.warning else Palette.success, known = true))
             lc.addView(ui.muted(tr("Це не поломка: одна комірка вгорі трохи «менша», плата її підтягує. Тривожно, якщо різниця в кінці заряду росте від тижня до тижня.",
                 "This is not a fault: one cell is a bit \"smaller\" at the top, the BMS pulls it along. Worry if the end-of-charge difference grows week by week."), 12.5f))
@@ -1554,7 +1549,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     /** «Назва ············ значення ⓘ» — весь рядок натискається. */
     private fun fact(name: String, value: CharSequence, info: String, color: Int = Palette.text, known: Boolean = false): View {
         val none = data == Data.NONE && !known
-        return ui.fact(name, (if (none) DASH else value).toString() + "  $INFO", if (none) Palette.muted else color).apply { clickableInfo(this, info) }
+        return ui.fact(name, (if (none) DASH else value).toString() + "\u00A0\u00A0$INFO", if (none) Palette.muted else color).apply { clickableInfo(this, info) }
     }
 
     private fun infoRow(title: String, id: String): View = ui.row(8).apply {

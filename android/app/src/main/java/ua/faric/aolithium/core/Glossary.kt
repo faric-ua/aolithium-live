@@ -199,7 +199,7 @@ object Glossary {
                 "Допомагає повний заряд і час на балансування.",
                 "Over 100 mV at idle — imbalance: one cell hits protection first, and the battery gives less. " +
                     "A full charge and time for balancing help."))
-        e("cellTrend", Group.CELLS, tr("Комірка: від середньої і за 1 хв", "Cell: from average and per 1 min"), null,
+        e("cellTrend", Group.CELLS, tr("Комірка: від середньої і за 1 хв", "Cell: from average and per min"), null,
             tr("«Від середньої» — на скільки мілівольт комірка вища (+) чи нижча (−) за середню з усіх. " +
                 "«За 1 хв» — як змінилась її напруга за останню хвилину: ▲ зелене — росте (заряджається), ▼ червоне — падає. " +
                 "Струм через усі комірки однаковий (вони з'єднані ланцюжком), а от напруга росте по-різному — " +

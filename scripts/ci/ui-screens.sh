@@ -205,6 +205,27 @@ adb shell settings put system font_scale 1.0
 adb shell am force-stop "$PKG"
 start --es lang uk --es page HOME
 shot e11-home-back-uk 5
+# T33 (відео faric 20.10 06:21): вужчий екран, як у A26 (щільність 450) — назва «Aolithium Live» в один рядок обома
+# мовами (раніше переносилась і сторінка стрибала), рівні комірки 3,329 / 3,329 — обидві з рамкою «найвища».
+adb shell wm density 450
+sleep 3
+start --es page HOME
+shot n01-home-uk-narrow 4
+start --es demo IDLE --es dialog tab:CELLS
+shot n02-cells-uk-narrow 4
+start --es demo IDLE --es dialog tab:BOARD
+shot n03-board-uk-narrow 4
+adb shell am force-stop "$PKG"
+start --es lang en --es page HOME
+shot n04-home-en-narrow 5
+start --es demo IDLE --es dialog tab:CELLS
+shot n05-cells-en-narrow 4
+start --es demo IDLE --es dialog tab:BOARD
+shot n06-board-en-narrow 4
+adb shell am force-stop "$PKG"
+start --es lang uk --es page HOME
+adb shell wm density reset
+sleep 2
 
 # Падіння лише нашого застосунку (системні застосунки емулятора теж іноді падають — їх не рахуємо).
 adb logcat -d -b crash > "$OUT/crash-all.txt" || true
