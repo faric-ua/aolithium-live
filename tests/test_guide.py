@@ -145,6 +145,19 @@ class GuideTests(unittest.TestCase):
         self.assertNotIn("<script src=", self.html)
         self.assertNotIn("<link ", self.html)
 
+    def test_images_reserve_space(self):
+        # T36: місце на сторінці відновлюється після перезавантаження — картинки мусять займати місце ще до завантаження.
+        for tag in re.findall(r"<img [^>]*>", self.html):
+            self.assertRegex(tag, r'width="\d+" height="\d+"', tag)
+
+    def test_app_hooks(self):
+        # T35: у застосунку свої «UA / EN» угорі — на сторінці вони сховані, а мову ставить window.guideSetLang.
+        self.assertRegex(self.html, r"html\.in-app \.langs\{display:none")
+        self.assertIn("window.guideSetLang", self.html)
+        kt = (KOTLIN / "ui/GuideScreen.kt").read_text(encoding="utf-8")
+        self.assertIn("guideSetLang", kt)
+        self.assertIn("fresh=1", kt)
+
     def test_languages_come_in_pairs(self):
         # Кожен текст українською (class="uk") — і одразу за ним той самий елемент англійською (class="en").
         problems = []

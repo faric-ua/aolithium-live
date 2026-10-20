@@ -21,7 +21,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 html[lang="en"] .uk, html:not([lang="en"]) .en{display:none !important}
-html:not(.in-app) .app-only, html.in-app .web-only{display:none !important}
+html:not(.in-app) .app-only, html.in-app .web-only, html.in-app .langs{display:none !important}
 body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:16px; line-height:1.55}
 .wrap{max-width:780px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-top:18px; padding-bottom:56px}
 h1,h2,h3{margin:0; line-height:1.15}
@@ -384,8 +384,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </div>
   <p class="note uk">Реєстрації, акаунта й інтернету не треба. Застосунок ставиться поруч з Aolithium 1.3 і нічого в ньому не чіпає.</p>
   <p class="note en">No sign-up, no account, no internet. The app installs next to Aolithium 1.3 and does not touch it.</p>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/home.webp" alt="Головна: Мої батареї і пошук поруч"><figcaption>Головна: «Мої батареї» і «Шукати батареї поруч».</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/home.webp" alt="Home: My batteries and search nearby"><figcaption>Home: "My batteries" and "Find batteries nearby".</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/home.webp" alt="Головна: Мої батареї і пошук поруч"><figcaption>Головна: «Мої батареї» і «Шукати батареї поруч».</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/home.webp" alt="Home: My batteries and search nearby"><figcaption>Home: "My batteries" and "Find batteries nearby".</figcaption></figure>
 </section>
 
 <!-- ================= 2. ПІДКЛЮЧИТИ ================= -->
@@ -437,8 +437,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <figcaption class="uk">Одночасно плату читає лише один застосунок. Сховай Aolithium Live — за 5 с плата вільна для іншого.</figcaption>
     <figcaption class="en">Only one app reads the BMS at a time. Hide Aolithium Live — in 5 s the BMS is free for another.</figcaption>
   </figure>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/now-charging.webp" alt="Батарея на зв'язку, вкладка Зараз"><figcaption>Підключено: угорі «На зв'язку», нижче — вкладка «Зараз».</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/now-charging.webp" alt="Battery connected, Now tab"><figcaption>Connected: "Connected" at the top, the "Now" tab below.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/now-charging.webp" alt="Батарея на зв'язку, вкладка Зараз"><figcaption>Підключено: угорі «На зв'язку», нижче — вкладка «Зараз».</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/now-charging.webp" alt="Battery connected, Now tab"><figcaption>Connected: "Connected" at the top, the "Now" tab below.</figcaption></figure>
 </section>
 
 <!-- ================= 3. НЕ ВИДНО / ЗВ'ЯЗОК ================= -->
@@ -477,8 +477,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk"><b>Не допомогло?</b> «Журнал зв'язку» (торкни рядок «Зв'язок» або «Ще») → «Поділитися» → надішли Claude. У журналі — що і коли відповіла плата, без особистих даних.</p>
     <p class="en"><b>Still no luck?</b> "Connection log" (tap the "Connection" line, or "More") → "Share" → send it to Claude. The log shows what the BMS answered and when, with no personal data.</p>
   </div>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/link-lost.webp" alt="Рядок Зв'язок втрачено з кнопкою Ще раз"><figcaption>«Зв'язок втрачено»: рядок той самий, з'явилась кнопка «Ще раз», нижче — останні дані.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/link-lost.webp" alt="Connection lost line with Retry button"><figcaption>"Connection lost": the same line, a "Retry" button, the last data below.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/link-lost.webp" alt="Рядок Зв'язок втрачено з кнопкою Ще раз"><figcaption>«Зв'язок втрачено»: рядок той самий, з'явилась кнопка «Ще раз», нижче — останні дані.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/link-lost.webp" alt="Connection lost line with Retry button"><figcaption>"Connection lost": the same line, a "Retry" button, the last data below.</figcaption></figure>
 </section>
 
 <!-- ================= 4. ЗАРАЗ ================= -->
@@ -529,10 +529,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>"BMS state"</b>: charge and discharge allowed, whether it balances cells, whether a protection triggered. If it did, a red "What triggered" card appears at the top, explaining what to do.</li>
   </ul>
   <div class="shots">
-    <figure class="shot uk"><img loading="lazy" src="img/uk/now-discharging.webp" alt="Світла нема: червоні вати й вистачить на"><figcaption>Світла нема: червоні вати, «Вистачить на».</figcaption></figure>
-    <figure class="shot en"><img loading="lazy" src="img/en/now-discharging.webp" alt="No power: red watts and lasts for"><figcaption>No power: red watts, "Lasts for".</figcaption></figure>
-    <figure class="shot uk"><img loading="lazy" src="img/uk/until-full.webp" alt="Заряджається: до повної"><figcaption>Заряджається: «До повної» і скільки дасть година.</figcaption></figure>
-    <figure class="shot en"><img loading="lazy" src="img/en/until-full.webp" alt="Charging: until full"><figcaption>Charging: "Until full" and what an hour adds.</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/now-discharging.webp" alt="Світла нема: червоні вати й вистачить на"><figcaption>Світла нема: червоні вати, «Вистачить на».</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/now-discharging.webp" alt="No power: red watts and lasts for"><figcaption>No power: red watts, "Lasts for".</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/until-full.webp" alt="Заряджається: до повної"><figcaption>Заряджається: «До повної» і скільки дасть година.</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/until-full.webp" alt="Charging: until full"><figcaption>Charging: "Until full" and what an hour adds.</figcaption></figure>
   </div>
 </section>
 
@@ -559,8 +559,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </ul>
   <p class="note uk">У Logic Power (JK BMS) тут ще балансир — з якої комірки в яку переливає і скільки ампер — та опір дроту кожної комірки (див. «Logic Power»).</p>
   <p class="note en">For Logic Power (JK BMS) there is also the balancer — from which cell to which it moves charge, and how many amps — and each cell's wire resistance (see "Logic Power").</p>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/cells.webp" alt="Комірки: найнижча, найвища, вирівнюється"><figcaption>Заряд з балансуванням: №1 найнижча, №2 найвища й вирівнюється.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/cells.webp" alt="Cells: lowest, highest, balancing"><figcaption>Charging with balancing: #1 lowest, #2 highest and balancing.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/cells.webp" alt="Комірки: найнижча, найвища, вирівнюється"><figcaption>Заряд з балансуванням: №1 найнижча, №2 найвища й вирівнюється.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/cells.webp" alt="Cells: lowest, highest, balancing"><figcaption>Charging with balancing: #1 lowest, #2 highest and balancing.</figcaption></figure>
 </section>
 
 <!-- ================= 6. ГРАФІКИ ================= -->
@@ -601,10 +601,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>Where the data comes from:</b> while the app is open and connected — a record every 10 s; with "Background recording" — also every ~5 min while it is closed. Kept for 90 days on the phone.</li>
   </ul>
   <div class="shots">
-    <figure class="shot uk"><img loading="lazy" src="img/uk/outages.webp" alt="Відключення світла"><figcaption>«Відключення світла»: плитки за 7 днів і кожне відключення.</figcaption></figure>
-    <figure class="shot en"><img loading="lazy" src="img/en/outages.webp" alt="Power outages"><figcaption>"Power outages": tiles for 7 days and each outage.</figcaption></figure>
-    <figure class="shot uk"><img loading="lazy" src="img/uk/charts-days.webp" alt="Найнижчий заряд по днях"><figcaption>«Найнижчий заряд по днях» і підсумок за 24 год; нижче — «Хто відстає», «Зарядний».</figcaption></figure>
-    <figure class="shot en"><img loading="lazy" src="img/en/charts-days.webp" alt="Lowest charge by day"><figcaption>"Lowest charge by day" and the 24 h summary; further down — "Lagging cell", "Charger".</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/outages.webp" alt="Відключення світла"><figcaption>«Відключення світла»: плитки за 7 днів і кожне відключення.</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/outages.webp" alt="Power outages"><figcaption>"Power outages": tiles for 7 days and each outage.</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/charts-days.webp" alt="Найнижчий заряд по днях"><figcaption>«Найнижчий заряд по днях» і підсумок за 24 год; нижче — «Хто відстає», «Зарядний».</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/charts-days.webp" alt="Lowest charge by day"><figcaption>"Lowest charge by day" and the 24 h summary; further down — "Lagging cell", "Charger".</figcaption></figure>
   </div>
 </section>
 
@@ -625,8 +625,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>BMS:</b> type (JBD or JK), name, software version, manufacture date, how many cells and temperature sensors.</li>
     <li><b>Protections, all time:</b> how many times the BMS turned on each protection. Tap a row — what it is and what to do. "Cell overcharge" at the end of charge — a hint to check the charger voltage.</li>
   </ul>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/board.webp" alt="Вкладка Плата"><figcaption>«Плата»: здоров'я і все про плату.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/board.webp" alt="BMS tab"><figcaption>"BMS": health and everything about the board.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/board.webp" alt="Вкладка Плата"><figcaption>«Плата»: здоров'я і все про плату.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/board.webp" alt="BMS tab"><figcaption>"BMS": health and everything about the board.</figcaption></figure>
 </section>
 
 <!-- ================= 8. ЩЕ ================= -->
@@ -663,8 +663,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Кожен рядок чи картка з ⓘ — торкнись, і відкриється пояснення: що це, яка норма, коли звернути увагу.</p>
     <p class="en">Tap any line or card with ⓘ to open an explanation: what it is, what is normal, when to pay attention.</p>
   </div>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/info.webp" alt="Вікно пояснення ⓘ"><figcaption>Пояснення за ⓘ: зони заряду.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/info.webp" alt="Explanation window ⓘ"><figcaption>An ⓘ explanation: charge zones.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/info.webp" alt="Вікно пояснення ⓘ"><figcaption>Пояснення за ⓘ: зони заряду.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/info.webp" alt="Explanation window ⓘ"><figcaption>An ⓘ explanation: charge zones.</figcaption></figure>
 </section>
 
 <!-- ================= 9. ЗАПИС У ФОНІ ================= -->
@@ -794,8 +794,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li>The "cell overcharge" protection at the end of charge means "Battery full", not an alarm.</li>
     <li><span class="btn norm">Test notifications</span> — the shade shows "Test: power outage" with sound; tap it and the battery opens.</li>
   </ul>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: сім перемикачів.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": seven switches.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: сім перемикачів.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": seven switches.</figcaption></figure>
 </section>
 
 <!-- ================= 11. ВІДЖЕТ ================= -->
@@ -825,8 +825,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li>Updates with each record — every ~5 min with "Background recording". After 15 min without data it turns grey and shows the last record time.</li>
     <li>Shows the battery with "Background recording", or if there is none, the one last connected. Tap it to open the battery.</li>
   </ul>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/widget.webp" alt="Віджети великий і малий"><figcaption>Великий і малий віджет (світла нема), нижче — як виглядає «нема даних».</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/widget.webp" alt="Large and small widgets"><figcaption>The large and small widget (no power), below — how "no data" looks.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/widget.webp" alt="Віджети великий і малий"><figcaption>Великий і малий віджет (світла нема), нижче — як виглядає «нема даних».</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/widget.webp" alt="Large and small widgets"><figcaption>The large and small widget (no power), below — how "no data" looks.</figcaption></figure>
 </section>
 
 <!-- ================= 12. LOGIC POWER ================= -->
@@ -868,8 +868,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <p class="en">The screens are checked on the demo (the same frames a JK BMS sends). On the real Logic Power battery the check is still ahead; if something is wrong — "Connection log" → "Share" → Claude.</p>
     </div>
   </div>
-  <figure class="shot uk"><img loading="lazy" src="img/uk/jk-cells.webp" alt="Комірки JK з балансиром"><figcaption>Демо Logic Power: комірки JK під час заряду; картка балансира — нижче.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" src="img/en/jk-cells.webp" alt="JK cells with balancer"><figcaption>Logic Power demo: JK cells while charging; the balancer card is further down.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/jk-cells.webp" alt="Комірки JK з балансиром"><figcaption>Демо Logic Power: комірки JK під час заряду; картка балансира — нижче.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/jk-cells.webp" alt="JK cells with balancer"><figcaption>Logic Power demo: JK cells while charging; the balancer card is further down.</figcaption></figure>
 </section>
 
 <!-- ================= 13. ДЕМО ================= -->
@@ -1057,6 +1057,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.5</b> · 20.10.2026</td><td>інструкція пам'ятає місце в кожному розділі (і після демо); її «UA / EN» — у рядку з «← Батареї»; оновлення з Google Диска</td></tr>
       <tr><td class="k"><b>0.4.4</b> · 20.10.2026</td><td>ця інструкція — двома мовами, зі схемами й знімками (замість старої «Довідки»); на головній — «UA» / «EN» і значок ?, кнопки однакові, назва більша</td></tr>
       <tr><td class="k"><b>0.4.3</b> · 20.10.2026</td><td>головна не стрибає при зміні мови; рівні комірки — обидві з рамкою; ⓘ не падає на новий рядок</td></tr>
       <tr><td class="k"><b>0.4.2</b> · 20.10.2026</td><td>англійська мова; рядки відключень не ховають відсоток</td></tr>
@@ -1080,6 +1081,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.5</b> · 20.10.2026</td><td>the guide remembers your place in every section (also after a demo); its "UA / EN" is in the row with "← Batteries"; update from Google Drive</td></tr>
       <tr><td class="k"><b>0.4.4</b> · 20.10.2026</td><td>this guide — in two languages, with diagrams and screenshots (instead of the old "Help"); home shows "UA" / "EN" and a ? icon, equal buttons, a bigger name</td></tr>
       <tr><td class="k"><b>0.4.3</b> · 20.10.2026</td><td>home does not jump when the language changes; equal cells both get a frame; ⓘ no longer drops to a new line</td></tr>
       <tr><td class="k"><b>0.4.2</b> · 20.10.2026</td><td>English language; outage rows no longer hide the percent</td></tr>
@@ -1118,20 +1120,35 @@ details > div{padding:0 0 12px; color:var(--muted)}
   });
   if (query.app === '1') root.classList.add('in-app');
 
-  // Мова: ?lang= (застосунок передає свою) → вибір на цій сторінці → українська.
-  function stored() { try { return localStorage.getItem('guide-lang'); } catch (e) { return null; } }
-  function setLang(l, save) {
+  // Пам'ять сторінки (localStorage; немає — працює й без неї).
+  function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function save(key, v) { try { localStorage.setItem(key, v); } catch (e) {} }
+  function drop(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+  // fresh=1 — застосунок відкрив інструкцію наново (значок ?, «Ще» → «Інструкція»): забути місця й узяти його мову.
+  // Прибираємо прапорець з адреси, щоб після демо (сторінка перезавантажується) це вже не був «новий» відкрив.
+  var fresh = query.fresh === '1';
+  if (fresh) {
+    drop('guide-pos');
+    if (query.lang) save('guide-lang', query.lang);
+    try { history.replaceState(null, '', location.href.replace(/([?&])fresh=1&?/, '$1').replace(/[?&](#|$)/, '$1')); } catch (e) {}
+  }
+
+  // Мова: застосунок передає свою (?lang=) при новому відкритті; далі — та, що вибрана (тут або вгорі застосунку).
+  function setLang(l, keep) {
     root.lang = l === 'en' ? 'en' : 'uk';
     Array.prototype.forEach.call(document.querySelectorAll('.langs button'), function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-lang') === root.lang ? 'true' : 'false');
     });
     document.title = root.lang === 'en' ? 'Aolithium Live guide' : 'Інструкція Aolithium Live';
-    if (save) { try { localStorage.setItem('guide-lang', root.lang); } catch (e) {} }
+    if (keep) save('guide-lang', root.lang);
   }
-  setLang(query.lang || stored() || 'uk', false);
+  setLang(load('guide-lang') || query.lang || 'uk', false);
   Array.prototype.forEach.call(document.querySelectorAll('.langs button'), function (b) {
     b.addEventListener('click', function () { setLang(b.getAttribute('data-lang'), true); });
   });
+  // T35: перемикач «UA / EN» у верхньому рядку застосунку кличе це.
+  window.guideSetLang = function (l) { setLang(l, true); };
 
   var home = document.getElementById('home');
   var pages = Array.prototype.slice.call(document.querySelectorAll('section.page'));
@@ -1160,6 +1177,31 @@ details > div{padding:0 0 12px; color:var(--muted)}
     p.insertBefore(bar, p.firstChild);
   });
 
+  // T36 (faric 20.10): кожен вигляд (зміст і кожен розділ) пам'ятає, докуди його прогорнули. Повернення («Назад»,
+  // «← Зміст», з демо) — туди ж; перехід уперед (плитка, «Далі →», «← Назад» у підвалі) — з початку розділу.
+  var pos = {};
+  try { pos = JSON.parse(load('guide-pos') || '{}') || {}; } catch (e) { pos = {}; }
+  var current = 'home', forward = false, restoring = false, timer = 0;
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+    if (!a) return;
+    forward = a.getAttribute('href') !== '#home';
+    setTimeout(function () { forward = false; }, 600); // той самий розділ — hashchange не буде
+  }, true);
+  window.addEventListener('scroll', function () {
+    if (restoring) return;
+    clearTimeout(timer);
+    timer = setTimeout(function () { pos[current] = Math.round(window.scrollY); save('guide-pos', JSON.stringify(pos)); }, 150);
+  }, { passive: true });
+  function scrollToSaved(y) {
+    restoring = true;
+    window.scrollTo(0, y);
+    // Картинки й шрифти ще можуть догружатись — повторити, коли все готове.
+    requestAnimationFrame(function () { window.scrollTo(0, y); restoring = false; });
+    if (document.readyState !== 'complete') window.addEventListener('load', function () { if (current === shownId) window.scrollTo(0, y); }, { once: true });
+  }
+  var shownId = 'home';
+
   function show() {
     var id = location.hash.slice(1);
     var target = id ? document.getElementById(id) : null;
@@ -1167,6 +1209,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     home.hidden = isPage;
     pages.forEach(function (p) { p.hidden = p !== target; });
     var shown = isPage ? target : home;
+    current = shownId = isPage ? id : 'home';
     shown.classList.remove('enter'); void shown.offsetWidth; shown.classList.add('enter');
     if (isPage) {
       var i = order.indexOf(id), prev = order[i - 1], next = order[i + 1], html = '';
@@ -1177,7 +1220,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     } else {
       pager.hidden = true;
     }
-    window.scrollTo(0, 0);
+    var y = forward ? 0 : (pos[current] || 0);
+    forward = false;
+    if (y === 0) delete pos[current];
+    scrollToSaved(y);
   }
   window.addEventListener('hashchange', show);
   show();
