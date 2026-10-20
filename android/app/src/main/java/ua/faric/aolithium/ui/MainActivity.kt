@@ -27,6 +27,7 @@ import ua.faric.aolithium.core.Lang
 import ua.faric.aolithium.core.UpdateFeature
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.LangSettings
+import ua.faric.aolithium.guard.GuardRunner
 import ua.faric.aolithium.widget.Widgets
 
 /**
@@ -429,6 +430,7 @@ class MainActivity : Activity() {
         // Запис у фоні ввімкнено, а службу Android зупинив (оновлення, «Очистити все» в диспетчері задач) —
         // запускаємо знову, поки застосунок на екрані (з фону Android 12+ не дозволяє).
         if (!RecordService.running) RecordService.ensure(this, RecordService.ACTION_TICK)
+        GuardRunner.ensure(this) // T48: сторож увімкнено — переконатись, що опитує бота
         // T37: оновлення з Google Диска — тиха перевірка раз на день / автопублікація автора. Сховано — нічого.
         if (UpdateFeature.VISIBLE) {
             Updater.attach(this)

@@ -259,6 +259,11 @@ guide_set() {
   shot "g-$L-alerts"
   start --es demo DISCHARGING --es dialog widgets
   shot "g-$L-widget" 10
+  # T48: «Ще» → «Сторож (Telegram)» — у демо так, ніби налаштовано (вигадані бот, код і люди); і вікно налаштування.
+  start --es demo IDLE --es dialog guard:card
+  shot "g-$L-guard" 5
+  start --es demo IDLE --es dialog guard:setup
+  shot "g-$L-guard-setup" 4
   start --es demo JK --es dialog tab:CELLS
   shot "g-$L-jk-cells" 4
 }

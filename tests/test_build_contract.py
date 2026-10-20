@@ -74,10 +74,11 @@ class BluetoothContract(unittest.TestCase):
         self.assertIn("android.permission.BLUETOOTH_CONNECT", MANIFEST)
         self.assertIn('android:allowBackup="false"', MANIFEST)
 
-    def test_internet_only_for_drive_update(self):
-        # Дані батареї нікуди не йдуть. До T37 тут було «INTERNET у маніфесті нема взагалі». З T37 (faric 20.10,
-        # оновлення з Google Диска, як у Track Catcher) дозвіл є — але лише разом з функцією оновлення, і мережею
-        # в коді користується лише update/DriveHttp.kt, тільки з адресами Google Диска.
+    def test_internet_only_for_drive_update_and_guard(self):
+        # Дані батареї нікуди не йдуть, крім Telegram-бота власника, і лише коли він сам увімкнув сторожа (T48).
+        # До T37 тут було «INTERNET у маніфесті нема взагалі». З T37 (оновлення з Google Диска) — мережею користується
+        # update/DriveHttp.kt, лише з адресами Диска. З T48 (faric 21.10 01:53, «Сторож (Telegram)») — ще
+        # guard/TelegramHttp.kt, лише api.telegram.org, і кличе його лише guard/GuardRunner.kt.
         self.assertIn("android.permission.INTERNET", MANIFEST)
         self.assertIn("android.permission.REQUEST_INSTALL_PACKAGES", MANIFEST)
         self.assertIn('android:name=".update.UpdateApkProvider"', MANIFEST)
@@ -85,13 +86,34 @@ class BluetoothContract(unittest.TestCase):
         self.assertIn("const val VISIBLE", (APP / "core/UpdateFeature.kt").read_text(encoding="utf-8"))
         net = re.compile(r"openConnection|java\.net\.|\bSocket\b|HttpURLConnection|WebSocket|okhttp")
         users = sorted(p.relative_to(APP).as_posix() for p in kotlin_sources() if net.search(p.read_text(encoding="utf-8")))
-        self.assertEqual(["update/DriveHttp.kt"], users)
+        self.assertEqual(["guard/TelegramHttp.kt", "update/DriveHttp.kt"], users)
         drive = (APP / "core/DriveUpdate.kt").read_text(encoding="utf-8") + (APP / "update/DriveHttp.kt").read_text(encoding="utf-8")
         self.assertEqual({"drive.google.com", "drive.usercontent.google.com"}, set(re.findall(r"https://([a-z0-9.-]+)/", drive)))
+        tg = (APP / "core/Telegram.kt").read_text(encoding="utf-8")
+        self.assertIn('const val HOST = "api.telegram.org"', tg)
+        self.assertEqual(set(), set(re.findall(r"https://([a-z0-9.-]+)/", tg)) - {"$HOST"} - set())
+        callers = sorted(p.relative_to(APP).as_posix() for p in kotlin_sources()
+                         if "TelegramHttp" in p.read_text(encoding="utf-8") and not p.name == "TelegramHttp.kt")
+        self.assertEqual(["guard/GuardRunner.kt"], callers)
         # Шари, що говорять з батареєю й тримають її дані, мережі не бачать узагалі.
         for layer in ("ble", "bg", "data", "widget"):
             for p in (APP / layer).rglob("*.kt"):
-                self.assertNotIn("DriveHttp", p.read_text(encoding="utf-8"), p.name)
+                text = p.read_text(encoding="utf-8")
+                self.assertNotIn("DriveHttp", text, p.name)
+                self.assertNotIn("TelegramHttp", text, p.name)
+
+    def test_guard_is_off_by_default(self):
+        # T48: сторож нічого не шле, поки власник сам не ввімкнув і не вставив токен свого бота.
+        g = (APP / "data/GuardSettings.kt").read_text(encoding="utf-8")
+        self.assertIn('prefs.getBoolean("on", false)', g)
+        runner = (APP / "guard/GuardRunner.kt").read_text(encoding="utf-8")
+        self.assertIn("if (!st.enabled || st.token.isEmpty())", runner)
+        # Токен (змінна) — ніколи в журнал зв'язку: ні «$token», ні «${st.token}», ні «+ token».
+        leak = re.compile(r"\$\{?[A-Za-z_.]*[tT]oken\b|\+\s*[A-Za-z_.]*[tT]oken\b")
+        for p in kotlin_sources():
+            for line in p.read_text(encoding="utf-8").splitlines():
+                if "LinkLog.add" in line:
+                    self.assertIsNone(leak.search(line), f"{p.name}: {line.strip()}")
 
     def test_app_only_reads_the_board(self):
         """Застосунок лише читає: у плату йдуть тільки команди читання, зібрані Jbd.readCommand."""

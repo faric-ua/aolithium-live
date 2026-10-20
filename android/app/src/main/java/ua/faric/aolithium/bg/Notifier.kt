@@ -17,6 +17,7 @@ import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.LastSnapshot
+import ua.faric.aolithium.guard.GuardRunner
 import ua.faric.aolithium.ui.MainActivity
 import ua.faric.aolithium.ui.Palette
 
@@ -48,6 +49,7 @@ object Notifier {
         settings.save(address, step.state)
         post(ctx, address, step.events)
         chargeBar(ctx, address, s)
+        GuardRunner.onSnapshot(ctx, address, s, atMs) // T48: сторож — свої правила й свій стан
     }
 
     /**
@@ -121,6 +123,7 @@ object Notifier {
         val step = Alerts.onNoData(settings.state(address), lastOk, now)
         if (step.state != settings.state(address)) settings.save(address, step.state)
         post(ctx, address, step.events)
+        GuardRunner.onNoData(ctx, address, now)
     }
 
     /**

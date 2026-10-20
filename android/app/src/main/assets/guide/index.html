@@ -326,6 +326,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <ul class="tiles">
       <li><a class="tile" href="#background"><span class="badge"><svg class="ic"><use href="#i-repeat"/></svg></span><span><b class="uk">Запис у фоні</b><b class="en">Background recording</b><span class="d uk">раз на ~5 хв, навіть уночі</span><span class="d en">every ~5 min, even at night</span></span><span class="chev">›</span></a></li>
       <li><a class="tile" href="#alerts"><span class="badge"><svg class="ic"><use href="#i-bell"/></svg></span><span><b class="uk">Сповіщення</b><b class="en">Notifications</b><span class="d uk">світло, мало заряду, батарея повна…</span><span class="d en">power, low charge, battery full…</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#guard"><span class="badge"><svg class="ic"><use href="#i-shield"/></svg></span><span><b class="uk">Сторож у Telegram</b><b class="en">Guard in Telegram</b><span class="d uk">тобі й рідним, де б ви не були</span><span class="d en">to you and family, wherever you are</span></span><span class="chev">›</span></a></li>
       <li><a class="tile" href="#widget"><span class="badge"><svg class="ic"><use href="#i-widget"/></svg></span><span><b class="uk">Віджет</b><b class="en">Widget</b><span class="d uk">заряд на головному екрані</span><span class="d en">charge on the home screen</span></span><span class="chev">›</span></a></li>
     </ul>
   </section>
@@ -345,7 +346,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <li><a class="tile" href="#numbers"><span class="badge"><svg class="ic"><use href="#i-pulse"/></svg></span><span><b class="uk">Що означають числа</b><b class="en">What the numbers mean</b><span class="d uk">норми, і як це звалось в Aolithium 1.3</span><span class="d en">normal ranges, and Aolithium 1.3 names</span></span><span class="chev">›</span></a></li>
       <li><a class="tile" href="#install"><span class="badge"><svg class="ic"><use href="#i-cloud"/></svg></span><span><b class="uk">Встановити й оновити</b><b class="en">Install and update</b><span class="d uk">меню Termux, телефон без Termux, Google Диск</span><span class="d en">Termux menu, phone without Termux, Google Drive</span></span><span class="chev">›</span></a></li>
       <li><a class="tile" href="#update"><span class="badge"><svg class="ic"><use href="#i-cloud"/></svg></span><span><b class="uk">Оновити з Google Диска</b><b class="en">Update from Google Drive</b><span class="d uk">перевірити й встановити; автору — опублікувати</span><span class="d en">check and install; for the author — publish</span></span><span class="chev">›</span></a></li>
-      <li><a class="tile" href="#safety"><span class="badge"><svg class="ic"><use href="#i-lock"/></svg></span><span><b class="uk">Безпека й приватність</b><b class="en">Safety and privacy</b><span class="d uk">лише читання, дані нікуди не йдуть</span><span class="d en">read-only, data goes nowhere</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#safety"><span class="badge"><svg class="ic"><use href="#i-lock"/></svg></span><span><b class="uk">Безпека й приватність</b><b class="en">Safety and privacy</b><span class="d uk">лише читання; дані — лише в твій Telegram</span><span class="d en">read-only; data only to your Telegram</span></span><span class="chev">›</span></a></li>
       <li><a class="tile" href="#changes"><span class="badge"><svg class="ic"><use href="#i-clock"/></svg></span><span><b class="uk">Що змінилось</b><b class="en">What's new</b><span class="d uk">усі версії по порядку</span><span class="d en">all versions in order</span></span><span class="chev">›</span></a></li>
     </ul>
   </section>
@@ -353,7 +354,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.10 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.11 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -818,6 +819,125 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": eight switches.</figcaption></figure>
 </section>
 
+<!-- ================= СТОРОЖ У TELEGRAM (T48) ================= -->
+<section id="guard" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Сторож у Telegram</h2><h2 class="en">Guard in Telegram</h2>
+    <p class="page-lead uk">Телефон лишається вдома біля батареї й пише в Telegram тобі й рідним, де б ви не були: світло зникло, мало заряду, захист плати, а щоранку — «я працюю». Сторожем може бути будь-який телефон із цим застосунком.</p>
+    <p class="page-lead en">The phone stays at home by the battery and writes to you and your family in Telegram, wherever you are: power outage, low charge, BMS protection, and every morning "I am working". Any phone with this app can be the guard.</p>
+  </div>
+  <figure class="diagram">
+    <svg viewBox="0 0 360 170">
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="d-arrow-acc"/></marker></defs>
+      <rect class="d-ok" x="8" y="20" width="76" height="50" rx="10"/>
+      <text class="d-t uk" x="46" y="50" text-anchor="middle">Батарея</text>
+      <text class="d-t en" x="46" y="50" text-anchor="middle">Battery</text>
+      <rect class="d-acc" x="118" y="12" width="104" height="66" rx="12"/>
+      <text class="d-t uk" x="170" y="40" text-anchor="middle">Сторож</text>
+      <text class="d-t en" x="170" y="40" text-anchor="middle">Guard</text>
+      <text class="d-s uk" x="170" y="58" text-anchor="middle">телефон удома</text>
+      <text class="d-s en" x="170" y="58" text-anchor="middle">phone at home</text>
+      <rect class="d-box" x="256" y="20" width="96" height="50" rx="10"/>
+      <text class="d-t" x="304" y="50" text-anchor="middle">Telegram</text>
+      <path d="M86 45H114" class="d-dash" marker-end="url(#ar3)"/>
+      <path d="M224 45H252" class="d-dash" marker-end="url(#ar3)"/>
+      <text class="d-m" x="100" y="90" text-anchor="middle">Bluetooth</text>
+      <text class="d-m uk" x="238" y="90" text-anchor="middle">інтернет</text>
+      <text class="d-m en" x="238" y="90" text-anchor="middle">internet</text>
+      <path d="M304 72V104" class="d-line"/>
+      <path d="M304 104H200V122M304 104V122M304 104H346V122" class="d-line"/>
+      <rect class="d-ok" x="168" y="124" width="64" height="34" rx="8"/>
+      <rect class="d-ok" x="272" y="124" width="64" height="34" rx="8"/>
+      <text class="d-s uk" x="200" y="145" text-anchor="middle">ти</text>
+      <text class="d-s en" x="200" y="145" text-anchor="middle">you</text>
+      <text class="d-s uk" x="304" y="145" text-anchor="middle">рідні</text>
+      <text class="d-s en" x="304" y="145" text-anchor="middle">family</text>
+      <text class="d-tacc uk" x="14" y="118">раз на ~5 хв</text>
+      <text class="d-tacc en" x="14" y="118">every ~5 min</text>
+      <text class="d-s uk" x="14" y="136">кожен сам вибирає,</text>
+      <text class="d-s en" x="14" y="136">everyone picks</text>
+      <text class="d-s uk" x="14" y="152">що отримувати</text>
+      <text class="d-s en" x="14" y="152">what to get</text>
+    </svg>
+    <figcaption class="uk">Сторож читає батарею тим самим «Записом у фоні» й шле лише людям, які під'єдналися твоїм кодом.</figcaption>
+    <figcaption class="en">The guard reads the battery with the same "Background recording" and sends only to people who joined with your code.</figcaption>
+  </figure>
+  <ol class="steps uk">
+    <li><span><b>Свій бот (2 хв, один раз).</b> У Telegram знайди <b>@BotFather</b> → «Start» → надішли <b>/newbot</b>. Назва — будь-яка («Батарея вдома»), ім'я — латиницею й закінчується на <b>bot</b>. BotFather надішле <b>токен</b> — довгий рядок «123456789:AA…»; скопіюй його.</span></li>
+    <li><span>На телефоні-сторожі: батарея → <b>«Ще»</b> → «Сторож (Telegram)» → <span class="btn prim">Налаштувати сторожа</span> → встав токен → <span class="btn prim">Перевірити й увімкнути</span>. «Запис у фоні» для цієї батареї ввімкнеться сам.</span></li>
+    <li><span><span class="btn prim">Запросити людину</span> → перешли запрошення (собі теж). Людина відкриває посилання → «Start» — Telegram сам надсилає код, і вона в списку.</span></li>
+    <li><span>Кожен у чаті з ботом: <b>/settings</b> — торкаєшся видів, 🔔 надсилати, 🔕 ні. <b>/status</b> — що зараз з батареєю, <b>/stop</b> — більше не надсилати.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span><b>Your own bot (2 min, once).</b> In Telegram find <b>@BotFather</b> → "Start" → send <b>/newbot</b>. Name — any ("Home battery"), username — Latin letters, ending in <b>bot</b>. BotFather sends a <b>token</b> — a long line "123456789:AA…"; copy it.</span></li>
+    <li><span>On the guard phone: battery → <b>"More"</b> → "Guard (Telegram)" → <span class="btn prim">Set up the guard</span> → paste the token → <span class="btn prim">Check and turn on</span>. "Background recording" for this battery turns on by itself.</span></li>
+    <li><span><span class="btn prim">Invite a person</span> → forward the invitation (to yourself too). The person opens the link → "Start" — Telegram sends the code by itself, and they are on the list.</span></li>
+    <li><span>Everyone in the bot chat: <b>/settings</b> — tap the kinds, 🔔 send, 🔕 don't. <b>/status</b> — what the battery is doing now, <b>/stop</b> — stop sending.</span></li>
+  </ol>
+  <div class="grid2">
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/guard.webp" alt="Картка «Сторож (Telegram)»"><figcaption>«Ще» → «Сторож (Telegram)»: бот, код, учасники, «я працюю» щодня.</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/guard.webp" alt="Guard (Telegram) card"><figcaption>"More" → "Guard (Telegram)": bot, code, members, daily "I am working".</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/guard-setup.webp" alt="Вікно налаштування сторожа"><figcaption>Налаштування: як отримати токен у BotFather і куди його вставити.</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/guard-setup.webp" alt="Guard setup window"><figcaption>Setup: how to get the token from BotFather and where to paste it.</figcaption></figure>
+  </div>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Що надсилає</th><th>Коли</th></tr>
+      <tr><td class="k"><b>Захист плати</b></td><td>спрацював захист; плата вимкнула заряд чи розряд; захист знято</td></tr>
+      <tr><td class="k"><b>Холод / спека</b></td><td>нижче 0 °C або вище 50 °C</td></tr>
+      <tr><td class="k"><b>Різниця комірок</b></td><td>як сповіщення в шторці: 30 мВ посеред заряду або 100 мВ нижче 95 %</td></tr>
+      <tr><td class="k"><b>Різкий стрибок</b></td><td>температура +5 °C або різниця комірок +50 мВ за 15 хв</td></tr>
+      <tr><td class="k"><b>Світло зникло / повернулось</b></td><td>батарея почала віддавати; і коли перестала — скільки не було</td></tr>
+      <tr><td class="k"><b>Батарея повна</b></td><td>щоб вимкнути генератор, навіть коли тебе нема вдома</td></tr>
+      <tr><td class="k"><b>Мало заряду, розрядилась</b></td><td>20 %, 10 %, 5 % і «розрядилась» (1 % і нижче)</td></tr>
+      <tr><td class="k"><b>Кожні −10 % заряду</b></td><td>під час розряду: 90, 80, 70… — з потужністю й скільки ще вистачить</td></tr>
+      <tr><td class="k"><b>Сторож не бачить батарею</b></td><td>30 хв без даних; і «знову бачу»</td></tr>
+      <tr><td class="k"><b>Щодня «я працюю»</b></td><td>о вибраній годині (7, 9, 12 чи 20): стан кожної батареї. <b>Не прийшло — зі сторожем щось сталося.</b></td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>What it sends</th><th>When</th></tr>
+      <tr><td class="k"><b>BMS protection</b></td><td>a protection triggered; the BMS turned off charge or discharge; protection cleared</td></tr>
+      <tr><td class="k"><b>Cold / heat</b></td><td>below 0 °C or above 50 °C</td></tr>
+      <tr><td class="k"><b>Cell difference</b></td><td>same as the shade notification: 30 mV mid-charge or 100 mV below 95 %</td></tr>
+      <tr><td class="k"><b>Sudden jump</b></td><td>temperature +5 °C or cell difference +50 mV within 15 min</td></tr>
+      <tr><td class="k"><b>Power outage / restored</b></td><td>the battery started giving power; and when it stopped — how long it lasted</td></tr>
+      <tr><td class="k"><b>Battery full</b></td><td>to turn off the generator even when you are away</td></tr>
+      <tr><td class="k"><b>Low charge, empty</b></td><td>20 %, 10 %, 5 % and "empty" (1 % and below)</td></tr>
+      <tr><td class="k"><b>Every −10 % of charge</b></td><td>while discharging: 90, 80, 70… — with power and how long it will last</td></tr>
+      <tr><td class="k"><b>Guard cannot see the battery</b></td><td>30 min without data; and "I can see it again"</td></tr>
+      <tr><td class="k"><b>Daily "I am working"</b></td><td>at the chosen hour (7, 9, 12 or 20): the state of each battery. <b>If it does not come, something happened to the guard.</b></td></tr>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="notif">
+      <div class="n-top"><svg class="ic"><use href="#i-shield"/></svg><span>Telegram</span><span class="t">18:02</span></div>
+      <b class="uk">🔌 Світло зникло</b><b class="en">🔌 Power outage</b>
+      <span class="n-txt uk">🔋 Aolithium · Батарея віддає 120 Вт · 99 % · вистачить ≈ 8 год 40 хв до 20 %</span>
+      <span class="n-txt en">🔋 Aolithium · Battery discharging at 120 W · 99 % · lasts ≈ 8 h 40 min to 20 %</span>
+    </div>
+    <div class="notif">
+      <div class="n-top"><svg class="ic"><use href="#i-shield"/></svg><span>Telegram</span><span class="t">09:00</span></div>
+      <b class="uk">🟢 Сторож працює · 09:00</b><b class="en">🟢 The guard is working · 09:00</b>
+      <span class="n-txt uk">🔋 Aolithium: 87 % · стоїть · 13,31 В · 15,2 °C · о 08:57</span>
+      <span class="n-txt en">🔋 Aolithium: 87 % · idle · 13.31 V · 15.2 °C · at 08:57</span>
+    </div>
+  </div>
+  <ul class="dots uk">
+    <li><b>Потрібен інтернет на сторожі.</b> Коли зникає світло, роутер вимикається — тоді повідомлення чекають у черзі й підуть, щойно зв'язок повернеться. Щоб ішли одразу: роутер на тій самій батареї / ДБЖ, або SIM з мобільним інтернетом у сторожі.</li>
+    <li><b>Сторож — додатковий, не замість плати.</b> Батарею захищає сама плата; сторож лише розповідає. Читає раз на ~5 хв і лише поки Bluetooth дістає.</li>
+    <li><b>Один бот — один сторож.</b> Для другого сторожа (наприклад, у мами) — свій бот.</li>
+    <li><b>Приватність:</b> токен — лише на телефоні-сторожі. Без коду до бота не під'єднатись; 5 хибних кодів — година паузи. <span class="btn norm">Новий код</span> — для нових людей, ті, хто вже є, лишаються. Прибрати людину — <span class="btn norm">Учасники</span>.</li>
+    <li>Тримай сторожа на зарядці й дозволь «Не обмежувати у фоні» (картка «Запис у фоні») — тоді Android його не приспить.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>The guard needs internet.</b> When the power goes out, the router turns off — then messages wait in a queue and go as soon as the connection returns. To send right away: the router on the same battery / UPS, or a SIM with mobile data in the guard.</li>
+    <li><b>The guard is extra, not instead of the BMS.</b> The BMS itself protects the battery; the guard only tells. It reads every ~5 min and only while Bluetooth reaches.</li>
+    <li><b>One bot — one guard.</b> For a second guard (for example, at mom's) — its own bot.</li>
+    <li><b>Privacy:</b> the token stays on the guard phone only. Nobody joins the bot without the code; 5 wrong codes — an hour's pause. <span class="btn norm">New code</span> — for new people, those already there stay. Remove a person — <span class="btn norm">Members</span>.</li>
+    <li>Keep the guard on charge and allow "Don't restrict in background" (the "Background recording" card) — then Android will not put it to sleep.</li>
+  </ul>
+</section>
+
 <!-- ================= 11. ВІДЖЕТ ================= -->
 <section id="widget" class="page" hidden>
   <div class="title-block">
@@ -1027,8 +1147,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.10 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.10.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.10 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.10.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.11 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.11.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.11 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.11.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
@@ -1152,13 +1272,15 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </figure>
   <ul class="dots uk">
     <li><b>Нічого не змінює в платі:</b> ні налаштувань, ні ключів заряду й розряду. Зміна налаштувань колись можлива лише після резервної копії й окремого «так».</li>
-    <li><b>Інтернет — лише для оновлень:</b> застосунок читає з Google Диска автора файл версії й APK (картка «Оновлення застосунку»), а перед встановленням перевіряє файл. Історія, батареї й налаштування — лише в телефоні, нікуди не надсилаються.</li>
+    <li><b>Інтернет — лише для оновлень і сторожа:</b> застосунок читає з Google Диска автора файл версії й APK (картка «Оновлення застосунку»), а перед встановленням перевіряє файл. Історія, батареї й налаштування — лише в телефоні.</li>
+    <li><b>Сторож у Telegram</b> — вимкнений, поки ти сам його не ввімкнеш і не вставиш токен свого бота. Тоді стан батареї йде лише в Telegram і лише людям, які під'єдналися твоїм кодом.</li>
     <li><b>Ділишся лише ти:</b> CSV зберігається туди, куди вибереш; журнал зв'язку йде, лише коли натиснеш «Поділитися».</li>
     <li><b>Звідки знання:</b> протоколи плат відкриті — бібліотеки aiobmsble, esphome-jbd-bms і esphome-jk-bms (Apache-2.0). Код Aolithium не копіювався й не розбирався.</li>
   </ul>
   <ul class="dots en">
     <li><b>Changes nothing in the BMS:</b> no settings, no charge or discharge switches. Changing settings may come one day, only after a backup and a separate "yes".</li>
-    <li><b>Internet only for updates:</b> the app reads the version file and the APK from the author's Google Drive ("App update" card) and checks the file before installing. History, batteries and settings stay on the phone only and are not sent anywhere.</li>
+    <li><b>Internet only for updates and the guard:</b> the app reads the version file and the APK from the author's Google Drive ("App update" card) and checks the file before installing. History, batteries and settings stay on the phone only.</li>
+    <li><b>Guard in Telegram</b> is off until you turn it on yourself and paste your own bot's token. Then the battery state goes only to Telegram and only to people who joined with your code.</li>
     <li><b>Only you share:</b> CSV is saved where you choose; the connection log leaves only when you tap "Share".</li>
     <li><b>Where the knowledge comes from:</b> the BMS protocols are open — the aiobmsble, esphome-jbd-bms and esphome-jk-bms libraries (Apache-2.0). The Aolithium code was not copied or taken apart.</li>
   </ul>
@@ -1174,6 +1296,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>сторож у Telegram: телефон удома пише тобі й рідним — світло, заряд, захист, кожні −10 %, щоранку «я працюю»; кожен сам вибирає, що отримувати; версія «0.4.10 · збірка 26» більше не переноситься</td></tr>
       <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>запис у фоні спершу шукає батарею в ефірі й пробує тричі — менше «нема зв'язку» поруч з батареєю; у кожному вікні заголовок згори й кнопки знизу завжди видно, прокручується середина; журнал зв'язку — свіжіші зверху</td></tr>
       <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>сповіщення «Заряджається» зі смужкою й часом до повної; віджет оновлюється, щойно розблокуєш телефон; одна порада «раз на 1–2 тижні до 100 %»</td></tr>
       <tr><td class="k"><b>0.4.8</b> · 20.10.2026</td><td>довідник: чому повна ємність менша за етикетку, чи варто розряджати до нуля, як берегти батарею</td></tr>
@@ -1203,6 +1326,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>guard in Telegram: a phone at home writes to you and your family — power, charge, protection, every −10 %, "I am working" every morning; everyone picks what to get; the version "0.4.10 · build 26" no longer wraps</td></tr>
       <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>background recording first looks for the battery on air and tries three times — fewer "no connection" near the battery; in every window the title on top and the buttons at the bottom are always visible, the middle scrolls; connection log — newest on top</td></tr>
       <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>"Charging" notification with a progress bar and time to full; the widget updates as soon as you unlock the phone; one tip "every 1–2 weeks to 100%"</td></tr>
       <tr><td class="k"><b>0.4.8</b> · 20.10.2026</td><td>glossary: why full capacity is below the label, whether to drain to zero, how to look after the battery</td></tr>
