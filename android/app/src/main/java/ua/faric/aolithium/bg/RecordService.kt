@@ -6,8 +6,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -55,12 +57,35 @@ class RecordService : Service() {
     private val fallbackTick = Runnable { tick() }
     private val readTimeout = Runnable { finishRead(null, Background.Skip.NO_ANSWER.name) }
 
+    /**
+     * T40: розблокування телефона. «Користувач тут» (`USER_PRESENT`) Android з Android 8 не надсилає приймачам
+     * із маніфесту — лише зареєстрованим у живому застосунку. Тож слухає сама служба, поки працює запис у фоні.
+     */
+    private val unlock = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != Intent.ACTION_USER_PRESENT) return
+            Widgets.refresh(this@RecordService) // одразу перемалювати «записано … тому» (і сірий, якщо давно)
+            if (Background.readOnUnlock(settings.lastTickAt, System.currentTimeMillis(), busy)) {
+                LinkLog.add(tr("фон: телефон розблоковано — читаю", "background: phone unlocked — reading"))
+                tick()
+            }
+        }
+    }
+    private var unlockRegistered = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         settings = BgSettings(this)
         instance = this
+        try {
+            // Системне повідомлення — прапорець EXPORTED / NOT_EXPORTED (Android 13+) для нього не потрібен.
+            registerReceiver(unlock, IntentFilter(Intent.ACTION_USER_PRESENT))
+            unlockRegistered = true
+        } catch (e: RuntimeException) {
+            LinkLog.add(tr("фон: не вийшло слухати розблокування", "background: could not listen for unlock"))
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -98,6 +123,14 @@ class RecordService : Service() {
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        if (unlockRegistered) {
+            unlockRegistered = false
+            try {
+                unregisterReceiver(unlock)
+            } catch (e: IllegalArgumentException) {
+                // уже відписано
+            }
+        }
         h.removeCallbacksAndMessages(null)
         link?.let { it.listener = null; it.stop() }
         link = null

@@ -188,6 +188,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
 .notif .n-top .t{margin-left:auto; font-variant-numeric:tabular-nums}
 .notif b{font-size:.98rem}
 .notif .n-txt{font-size:.88rem; color:var(--muted)}
+.notif .n-bar{height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:4px}
+.notif .n-bar i{display:block; height:100%; background:var(--accent); border-radius:3px}
 .notif .n-act{margin-top:6px; color:var(--accent); font-weight:650; font-size:.86rem}
 .topstrip{display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:16px; max-width:420px; width:100%; margin:0 auto}
 .topstrip .led{width:10px; height:10px; border-radius:4px; background:var(--accent); flex:none}
@@ -351,7 +353,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.8 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.9 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -752,8 +754,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
 <section id="alerts" class="page" hidden>
   <div class="title-block">
     <h2 class="uk">Сповіщення</h2><h2 class="en">Notifications</h2>
-    <p class="page-lead uk">Сім видів, кожен вмикається окремо: батарея → «Ще» → «Сповіщення». Перемикачі спільні для всіх батарей, за замовчуванням усі ввімкнені.</p>
-    <p class="page-lead en">Seven kinds, each turned on separately: battery → "More" → "Notifications". The switches are shared by all batteries; all are on by default.</p>
+    <p class="page-lead uk">Вісім видів, кожен вмикається окремо: батарея → «Ще» → «Сповіщення». Перемикачі спільні для всіх батарей, за замовчуванням усі ввімкнені.</p>
+    <p class="page-lead en">Eight kinds, each turned on separately: battery → "More" → "Notifications". The switches are shared by all batteries; all are on by default.</p>
   </div>
   <div class="tbl kv">
     <table class="uk">
@@ -765,6 +767,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>Велика різниця комірок</b></td><td>30 мВ посеред заряду (15–90 %) або 100 мВ будь-де нижче 95 %</td></tr>
       <tr><td class="k"><b>Холод / спека</b></td><td>нижче 0 °C або вище 50 °C</td></tr>
       <tr><td class="k"><b>Нема даних понад 1 год</b></td><td>тихе, без звуку: запис у фоні годину не дістає батарею</td></tr>
+      <tr><td class="k"><b>Заряджається (смужка)</b></td><td>тихе, поки батарея заряджається: відсотки смужкою, вати й скільки до повної; зникає саме, коли повна або заряд припинився</td></tr>
     </table>
     <table class="en">
       <tr class="hd"><th>Notification</th><th>When it comes</th></tr>
@@ -775,6 +778,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>Large cell difference</b></td><td>30 mV mid-charge (15–90 %) or 100 mV anywhere below 95 %</td></tr>
       <tr><td class="k"><b>Cold / heat</b></td><td>below 0 °C or above 50 °C</td></tr>
       <tr><td class="k"><b>No data for over 1 h</b></td><td>quiet, no sound: background recording has not reached the battery for an hour</td></tr>
+      <tr><td class="k"><b>Charging (progress bar)</b></td><td>quiet, while the battery charges: percent as a bar, watts and time to full; goes away by itself when full or when charging stops</td></tr>
     </table>
   </div>
   <div class="grid2">
@@ -789,21 +793,29 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <b class="uk">Батарея повна — 100 %</b><b class="en">Battery full — 100 %</b>
       <span class="n-txt uk">Плата сама зупинила заряд.</span><span class="n-txt en">The BMS stopped charging by itself.</span>
     </div>
+    <div class="notif">
+      <div class="n-top"><svg class="ic"><use href="#i-battery"/></svg><span>Aolithium Live</span><span class="t">05:40</span></div>
+      <b class="uk">Заряджається · 64 %</b><b class="en">Charging · 64 %</b>
+      <span class="n-txt uk">330 Вт · до повної ≈ 1 год 20 хв</span><span class="n-txt en">330 W · to full ≈ 1 h 20 min</span>
+      <span class="n-bar"><i style="width:64%"></i></span>
+    </div>
   </div>
   <ul class="dots uk">
     <li><b>Кожне — один раз</b>, доки стан не мине (наприклад, «Мало заряду 20 %» знову — лише після того, як батарея піднялась вище).</li>
     <li><b>Коли застосунок закритий</b> — приходять лише з увімкненим «Записом у фоні» і лише поки телефон поруч з батареєю.</li>
     <li>Захист «перезаряд комірки» наприкінці заряду — це «Батарея повна», не тривога.</li>
     <li><span class="btn norm">Перевірити сповіщення</span> — у шторці «Перевірка: світло зникло» зі звуком; торкнись — відкриється батарея.</li>
+    <li><b>«Заряджається»</b> оновлюється з кожним записом (з «Записом у фоні» — раз на ~5 хв і щойно розблокуєш телефон). Немає нових даних 20 хв — зникає саме, щоб у шторці не висіли старі відсотки.</li>
   </ul>
   <ul class="dots en">
     <li><b>Each comes once</b>, until the state passes (for example, "Low charge 20 %" comes again only after the battery went back above it).</li>
     <li><b>When the app is closed</b> — they come only with "Background recording" on and only while the phone is near the battery.</li>
     <li>The "cell overcharge" protection at the end of charge means "Battery full", not an alarm.</li>
     <li><span class="btn norm">Test notifications</span> — the shade shows "Test: power outage" with sound; tap it and the battery opens.</li>
+    <li><b>"Charging"</b> updates with each record (with "Background recording" — every ~5 min and as soon as you unlock the phone). No new data for 20 min — it goes away by itself, so old percents do not hang in the shade.</li>
   </ul>
-  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: сім перемикачів.</figcaption></figure>
-  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": seven switches.</figcaption></figure>
+  <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: вісім перемикачів.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": eight switches.</figcaption></figure>
 </section>
 
 <!-- ================= 11. ВІДЖЕТ ================= -->
@@ -825,12 +837,12 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </ol>
   <ul class="dots uk">
     <li>Кільце з відсотками, вати зі стрілкою (<b style="color:var(--bad)">червона ▲</b> — віддає, <b style="color:var(--ok)">зелена ▼</b> — заряджається), «вистачить на» і «записано 21:05».</li>
-    <li>Оновлюється з кожним записом — з «Записом у фоні» раз на ~5 хв. Понад 15 хв без даних — сірий, з часом останнього запису.</li>
+    <li>Оновлюється з кожним записом — з «Записом у фоні» раз на ~5 хв, а ще <b>щойно розблокуєш телефон</b> (якщо останній запис старший за хвилину й телефон поруч з батареєю). Понад 15 хв без даних — сірий, з часом останнього запису.</li>
     <li>Показує батарею із «Записом у фоні», а якщо такої нема — ту, з якою був останній зв'язок. Торкнись — відкриється батарея.</li>
   </ul>
   <ul class="dots en">
     <li>A ring with the percent, watts with an arrow (<b style="color:var(--bad)">red ▲</b> — giving power, <b style="color:var(--ok)">green ▼</b> — charging), "lasts for" and "recorded 21:05".</li>
-    <li>Updates with each record — every ~5 min with "Background recording". After 15 min without data it turns grey and shows the last record time.</li>
+    <li>Updates with each record — every ~5 min with "Background recording", and also <b>as soon as you unlock the phone</b> (if the last record is older than a minute and the phone is near the battery). After 15 min without data it turns grey and shows the last record time.</li>
     <li>Shows the battery with "Background recording", or if there is none, the one last connected. Tap it to open the battery.</li>
   </ul>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/widget.webp" alt="Віджети великий і малий"><figcaption>Великий і малий віджет (світла нема), нижче — як виглядає «нема даних».</figcaption></figure>
@@ -1015,8 +1027,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.8 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.8.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.8 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.8.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.9 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.9.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.9 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.9.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
@@ -1162,6 +1174,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>сповіщення «Заряджається» зі смужкою й часом до повної; віджет оновлюється, щойно розблокуєш телефон; одна порада «раз на 1–2 тижні до 100 %»</td></tr>
       <tr><td class="k"><b>0.4.8</b> · 20.10.2026</td><td>довідник: чому повна ємність менша за етикетку, чи варто розряджати до нуля, як берегти батарею</td></tr>
       <tr><td class="k"><b>0.4.7</b> · 20.10.2026</td><td>одна мова скрізь: «UA / EN» в інструкції перемикають увесь застосунок, демо відкриваються тією ж мовою</td></tr>
       <tr><td class="k"><b>0.4.6</b> · 20.10.2026</td><td>посилання на оновлення з Google Диска вбудовані; автор лише вибирає два готові файли</td></tr>
@@ -1189,6 +1202,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>"Charging" notification with a progress bar and time to full; the widget updates as soon as you unlock the phone; one tip "every 1–2 weeks to 100%"</td></tr>
       <tr><td class="k"><b>0.4.8</b> · 20.10.2026</td><td>glossary: why full capacity is below the label, whether to drain to zero, how to look after the battery</td></tr>
       <tr><td class="k"><b>0.4.7</b> · 20.10.2026</td><td>one language everywhere: "UA / EN" in the guide switch the whole app, demos open in the same language</td></tr>
       <tr><td class="k"><b>0.4.6</b> · 20.10.2026</td><td>the Google Drive update links are built in; the author only picks two ready files</td></tr>
