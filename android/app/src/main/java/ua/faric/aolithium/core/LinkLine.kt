@@ -47,7 +47,7 @@ object LinkLine {
         val signal = rssi?.let { Signal.describe(it) }
         val repeat = if (attempt > 0 && ofAttempts > 0) tr("повтор $attempt з $ofAttempts", "retry $attempt of $ofAttempts") else ""
         val detail = when (state) {
-            State.LIVE -> if (demo) tr("демо, без батареї", "demo, no battery") else tr("дані наживо", "live data")
+            State.LIVE -> if (demo) tr("демо", "demo") else tr("дані наживо", "live data")
             State.CONNECTING -> join(repeat.ifEmpty { tr("зазвичай 2–5 с", "usually 2–5 s") }, signal)
             State.READING -> tr("читаю дані плати", "reading BMS data")
             State.LOST -> join(repeat.ifEmpty { tr("пробую ще раз", "trying again") }, signal)
