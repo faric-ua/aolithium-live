@@ -165,16 +165,15 @@ class MainActivity : Activity() {
             val toHelp = page == Page.BATTERY && returnTo == Page.HELP
             topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) tr("Інструкція", "Guide") else tr("Батареї", "Batteries"), Ui.Kind.QUIET) { goBack() })
             topBar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-            // T35 (faric 20.10, перевірка 31): мова інструкції — тут, у рядку з «Назад», а не поруч з назвою на сторінці.
-            (screen as? GuideScreen)?.let { g ->
+            // T35 (faric 20.10, перевірка 31): мова — тут, у рядку з «Назад», а не поруч з назвою на сторінці.
+            // T42 (faric 17:02, «локалізація пливе»): перемикає мову ВСЬОГО застосунку — інструкція, демо, шапка,
+            // сповіщення й віджет завжди однією мовою (раніше — лише інструкцію, а демо відкривались українською).
+            if (screen is GuideScreen) {
                 val square = LinearLayout.LayoutParams(ui.dp(SQUARE_DP), ViewGroup.LayoutParams.WRAP_CONTENT)
                 for (code in listOf(Lang.Code.UK, Lang.Code.EN)) {
                     val label = if (code == Lang.Code.UK) "UA" else "EN"
-                    topBar.addView(ui.squareButton(label) {
-                        g.setGuideLang(code)
-                        renderTopBar()
-                    }.apply {
-                        if (g.guideLang == code) ui.markSelected(this)
+                    topBar.addView(ui.squareButton(label) { setLanguage(code) }.apply {
+                        if (Lang.current == code) ui.markSelected(this)
                         contentDescription = if (code == Lang.Code.UK) "Українська" else "English" // uk-only — назва мови її ж мовою
                     }, square)
                 }
