@@ -49,7 +49,8 @@ class HistoryStore private constructor(context: Context) {
         val main = Handler(android.os.Looper.getMainLooper())
         if (address.startsWith("demo:")) {
             io.post {
-                val pts = DemoHistory.week(System.currentTimeMillis()).filter { it.t in from..to }
+                val profile = DemoHistory.profileFor(address.removePrefix("demo:"))
+                val pts = DemoHistory.week(System.currentTimeMillis(), profile).filter { it.t in from..to }
                 main.post { done(pts) }
             }
             return
