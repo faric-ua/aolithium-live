@@ -2,6 +2,7 @@ package ua.faric.aolithium.core
 
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -60,5 +61,15 @@ class BackgroundTest {
         assertEquals(11, HistoryCsv.row(noTemp, kyiv).split(',').size)
         assertEquals("aolithium-AL12-100-4S-P814-2026-10-19.csv", HistoryCsv.fileName("AL12-100-4S P814", at, kyiv))
         assertEquals("aolithium-battery-2026-10-19.csv", HistoryCsv.fileName("//", at, kyiv))
+    }
+
+    /** T40: розблокування — читаємо, лише якщо давніше хвилини й нічого не читаємо зараз. */
+    @Test
+    fun read_on_unlock_only_when_data_older_than_a_minute() {
+        val t = 1_792_428_000_000L
+        assertTrue(Background.readOnUnlock(lastTickAt = t - 5 * 60_000L, now = t, busy = false))
+        assertTrue(Background.readOnUnlock(lastTickAt = 0L, now = t, busy = false))
+        assertFalse(Background.readOnUnlock(lastTickAt = t - 30_000L, now = t, busy = false))
+        assertFalse(Background.readOnUnlock(lastTickAt = t - 5 * 60_000L, now = t, busy = true))
     }
 }

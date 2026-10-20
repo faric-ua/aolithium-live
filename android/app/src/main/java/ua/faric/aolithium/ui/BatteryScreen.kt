@@ -1470,6 +1470,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             ui.choice("${k.title}\n${if (on) tr("увімкнено", "on") else tr("вимкнено", "off")}", on) {
                 alertPrefs.set(k, !on)
                 if (!on) host.requestNotifications()
+                if (on && k == Alerts.Kind.CHARGING && demo == null) Notifier.dropChargeBar(host, address)
                 render()
             }
         }

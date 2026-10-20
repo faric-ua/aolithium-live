@@ -11,6 +11,7 @@ import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.ChargeNote
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
@@ -32,6 +33,9 @@ object Notifier {
 
     private val lastRun = HashMap<String, Long>()
 
+    /** T39: для яких батарей зараз висить смужка «Заряджається» (лише в пам'яті — після перезапуску почнемо з нуля). */
+    private val charging = HashSet<String>()
+
     /** Новий знімок батареї. Головний потік. */
     fun onSnapshot(ctx: Context, address: String, s: BatterySnapshot, atMs: Long) {
         if (address.startsWith("demo:")) return
@@ -43,11 +47,73 @@ object Notifier {
         val step = Alerts.onSnapshot(settings.state(address), s, atMs)
         settings.save(address, step.state)
         post(ctx, address, step.events)
+        chargeBar(ctx, address, s)
+    }
+
+    /**
+     * T39: смужка «Заряджається · 64 %» — тихе сповіщення, яке оновлюється з кожним знімком (екран — раз на 10 с,
+     * фон — раз на ~5 хв) і зникає, коли батарея повна, перестала заряджатись або даних нема ([ChargeNote.STALE_MS]).
+     */
+    private fun chargeBar(ctx: Context, address: String, s: BatterySnapshot) {
+        val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
+        val key = address.uppercase()
+        val id = noteId(address, Alerts.Kind.CHARGING)
+        val show = if (AlertSettings(ctx).isOn(Alerts.Kind.CHARGING)) ChargeNote.of(s, showing = key in charging) else null
+        if (show == null) {
+            if (charging.remove(key)) {
+                nm.cancel(id)
+                LinkLog.add(tr("смужка заряду ${BmsMatch.shortAddress(address)}: прибрано", "charge bar ${BmsMatch.shortAddress(address)}: removed"))
+            }
+            return
+        }
+        ensureChannel(nm, Alerts.Kind.CHARGING)
+        val name = Batteries(ctx).find(address)?.title ?: BmsMatch.shortAddress(address)
+        val open = PendingIntent.getActivity(
+            ctx, id,
+            Intent(ctx, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(MainActivity.EXTRA_BATTERY, address),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val note = Notification.Builder(ctx, channelId(Alerts.Kind.CHARGING))
+            .setSmallIcon(R.drawable.ic_note_battery)
+            .setColor(Palette.accent)
+            .setContentTitle(show.title)
+            .setContentText(show.text)
+            .setSubText(name)
+            .setProgress(100, show.percent, false)
+            .setContentIntent(open)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(true)
+            .setWhen(System.currentTimeMillis())
+            .setTimeoutAfter(ChargeNote.STALE_MS)
+            .setCategory(Notification.CATEGORY_PROGRESS)
+            .build()
+        try {
+            nm.notify(id, note)
+            if (charging.add(key)) {
+                LinkLog.add(tr("смужка заряду ${BmsMatch.shortAddress(address)}: ${show.title}",
+                    "charge bar ${BmsMatch.shortAddress(address)}: ${show.title}"))
+            }
+        } catch (x: SecurityException) {
+            // Android 13+: сповіщення заборонені — мовчки.
+        }
+    }
+
+    /**
+     * Прибрати смужку одразу: фон не дістав батарею (що там зараз — невідомо, не чекаємо [ChargeNote.STALE_MS])
+     * або в «Сповіщеннях» вимкнули «Заряджається».
+     */
+    fun dropChargeBar(ctx: Context, address: String) {
+        charging.remove(address.uppercase())
+        ctx.getSystemService(NotificationManager::class.java)?.cancel(noteId(address, Alerts.Kind.CHARGING))
     }
 
     /** Фон не дістав батарею: через годину без даних — тихе «Нема даних». */
     fun onNoData(ctx: Context, address: String, now: Long) {
         if (address.startsWith("demo:")) return
+        dropChargeBar(ctx, address)
         val settings = AlertSettings(ctx)
         val bgOk = BgSettings(ctx).result(address)?.takeIf { it.ok }?.at
         val saved = LastSnapshot(ctx).load(address)?.second

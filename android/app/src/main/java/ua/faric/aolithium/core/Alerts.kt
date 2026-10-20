@@ -26,6 +26,8 @@ object Alerts {
         CELLS("cells", Level.DEFAULT),
         TEMP("temp", Level.HIGH),
         NO_DATA("nodata", Level.QUIET),
+        /** T39 (v0.4.9): смужка «Заряджається» — правила в `ChargeNote`, не в `onSnapshot`. Останнім: номери в шторці не зсуваються. */
+        CHARGING("charging", Level.QUIET),
         ;
 
         /** Назва (перемикач у «Ще», канал Android) — обома мовами (T12), через `get()`: мову можуть перемкнути. */
@@ -37,6 +39,7 @@ object Alerts {
             CELLS -> tr("Велика різниця комірок", "Large cell difference")
             TEMP -> tr("Холод / спека", "Cold / heat")
             NO_DATA -> tr("Нема даних понад 1 год", "No data for over 1 h")
+            CHARGING -> tr("Заряджається (смужка)", "Charging (progress bar)")
         }
 
         /** Підказка під назвою; "" — без підказки. */
@@ -47,6 +50,7 @@ object Alerts {
             PROTECTION -> tr("і коли плата вимкнула заряд чи розряд", "also when the BMS turns off charge or discharge")
             TEMP -> tr("нижче 0 °C, вище 50 °C", "below 0 °C, above 50 °C")
             NO_DATA -> tr("тихе, без звуку", "quiet, no sound")
+            CHARGING -> tr("тихе: %, до повної, зникає саме", "quiet: %, time to full, goes away by itself")
         }
 
         companion object {

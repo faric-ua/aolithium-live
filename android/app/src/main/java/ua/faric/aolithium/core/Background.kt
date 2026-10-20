@@ -85,6 +85,15 @@ object Background {
         return if (r.ok) "$t — ${r.soc} %, ${flow(r.current)}" else "$t — ${Skip.localize(r.note.ifBlank { Skip.NO_ANSWER.name })}"
     }
 
+    /**
+     * T40 (v0.4.9, faric 20.10 «підтримую»): розблокував телефон — одне коротке читання, щоб віджет і смужка заряду
+     * показали свіже. Лише якщо останнє читання старше за [UNLOCK_MIN_MS] і зараз нічого не читаємо — інакше часті
+     * розблокування ганяли б Bluetooth (і займали батарею для Aolithium на іншому телефоні) щохвилини.
+     */
+    const val UNLOCK_MIN_MS = 60_000L
+
+    fun readOnUnlock(lastTickAt: Long, now: Long, busy: Boolean): Boolean = !busy && now - lastTickAt >= UNLOCK_MIN_MS
+
     /** Коли наступний тік: від початку попереднього, але не раніше ніж за хвилину від зараз. */
     fun nextAt(lastTickAt: Long, now: Long): Long = maxOf(lastTickAt + EVERY_MS, now + 60_000L)
 
