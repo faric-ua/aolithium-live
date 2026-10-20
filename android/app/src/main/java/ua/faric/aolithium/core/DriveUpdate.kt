@@ -33,8 +33,11 @@ object DriveUpdate {
      */
     const val BUILT_IN_MANIFEST_ID = "1s6SVbZuXEszmYC71S9avvTW9ilhsaOGB"
 
-    /** Вбудоване посилання на `Aolithium Live.apk` у тій самій папці — кроки 3–4 автора більше не потрібні (0.4.6). */
-    const val BUILT_IN_APK_ID = "1cI2Db86Rb3SpapcLVnuapj-Xxgy-Y4LC"
+    /**
+     * Вбудоване посилання на `Aolithium Live.apk` у тій самій папці — кроки 3–4 автора більше не потрібні (0.4.6).
+     * Заглушку Claude faric замінив справжнім файлом, публікуючи 0.4.5 (20.10 16:39) — тут ID саме того файлу.
+     */
+    const val BUILT_IN_APK_ID = "1IYhxxrMWtVPeRoVzqKIA--qJWRu6ECzm"
 
     /** Де лежать ці файли — для підказки автору на кроках 1–2. */
     const val BUILT_IN_FOLDER = "AppsAndroidSync › AolithiumLive › App"

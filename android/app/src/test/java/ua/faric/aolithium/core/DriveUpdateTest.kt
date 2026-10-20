@@ -35,7 +35,7 @@ class DriveUpdateTest {
     fun builtInLinksPointToCreatedFiles() {
         // 0.4.6: посилання вбудовані (файли створено в AppsAndroidSync › AolithiumLive › App).
         assertEquals("1s6SVbZuXEszmYC71S9avvTW9ilhsaOGB", DriveUpdate.BUILT_IN_MANIFEST_ID)
-        assertEquals("1cI2Db86Rb3SpapcLVnuapj-Xxgy-Y4LC", DriveUpdate.BUILT_IN_APK_ID)
+        assertEquals("1IYhxxrMWtVPeRoVzqKIA--qJWRu6ECzm", DriveUpdate.BUILT_IN_APK_ID)
         assertTrue(DriveUpdate.filesBuiltIn)
         assertEquals(emptyList<String>(), DriveUpdate.manifestCandidates(null, null, ""))
         assertEquals(listOf(id), DriveUpdate.manifestCandidates(null, id, ""))

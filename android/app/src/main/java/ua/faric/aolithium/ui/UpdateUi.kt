@@ -190,6 +190,9 @@ class UpdateUi(private val host: MainActivity) {
     private fun apkIdNow(): String = prefs.getString(KEY_APK_ID, "").orEmpty().ifBlank { DriveUpdate.BUILT_IN_APK_ID }
     private fun jsonIdNow(): String = prefs.getString(KEY_JSON_ID, "").orEmpty().ifBlank { DriveUpdate.BUILT_IN_MANIFEST_ID }
 
+    /** Показати кроки 3–4 (вставити інші посилання) і тоді, коли посилання вбудовані. */
+    private var linkSteps = false
+
     private fun setupReady(): Boolean = listOf(KEY_APK_URI, KEY_JSON_URI).all { !prefs.getString(it, "").isNullOrBlank() } &&
         apkIdNow().isNotBlank() && jsonIdNow().isNotBlank()
 
@@ -240,6 +243,15 @@ class UpdateUi(private val host: MainActivity) {
             else tr("2. Створити файл версії на Диску", "2. Create the version file on Drive"),
             if (jsonReady) Ui.Kind.QUIET else Ui.Kind.PRIMARY, apkReady && !jsonReady,
         ) { if (pick) pickFile(REQ_JSON) else createFile(REQ_JSON, "application/json", DriveUpdate.VERSION_FILE_NAME) }
+        if (pick && linkSteps) {
+            // Змінити вбудовані посилання на інші (скопійовані в Google Диску) — для цього телефона.
+            step(tr("3. Вставити інше посилання на APK", "3. Paste another APK link"), Ui.Kind.NORMAL, true) {
+                if (pasteLink(KEY_APK_ID)) showPublishSheet(keepScroll = true)
+            }
+            step(tr("4. Вставити інше посилання на файл версії", "4. Paste another version file link"), Ui.Kind.NORMAL, true) {
+                if (pasteLink(KEY_JSON_ID)) showPublishSheet(keepScroll = true)
+            }
+        }
         if (!pick) step(
             if (apkLink) tr("3. Посилання на APK — вставлено", "3. APK link — pasted") else tr("3. Вставити посилання на APK", "3. Paste the APK link"),
             if (apkLink) Ui.Kind.QUIET else Ui.Kind.PRIMARY, apkReady && jsonReady && !apkLink,
@@ -248,6 +260,13 @@ class UpdateUi(private val host: MainActivity) {
             if (jsonLink) tr("4. Посилання на файл версії — вставлено", "4. Version file link — pasted") else tr("4. Вставити посилання на файл версії", "4. Paste the version file link"),
             if (jsonLink) Ui.Kind.QUIET else Ui.Kind.PRIMARY, apkReady && jsonReady && apkLink && !jsonLink,
         ) { if (pasteLink(KEY_JSON_ID)) showPublishSheet(keepScroll = true) }
+        if (pick && !linkSteps) {
+            // faric 20.10 16:42: «кнопку, щоб можна було змінити посилання — як у всіх». Вбудовані — за замовчуванням.
+            box.addView(ui.button(tr("Змінити посилання на файли (автор)", "Change the file links (author)"), Ui.Kind.QUIET) {
+                linkSteps = true
+                showPublishSheet(keepScroll = true)
+            }, ui.matchWrap())
+        }
         if (pick && !(apkReady && jsonReady)) {
             box.addView(ui.muted(tr(
                 "Кроки 1–2: у вікні вибору натисни ☰ ліворуч → «Google Диск» → папки ${DriveUpdate.BUILT_IN_FOLDER} → торкнись файлу.",
