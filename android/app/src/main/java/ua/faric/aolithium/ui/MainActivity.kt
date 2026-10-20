@@ -20,8 +20,13 @@ import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import ua.faric.aolithium.BuildConfig
+import ua.faric.aolithium.bg.Notifier
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BtAccess
+import ua.faric.aolithium.core.Lang
+import ua.faric.aolithium.core.tr
+import ua.faric.aolithium.data.LangSettings
+import ua.faric.aolithium.widget.Widgets
 
 /**
  * Одне вікно, три сторінки: «Батареї» (головна), «Батарея» (живі показники), «Довідка».
@@ -122,13 +127,30 @@ class MainActivity : Activity() {
             brand.addView(View(this).apply { background = ui.rounded(Palette.accent, radiusDp = 6) }, LinearLayout.LayoutParams(ui.dp(10), ui.dp(10)))
             brand.addView(ui.text("Aolithium Live", 18f, Palette.text, medium = true))
             topBar.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            topBar.addView(ui.iconButton(LineIcon.HELP, "Довідка", Ui.Kind.QUIET) { show(Page.HELP, null) })
+            // T12: перемикач мови — назва ІНШОЇ мови її ж мовою («English» / «Українська»), щоб знайти без перекладу.
+            topBar.addView(ui.button(if (Lang.isEn) "УКР" else "EN", Ui.Kind.QUIET) {
+                setLanguage(if (Lang.isEn) Lang.Code.UK else Lang.Code.EN)
+            }.apply { contentDescription = if (Lang.isEn) "Українська" else "English" })
+            topBar.addView(ui.iconButton(LineIcon.HELP, tr("Довідка", "Help"), Ui.Kind.QUIET) { show(Page.HELP, null) })
         } else {
             val toHelp = page == Page.BATTERY && returnTo == Page.HELP
-            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) "Довідка" else "Батареї", Ui.Kind.QUIET) { goBack() })
+            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) tr("Довідка", "Help") else tr("Батареї", "Batteries"), Ui.Kind.QUIET) { goBack() })
             topBar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         }
         topBar.gravity = Gravity.CENTER_VERTICAL
+    }
+
+    /**
+     * T12: змінити мову. Зберегти, перейменувати канали сповіщень, перемалювати віджети й шторку «Запис у фоні», а
+     * вікно перестворити — сторінка, відкрита батарея й прокрутка відновлюються так само, як після повороту.
+     */
+    fun setLanguage(code: Lang.Code) {
+        if (code == Lang.current) return
+        LangSettings.save(this, code)
+        Notifier.refreshChannels(this)
+        Widgets.refresh(this)
+        if (RecordService.running) RecordService.ensure(this)
+        recreate()
     }
 
     fun openBattery(address: String) = show(Page.BATTERY, address)

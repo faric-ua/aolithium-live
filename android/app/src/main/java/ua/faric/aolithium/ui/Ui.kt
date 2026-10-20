@@ -235,7 +235,7 @@ class Ui(val ctx: Context) {
 
     companion object {
         /** Число й одиниця не розриваються переносом: «63,5 А·год», а не «63,5 / А·год» (знімки CI, шрифт 1,3). */
-        fun keepUnits(v: CharSequence): String = v.toString().replace(Regex("""(\d) (?=[А-Яа-яІіЇїЄєA-Za-z°%])"""), "$1\u00A0")
+        fun keepUnits(v: CharSequence): String = v.toString().replace(Regex("""(\d) (?=[А-Яа-яІіЇїЄєA-Za-z°%])"""), "$1\u00A0")  // uk-only
 
         const val MIN_TOUCH_DP = 48
         const val TWO_PANE_DP = 600

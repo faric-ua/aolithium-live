@@ -36,6 +36,7 @@ import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.HistoryPoint
 import ua.faric.aolithium.core.Laggard
+import ua.faric.aolithium.core.Lang
 import ua.faric.aolithium.core.LinkLine
 import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
@@ -44,6 +45,7 @@ import ua.faric.aolithium.core.TextFit
 import ua.faric.aolithium.core.TimeLeft
 import ua.faric.aolithium.core.WidgetModel
 import ua.faric.aolithium.core.Zones
+import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
@@ -1010,7 +1012,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             val week = outages.filter { it.end > now - 7 * DailyMin.DAY_MS }
             val sumBox = ArrayList<View>()
             summaryValues.clear()
-            sumBox += summaryTile("за 7 днів", "${week.size} " + Fmt.plural(week.size, "відключення", "відключення", "відключень"))
+            sumBox += summaryTile(tr("за 7 днів", "7 days"), "${week.size} " + Fmt.plural(week.size, "відключення", "відключення", "відключень", "outage", "outages"))
             sumBox += summaryTile("без світла", Fmt.duration(week.sumOf { it.durationMs } / 3_600_000.0))
             sumBox += summaryTile("віддала", if (week.sumOf { it.wh } >= 1000) Fmt.num(week.sumOf { it.wh } / 1000, 1) + " кВт·год" else Fmt.num(week.sumOf { it.wh }, 0) + " Вт·год")
             sumBox += summaryTile("найнижче", (week.minOfOrNull { it.socTo }?.let { "$it %" } ?: "—"))
@@ -1218,7 +1220,19 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         help.addView(ui.muted("Як підключити, чому не видно батареї, демо без батареї.", 13f))
         help.addView(ui.iconButton(LineIcon.HELP, "Відкрити довідку", Ui.Kind.NORMAL) { host.openHelp() }, ui.matchWrap())
 
-        columns(listOf(backgroundCard(), alertsCard(), actions, hist, help), listOf(dict))
+        columns(listOf(backgroundCard(), alertsCard(), langCard(), actions, hist, help), listOf(dict))
+    }
+
+    /** T12: «Мова / Language» — обидві назви, щоб картку знайшов і той, хто не читає поточною мовою. */
+    private fun langCard(): View {
+        val card = ui.card()
+        card.addView(labelRow("Мова · Language", LineIcon.GLOBE, null))
+        val row = ArrayList<View>()
+        row += ui.choice("Українська", !Lang.isEn) { host.setLanguage(Lang.Code.UK) }
+        row += ui.choice("English", Lang.isEn) { host.setLanguage(Lang.Code.EN) }
+        card.addView(ui.grid(row), ui.matchWrap())
+        card.addView(ui.muted(tr("Сповіщення й віджет теж перейдуть на вибрану мову.", "Notifications and the widget switch language too."), 12.5f))
+        return card
     }
 
     /**

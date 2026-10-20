@@ -24,6 +24,7 @@ import ua.faric.aolithium.ble.LinkStatus
 import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.HistoryStore
@@ -129,13 +130,7 @@ class RecordService : Service() {
 
     private fun buildNote(): Notification {
         val nm = getSystemService(NotificationManager::class.java)
-        if (nm?.getNotificationChannel(CHANNEL) == null) {
-            val ch = NotificationChannel(CHANNEL, "Запис у фоні", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Тихе сповіщення, поки Aolithium Live раз на 5 хв записує показники батареї"
-                setShowBadge(false)
-            }
-            nm?.createNotificationChannel(ch)
-        }
+        if (nm != null && nm.getNotificationChannel(CHANNEL) == null) ensureChannel(nm)
         val batteries = Batteries(this)
         val enabled = settings.enabled()
         // T21 (faric 19.10 20:55): час останнього читання — у верхньому рядку сповіщення (праворуч), не в тексті.
@@ -307,6 +302,16 @@ class RecordService : Service() {
 
     companion object {
         const val CHANNEL = "background"
+
+        /** Канал тихого сповіщення «Запис у фоні»; повторний виклик (T12, зміна мови) лише перейменовує його. */
+        fun ensureChannel(nm: NotificationManager) {
+            val ch = NotificationChannel(CHANNEL, tr("Запис у фоні", "Background recording"), NotificationManager.IMPORTANCE_LOW).apply {
+                description = tr("Тихе сповіщення, поки Aolithium Live раз на 5 хв записує показники батареї",
+                    "Quiet notification while Aolithium Live records the battery every 5 min")
+                setShowBadge(false)
+            }
+            nm.createNotificationChannel(ch)
+        }
         const val NOTE_ID = 5
         const val ACTION_TICK = "ua.faric.aolithium.bg.TICK"
         const val ACTION_REFRESH = "ua.faric.aolithium.bg.REFRESH"

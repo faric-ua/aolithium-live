@@ -111,8 +111,19 @@ object Notifier {
 
     private fun channelId(kind: Alerts.Kind) = "alert_${kind.key}"
 
-    private fun ensureChannel(nm: NotificationManager, kind: Alerts.Kind) {
-        if (nm.getNotificationChannel(channelId(kind)) != null) return
+    /**
+     * T12: мову змінили — перейменувати вже створені канали (назви видно в налаштуваннях телефона). Android при
+     * повторному `createNotificationChannel` міняє лише назву й опис, а звук і важливість, які людина могла змінити,
+     * лишає — тож це безпечно. Канал «Запис у фоні» — так само.
+     */
+    fun refreshChannels(ctx: Context) {
+        val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
+        for (kind in Alerts.Kind.entries) if (nm.getNotificationChannel(channelId(kind)) != null) ensureChannel(nm, kind, force = true)
+        if (nm.getNotificationChannel(RecordService.CHANNEL) != null) RecordService.ensureChannel(nm)
+    }
+
+    private fun ensureChannel(nm: NotificationManager, kind: Alerts.Kind, force: Boolean = false) {
+        if (!force && nm.getNotificationChannel(channelId(kind)) != null) return
         val importance = when (kind.level) {
             Alerts.Level.HIGH -> NotificationManager.IMPORTANCE_HIGH
             Alerts.Level.DEFAULT -> NotificationManager.IMPORTANCE_DEFAULT
