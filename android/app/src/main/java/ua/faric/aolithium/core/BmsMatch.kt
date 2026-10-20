@@ -5,10 +5,15 @@ package ua.faric.aolithium.core
  * Ознаки — з відкритої бібліотеки aiobmsble (`jbd_bms.py`, `jikong_bms.py`).
  */
 object BmsMatch {
-    enum class Kind(val title: String) {
-        JBD("Плата JBD (як в Aolithium)"),
-        JK("Плата JK BMS"),
-        OTHER("Інший пристрій"),
+    enum class Kind {
+        JBD, JK, OTHER;
+
+        /** Обома мовами (T12), через `get()` — мову можуть перемкнути. */
+        val title: String get() = when (this) {
+            JBD -> tr("Плата JBD (як в Aolithium)", "JBD BMS (as in Aolithium)")
+            JK -> tr("Плата JK BMS", "JK BMS")
+            OTHER -> tr("Інший пристрій", "Other device")
+        }
     }
 
     /** Початки адрес Bluetooth, які видають модулі JBD. A4:C1:37 — саме в Aolithium. */

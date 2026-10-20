@@ -7,13 +7,23 @@ package ua.faric.aolithium.core
  * Напруги окремих комірок Aolithium не показує — тут вигадані близькі (середня 3,328 В, як на відео).
  */
 object DemoFrames {
-    enum class Scene(val title: String) {
-        IDLE("Спокій (як на відео)"),
-        CHARGING("Заряджається, балансування"),
-        DISCHARGING("Світла нема — віддає"),
-        COLD("Захист: холодно для заряду"),
+    enum class Scene {
+        IDLE,
+        CHARGING,
+        DISCHARGING,
+        COLD,
         /** v0.4: плата JK BMS (як у Logic Power у мами) — кадри JK з `JkDemo`, не JBD. */
-        JK("Logic Power (JK BMS): заряд, балансир"),
+        JK,
+        ;
+
+        /** Обома мовами (T12), через `get()` — мову можуть перемкнути. */
+        val title: String get() = when (this) {
+            IDLE -> tr("Спокій (як на відео)", "Idle (as in the video)")
+            CHARGING -> tr("Заряджається, балансування", "Charging, balancing")
+            DISCHARGING -> tr("Світла нема — віддає", "No power — discharging")
+            COLD -> tr("Захист: холодно для заряду", "Protection: too cold to charge")
+            JK -> tr("Logic Power (JK BMS): заряд, балансир", "Logic Power (JK BMS): charging, balancer")
+        }
     }
 
     fun basic(scene: Scene): ByteArray = Jbd.responseFrame(Jbd.CMD_BASIC, basicData(scene))

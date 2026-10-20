@@ -27,12 +27,29 @@ object Background {
     /** Результат останнього читання у фоні (зберігається в пам'яті телефона для «Ще» і сповіщення). */
     data class Result(val at: Long, val ok: Boolean, val soc: Int = 0, val current: Double = 0.0, val note: String = "")
 
-    /** Чому цього разу не читали чи не прочитали. */
-    enum class Skip(val text: String) {
-        SCREEN_OPEN("відкритий екран батареї сам записує"),
-        NO_PERMISSION("Android не дав дозволу на Bluetooth"),
-        BLUETOOTH_OFF("Bluetooth вимкнено"),
-        NO_ANSWER("нема зв'язку — батарея далеко чи зайнята іншим телефоном"),
+    /**
+     * Чому цього разу не читали чи не прочитали. [text] — обома мовами (T12), через `get()`.
+     * T12: у пам'ять телефона ([Result.note], `data/BgSettings`) іде не текст, а назва ([name], напр. «NO_ANSWER») —
+     * текст поточною мовою дає [localize] при показі. Старий запис українським текстом показуємо як є
+     * (за ~5 хв його замінить новий).
+     */
+    enum class Skip {
+        SCREEN_OPEN, NO_PERMISSION, BLUETOOTH_OFF, NO_ANSWER;
+
+        val text: String get() = when (this) {
+            SCREEN_OPEN -> tr("відкритий екран батареї сам записує", "the open battery screen records by itself")
+            NO_PERMISSION -> tr("Android не дав дозволу на Bluetooth", "Android did not allow Bluetooth")
+            BLUETOOTH_OFF -> tr("Bluetooth вимкнено", "Bluetooth is off")
+            NO_ANSWER -> tr(
+                "нема зв'язку — батарея далеко чи зайнята іншим телефоном",
+                "no connection — battery far away or used by another phone",
+            )
+        }
+
+        companion object {
+            /** Збережена причина ([name]) — текстом поточною мовою; незнайомий запис — як є. */
+            fun localize(note: String): String = entries.firstOrNull { it.name == note }?.text ?: note
+        }
     }
 
     /** Що зробити на черговому «тіку» з однією батареєю. */
@@ -45,9 +62,9 @@ object Background {
 
     /** «віддає 4,10 А» / «бере 8,50 А» / «стоїть». */
     fun flow(current: Double): String = when {
-        current <= -IDLE_A -> "віддає ${Fmt.amps(abs(current))}"
-        current >= IDLE_A -> "бере ${Fmt.amps(current)}"
-        else -> "стоїть"
+        current <= -IDLE_A -> tr("віддає ${Fmt.amps(abs(current))}", "discharging ${Fmt.amps(abs(current))}")
+        current >= IDLE_A -> tr("бере ${Fmt.amps(current)}", "charging ${Fmt.amps(current)}")
+        else -> tr("стоїть", "idle")
     }
 
     /**
@@ -55,17 +72,17 @@ object Background {
      * [withTime] = false — без часу в кінці (T21, faric 19.10 20:55: час — у верхньому рядку сповіщення, праворуч).
      */
     fun line(name: String, r: Result?, tz: TimeZone = TimeZone.getDefault(), withTime: Boolean = true): String {
-        if (r == null) return "$name: чекаю першого запису"
+        if (r == null) return tr("$name: чекаю першого запису", "$name: waiting for the first record")
         val t = if (withTime) " · ${hhmm(r.at, tz)}" else ""
         return if (r.ok) "$name: ${r.soc} % · ${flow(r.current)}$t"
-        else "$name: ${r.note.ifBlank { Skip.NO_ANSWER.text }}$t"
+        else "$name: ${Skip.localize(r.note.ifBlank { Skip.NO_ANSWER.name })}$t"
     }
 
     /** Для «Ще»: «04:35 — 64 %, віддає 4,10 А» або «04:35 — нема зв'язку …». */
     fun status(r: Result?, tz: TimeZone = TimeZone.getDefault()): String {
-        if (r == null) return "ще не було"
+        if (r == null) return tr("ще не було", "not yet")
         val t = hhmm(r.at, tz)
-        return if (r.ok) "$t — ${r.soc} %, ${flow(r.current)}" else "$t — ${r.note.ifBlank { Skip.NO_ANSWER.text }}"
+        return if (r.ok) "$t — ${r.soc} %, ${flow(r.current)}" else "$t — ${Skip.localize(r.note.ifBlank { Skip.NO_ANSWER.name })}"
     }
 
     /** Коли наступний тік: від початку попереднього, але не раніше ніж за хвилину від зараз. */
@@ -80,7 +97,9 @@ object Background {
  * щоб файл відкривався в таблицях. Розділювач — кома, числа — з крапкою (так таблиці читають CSV).
  */
 object HistoryCsv {
-    const val HEADER = "дата_час,мітка_мс,заряд_%,напруга_В,струм_А,потужність_Вт,залишок_Агод,темп_мін_С,темп_макс_С,різниця_мВ,комірки_мВ"
+    /** Назви колонок файлу — не переклад, а ключі (T12): однакові обома мовами. */
+    const val HEADER = "дата_час,мітка_мс,заряд_%,напруга_В,струм_А,потужність_Вт,залишок_Агод," + // uk-only
+        "темп_мін_С,темп_макс_С,різниця_мВ,комірки_мВ" // uk-only
 
     fun row(p: HistoryPoint, tz: TimeZone = TimeZone.getDefault()): String {
         val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).apply { timeZone = tz }.format(Date(p.t))
@@ -94,7 +113,8 @@ object HistoryCsv {
 
     /** Назва файлу: «aolithium-AL12-100-4S-2026-10-19.csv» (без адреси батареї). */
     fun fileName(title: String, now: Long, tz: TimeZone = TimeZone.getDefault()): String {
-        val safe = title.replace(Regex("[^A-Za-z0-9А-Яа-яІіЇїЄєҐґ_-]+"), "-").trim('-').take(30).ifBlank { "battery" }
+        val letters = "[^A-Za-z0-9А-Яа-яІіЇїЄєҐґ_-]+" // uk-only: не текст, а дозволені букви
+        val safe = title.replace(Regex(letters), "-").trim('-').take(30).ifBlank { "battery" }
         val day = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { timeZone = tz }.format(Date(now))
         return "aolithium-$safe-$day.csv"
     }

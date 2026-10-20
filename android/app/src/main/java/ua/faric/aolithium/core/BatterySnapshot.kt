@@ -67,10 +67,15 @@ data class BatterySnapshot(
     enum class Flow { CHARGING, DISCHARGING, IDLE }
 
     /** Оцінка різниці комірок — орієнтир, не діагноз. */
-    enum class Verdict(val title: String) {
-        GOOD("рівно"),
-        WATCH("помірна різниця"),
-        BAD("велика різниця");
+    enum class Verdict {
+        GOOD, WATCH, BAD;
+
+        /** Обома мовами (T12), через `get()` — мову можуть перемкнути. */
+        val title: String get() = when (this) {
+            GOOD -> tr("рівно", "even")
+            WATCH -> tr("помірна різниця", "moderate difference")
+            BAD -> tr("велика різниця", "large difference")
+        }
 
         companion object {
             const val WATCH_FROM_MV = 30

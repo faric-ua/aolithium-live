@@ -53,7 +53,7 @@ class RecordService : Service() {
     private var linkAddress: String? = null
     private var busy = false
     private val fallbackTick = Runnable { tick() }
-    private val readTimeout = Runnable { finishRead(null, Background.Skip.NO_ANSWER.text) }
+    private val readTimeout = Runnable { finishRead(null, Background.Skip.NO_ANSWER.name) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -71,7 +71,7 @@ class RecordService : Service() {
         when (intent?.action) {
             ACTION_STOP -> {
                 settings.offAll()
-                LinkLog.add("фон: вимкнено зі сповіщення")
+                LinkLog.add(tr("фон: вимкнено зі сповіщення", "background: turned off from the notification"))
                 stopEverything()
                 return START_NOT_STICKY
             }
@@ -119,11 +119,11 @@ class RecordService : Service() {
             true
         } catch (e: SecurityException) {
             // Android 14+: служба «пристрої поблизу» лише з дозволом на Bluetooth.
-            LinkLog.add("фон: Android не дозволив запуск (${e.message})")
+            LinkLog.add(tr("фон: Android не дозволив запуск (${e.message})", "background: Android did not allow start (${e.message})"))
             false
         } catch (e: IllegalStateException) {
             // Android 12+: з фону запускати не можна (ForegroundServiceStartNotAllowedException).
-            LinkLog.add("фон: Android не дозволив запуск з фону")
+            LinkLog.add(tr("фон: Android не дозволив запуск з фону", "background: Android did not allow start from background"))
             false
         }
     }
@@ -139,7 +139,7 @@ class RecordService : Service() {
             Background.line(name, settings.result(addr), withTime = false)
         }
         val lastAt = enabled.mapNotNull { settings.result(it)?.at }.maxOrNull()
-        val text = lines.joinToString("\n").ifBlank { "Запис у фоні вимкнено" }
+        val text = lines.joinToString("\n").ifBlank { tr("Запис у фоні вимкнено", "Background recording is off") }
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -150,7 +150,7 @@ class RecordService : Service() {
         )
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_note_battery)
-            .setContentTitle("Запис у фоні · раз на 5 хв")
+            .setContentTitle(tr("Запис у фоні · раз на 5 хв", "Background recording · every 5 min"))
             .setContentText(lines.firstOrNull() ?: text)
             .setStyle(Notification.BigTextStyle().bigText(text))
             .setContentIntent(open)
@@ -159,7 +159,9 @@ class RecordService : Service() {
             .setShowWhen(lastAt != null)
             .setWhen(lastAt ?: System.currentTimeMillis())
             .setCategory(Notification.CATEGORY_SERVICE)
-            .addAction(Notification.Action.Builder(Icon.createWithResource(this, R.drawable.ic_note_battery), "Вимкнути", stop).build())
+            .addAction(
+                Notification.Action.Builder(Icon.createWithResource(this, R.drawable.ic_note_battery), tr("Вимкнути", "Turn off"), stop).build(),
+            )
             .build()
     }
 
@@ -222,8 +224,10 @@ class RecordService : Service() {
             bluetoothOn = BtAccess.bluetoothOn(this),
         )
         if (skip != null) {
-            LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: пропускаю — ${skip.text}")
-            settings.saveResult(addr, Background.Result(System.currentTimeMillis(), ok = false, note = skip.text))
+            val short = BmsMatch.shortAddress(addr)
+            LinkLog.add(tr("фон $short: пропускаю — ${skip.text}", "background $short: skipping — ${skip.text}"))
+            // T12: у пам'ять — назва причини, не текст: показ перекладає `Background.Skip.localize` (мову можуть перемкнути).
+            settings.saveResult(addr, Background.Result(System.currentTimeMillis(), ok = false, note = skip.name))
             // Екран сам пише й сповіщає; а без Bluetooth чи дозволу — даних нема, як і коли батарея далеко.
             if (skip != Background.Skip.SCREEN_OPEN) Notifier.onNoData(this, addr, System.currentTimeMillis())
             h.post { readNext() }
@@ -235,7 +239,7 @@ class RecordService : Service() {
         l.listener = object : BatteryLink.Listener {
             override fun onStatus(status: LinkStatus) {
                 if (status.phase == LinkStatus.Phase.FAILED || status.phase == LinkStatus.Phase.NO_ANSWER) {
-                    finishRead(null, Background.Skip.NO_ANSWER.text)
+                    finishRead(null, Background.Skip.NO_ANSWER.name)
                 }
             }
 
@@ -247,7 +251,7 @@ class RecordService : Service() {
         l.start()
     }
 
-    /** Знімок є — записати; нема — записати причину. Потім — відключитись і до наступної батареї. */
+    /** Знімок є — записати; нема — записати причину ([note] — назва `Background.Skip`). Потім — до наступної батареї. */
     private fun finishRead(s: BatterySnapshot?, note: String, atMs: Long = System.currentTimeMillis()) {
         val l = link ?: return
         val addr = linkAddress ?: return
@@ -260,12 +264,16 @@ class RecordService : Service() {
             HistoryStore.get(this).record(addr, s, atMs)
             LastSnapshot(this).save(addr, s, atMs)
             settings.saveResult(addr, Background.Result(atMs, ok = true, soc = s.soc, current = s.current))
-            LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: записано ${s.soc} %, ${Background.flow(s.current)}")
+            val short = BmsMatch.shortAddress(addr)
+            LinkLog.add(tr("фон $short: записано ${s.soc} %, ${Background.flow(s.current)}",
+                "background $short: saved ${s.soc} %, ${Background.flow(s.current)}"))
             Notifier.onSnapshot(this, addr, s, atMs)
             Widgets.onData(this, fromScreen = false)
         } else {
             settings.saveResult(addr, Background.Result(atMs, ok = false, note = note))
-            LinkLog.add("фон ${BmsMatch.shortAddress(addr)}: $note")
+            val short = BmsMatch.shortAddress(addr)
+            val why = Background.Skip.localize(note)
+            LinkLog.add(tr("фон $short: $why", "background $short: $why"))
             Notifier.onNoData(this, addr, atMs)
             Widgets.onData(this, fromScreen = false)
         }
@@ -278,7 +286,8 @@ class RecordService : Service() {
     private fun cancelFor(address: String) {
         val l = link ?: return
         if (!address.equals(linkAddress, ignoreCase = true)) return
-        LinkLog.add("фон ${BmsMatch.shortAddress(address)}: поступаюсь відкритому екрану")
+        val short = BmsMatch.shortAddress(address)
+        LinkLog.add(tr("фон $short: поступаюсь відкритому екрану", "background $short: giving way to the open screen"))
         h.removeCallbacks(readTimeout)
         l.listener = null
         l.stop()
@@ -338,10 +347,12 @@ class RecordService : Service() {
                 ctx.startForegroundService(Intent(ctx, RecordService::class.java).setAction(action))
                 true
             } catch (e: IllegalStateException) {
-                LinkLog.add("фон: Android не дав запустити службу (${e.javaClass.simpleName})")
+                val why = e.javaClass.simpleName
+                LinkLog.add(tr("фон: Android не дав запустити службу ($why)", "background: Android did not let the service start ($why)"))
                 false
             } catch (e: SecurityException) {
-                LinkLog.add("фон: Android не дав запустити службу (немає дозволу)")
+                LinkLog.add(tr("фон: Android не дав запустити службу (немає дозволу)",
+                    "background: Android did not let the service start (no permission)"))
                 false
             }
         }

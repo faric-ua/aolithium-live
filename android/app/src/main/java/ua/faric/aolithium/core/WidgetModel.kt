@@ -42,50 +42,67 @@ object WidgetModel {
     fun of(name: String, s: BatterySnapshot?, at: Long?, now: Long, tz: TimeZone = TimeZone.getDefault()): Model {
         if (s == null || at == null) {
             return Model(
-                name, Tone.EMPTY, "—", 0f, "", "нема даних", Arrow.NONE,
-                "ще не було зв'язку", "відкрий застосунок біля батареї", "торкнись — відкрити батарею", "відкрий біля батареї",
+                name, Tone.EMPTY, "—", 0f, "", tr("нема даних", "no data"), Arrow.NONE,
+                tr("ще не було зв'язку", "no connection yet"),
+                tr("відкрий застосунок біля батареї", "open the app near the battery"),
+                tr("торкнись — відкрити батарею", "tap to open the battery"),
+                tr("відкрий біля батареї", "open near the battery"),
             )
         }
         val pct = "${s.soc} %"
         val ring = (s.soc.coerceIn(0, 100) / 100f)
         val time = Background.hhmm(at, tz)
         if (now - at > STALE_MS) {
+            val ago = Fmt.duration((now - at) / 3_600_000.0)
             return Model(
-                name, Tone.STALE, pct, ring, "о $time", "нема даних", Arrow.NONE,
-                "${Fmt.duration((now - at) / 3_600_000.0)} — телефон далеко?",
-                "показано останнє, що було о $time", "торкнись — відкрити батарею", "нема даних з $time",
+                name, Tone.STALE, pct, ring, tr("о $time", "at $time"), tr("нема даних", "no data"), Arrow.NONE,
+                tr("$ago — телефон далеко?", "$ago — phone far away?"),
+                tr("показано останнє, що було о $time", "showing the last data from $time"),
+                tr("торкнись — відкрити батарею", "tap to open the battery"),
+                tr("нема даних з $time", "no data since $time"),
             )
         }
-        val ah = Fmt.num(s.remainAh, 1) + " А·год"
+        val ah = Fmt.num(s.remainAh, 1) + " " + Fmt.AH
+        val saved = tr("записано $time", "saved at $time")
         return when (s.flow) {
             BatterySnapshot.Flow.DISCHARGING -> {
                 val d = TimeLeft.discharge(s.remainAh, s.fullAh, s.current)
                 val to20 = d?.toThreshold?.firstOrNull { it.first == 20 }?.second
                 val left = when {
-                    to20 != null -> "вистачить ≈ ${Fmt.duration(to20)} до 20 %"
-                    d != null -> "до кінця ≈ ${Fmt.duration(d.totalH)} — час заряджати"
+                    to20 != null -> tr("вистачить ≈ ${Fmt.duration(to20)} до 20 %", "lasts ≈ ${Fmt.duration(to20)} to 20 %")
+                    d != null -> {
+                        val total = Fmt.duration(d.totalH)
+                        tr("до кінця ≈ $total — час заряджати", "until empty ≈ $total — time to charge")
+                    }
                     else -> ""
                 }
-                val short = to20?.let { "≈ ${Fmt.duration(it)}" } ?: d?.let { "≈ ${Fmt.duration(it.totalH)}" } ?: "віддає"
+                val short = to20?.let { "≈ ${Fmt.duration(it)}" } ?: d?.let { "≈ ${Fmt.duration(it.totalH)}" }
+                    ?: tr("віддає", "discharging")
                 Model(
                     name, Tone.DISCHARGE, pct, ring, ah, Fmt.watts(abs(s.power)), Arrow.UP,
-                    "віддає — світла нема", left, "записано $time", "$short · $time",
+                    tr("віддає — світла нема", "discharging — no power"), left, saved, "$short · $time",
                 )
             }
             BatterySnapshot.Flow.CHARGING -> {
                 val c = TimeLeft.charge(s.remainAh, s.fullAh, s.current)
-                val line = c?.let { "до повної ≈ ${Fmt.duration(it.toFullH)} · +${Fmt.num(it.percentPerHour, 0)} % за год" } ?: ""
+                val line = c?.let {
+                    val full = Fmt.duration(it.toFullH)
+                    val rate = Fmt.num(it.percentPerHour, 0)
+                    tr("до повної ≈ $full · +$rate % за год", "until full ≈ $full · +$rate % per h")
+                } ?: ""
                 Model(
                     name, Tone.CHARGE, pct, ring, ah, Fmt.watts(abs(s.power)), Arrow.DOWN,
-                    "заряджається", line, "записано $time", "заряд · $time",
+                    tr("заряджається", "charging"), line, saved, tr("заряд · $time", "charging · $time"),
                 )
             }
             BatterySnapshot.Flow.IDLE -> {
                 val full = s.soc >= 99
                 Model(
-                    name, Tone.IDLE, pct, ring, ah, "стоїть", Arrow.NONE,
-                    if (full) "повна — ні заряду, ні розряду" else "ні заряду, ні розряду",
-                    "напруга ${Fmt.volts(s.voltage)}", "записано $time", "${if (full) "повна" else "стоїть"} · $time",
+                    name, Tone.IDLE, pct, ring, ah, tr("стоїть", "idle"), Arrow.NONE,
+                    if (full) tr("повна — ні заряду, ні розряду", "full — no charge, no discharge")
+                    else tr("ні заряду, ні розряду", "no charge, no discharge"),
+                    tr("напруга ${Fmt.volts(s.voltage)}", "voltage ${Fmt.volts(s.voltage)}"), saved,
+                    (if (full) tr("повна", "full") else tr("стоїть", "idle")) + " · $time",
                 )
             }
         }
