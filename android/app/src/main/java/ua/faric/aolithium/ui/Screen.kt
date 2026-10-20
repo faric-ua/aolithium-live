@@ -17,4 +17,7 @@ abstract class Screen(val host: MainActivity) {
 
     /** Android щойно дав / не дав дозволи. */
     open fun onAccessChanged() {}
+
+    /** «Назад» (кнопка телефона): true — екран обробив сам (напр. інструкція: розділ → зміст). */
+    open fun onBack(): Boolean = false
 }

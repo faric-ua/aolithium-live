@@ -139,5 +139,12 @@ fun Ui.iconText(icon: LineIcon, label: CharSequence, color: Int, sizeDp: Int = 1
         append(label)
     }
 
+/** Лише значок, без підпису (T34: кнопка «?» на головній; опис для читалки — `contentDescription`). */
+fun Ui.iconOnly(icon: LineIcon, color: Int, sizeDp: Int): CharSequence =
+    SpannableStringBuilder().apply {
+        append(LineIcon.OBJ)
+        setSpan(ImageSpan(icon.drawable(color, dp(sizeDp)), DynamicDrawableSpan.ALIGN_CENTER), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    }
+
 /** Підпис без значка — для озвучення й порівнянь. */
 fun plainLabel(text: CharSequence): String = text.toString().replace(LineIcon.OBJ.toString(), "").trim()

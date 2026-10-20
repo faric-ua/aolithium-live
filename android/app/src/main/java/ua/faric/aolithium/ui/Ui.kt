@@ -158,6 +158,17 @@ class Ui(val ctx: Context) {
             contentDescription = label
         }
 
+    /**
+     * T34 (faric 20.10 06:51): квадратна кнопка верхньої смуги головної (мова «EN / UA», значок «?») — обидві однакові.
+     * Ширину задає LayoutParams; бокових відступів майже нема, підпис — один рядок (2 літери або значок).
+     */
+    fun squareButton(label: CharSequence, onClick: () -> Unit): TextView = button("", Kind.QUIET, onClick = onClick).apply {
+        text = label
+        maxLines = 1
+        textSize = 16f
+        setPadding(dp(2), dp(8), dp(2), dp(8))
+    }
+
     fun styleButton(b: TextView, kind: Kind) {
         val (fill, stroke, color) = when (kind) {
             Kind.PRIMARY -> Triple(Palette.accentFill, Palette.accent, Palette.accent)

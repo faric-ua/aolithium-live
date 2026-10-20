@@ -29,7 +29,8 @@ import ua.faric.aolithium.data.LangSettings
 import ua.faric.aolithium.widget.Widgets
 
 /**
- * Одне вікно, три сторінки: «Батареї» (головна), «Батарея» (живі показники), «Довідка».
+ * Одне вікно, три сторінки: «Батареї» (головна), «Батарея» (живі показники), «Інструкція» (T7, `GuideScreen`;
+ * сторінка зветься `HELP` — так її відкривають і знімки CI).
  * Поворот перестворює вікно, але сторінка, відкрите вікно і стан екрана відновлюються,
  * а зв'язок з батареєю не рветься (`LinkHolder`).
  */
@@ -52,6 +53,8 @@ class MainActivity : Activity() {
      * місце, а не на головну, щоб подивитись наступне демо без пошуку.
      */
     private var returnTo: Page? = null
+    /** Розділ інструкції, який відкрити (напр. «background»); null — зміст або там, де була. */
+    private var helpSection: String? = null
     private var screen: Screen? = null
     private val screenStates = Bundle()
     private var started = false
@@ -94,7 +97,9 @@ class MainActivity : Activity() {
         }
         if (!BuildConfig.DEBUG) return
         i.getStringExtra(EXTRA_DEMO)?.let { openBattery("demo:$it") }
-        i.getStringExtra(EXTRA_PAGE)?.let { name -> Page.entries.firstOrNull { it.name == name } }?.let { if (it != Page.BATTERY) show(it, null) }
+        i.getStringExtra(EXTRA_PAGE)?.let { name -> Page.entries.firstOrNull { it.name == name } }?.let {
+            if (it == Page.HELP) openHelp(i.getStringExtra(EXTRA_SECTION) ?: "home") else if (it != Page.BATTERY) show(it, null)
+        }
         i.getStringExtra(EXTRA_DIALOG)?.let { screen?.restoreDialog(it) }
     }
 
@@ -127,17 +132,21 @@ class MainActivity : Activity() {
         if (page == Page.HOME) {
             val brand = ui.row(8).apply { gravity = Gravity.CENTER_VERTICAL }
             brand.addView(View(this).apply { background = ui.rounded(Palette.accent, radiusDp = 6) }, LinearLayout.LayoutParams(ui.dp(10), ui.dp(10)))
-            brand.addView(ui.fitOneLine(ui.text("Aolithium Live", 18f, Palette.text, medium = true), 13f),
+            // T34 (faric 20.10 06:51): назва трохи більша, а місце для неї — не стисканням шрифту, а меншими кнопками.
+            brand.addView(ui.fitOneLine(ui.text("Aolithium Live", 21f, Palette.text, medium = true), 15f),
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             topBar.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            // T12: перемикач мови — назва ІНШОЇ мови її ж мовою («English» / «Українська»), щоб знайти без перекладу.
-            topBar.addView(ui.button(if (Lang.isEn) "УКР" else "EN", Ui.Kind.QUIET) { // uk-only — назва мови її ж мовою
+            // T12/T34: перемикач мови — коротка назва ІНШОЇ мови: «EN» / «UA» (опис для читалки — повна назва її ж мовою).
+            val square = LinearLayout.LayoutParams(ui.dp(SQUARE_DP), ViewGroup.LayoutParams.WRAP_CONTENT)
+            topBar.addView(ui.squareButton(if (Lang.isEn) "UA" else "EN") {
                 setLanguage(if (Lang.isEn) Lang.Code.UK else Lang.Code.EN)
-            }.apply { contentDescription = if (Lang.isEn) "Українська" else "English" }) // uk-only
-            topBar.addView(ui.iconButton(LineIcon.HELP, tr("Довідка", "Help"), Ui.Kind.QUIET) { show(Page.HELP, null) })
+            }.apply { contentDescription = if (Lang.isEn) "Українська" else "English" }, square) // uk-only — назва мови її ж мовою
+            // T34: замість «Довідка» — лише значок ?, тієї ж ширини, що й кнопка мови. Відкриває інструкцію (T7).
+            topBar.addView(ui.squareButton(ui.iconOnly(LineIcon.HELP, Palette.muted, SQUARE_ICON_DP)) { openHelp() }
+                .apply { contentDescription = tr("Інструкція", "Guide") }, square)
         } else {
             val toHelp = page == Page.BATTERY && returnTo == Page.HELP
-            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) tr("Довідка", "Help") else tr("Батареї", "Batteries"), Ui.Kind.QUIET) { goBack() })
+            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) tr("Інструкція", "Guide") else tr("Батареї", "Batteries"), Ui.Kind.QUIET) { goBack() })
             topBar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         }
         topBar.gravity = Gravity.CENTER_VERTICAL
@@ -160,12 +169,17 @@ class MainActivity : Activity() {
 
     fun goHome() = show(Page.HOME, null)
 
-    /** «Назад» (кнопка вгорі й системна): батарея, відкрита з «Довідки», → «Довідка»; решта → головна. */
+    /** «Назад» (кнопка вгорі й системна): батарея, відкрита з інструкції (демо), → інструкція; решта → головна. */
     private fun goBack() {
         if (page == Page.BATTERY && returnTo == Page.HELP) show(Page.HELP, null) else goHome()
     }
 
-    fun openHelp() = show(Page.HELP, null)
+    /** Інструкція. [section] — відкрити одразу цей розділ («home» — зміст); null — там, де її залишили. */
+    fun openHelp(section: String? = null) {
+        if (section != null) screenStates.remove(stateKey(Page.HELP, null))
+        helpSection = section?.takeIf { it != "home" }
+        show(Page.HELP, null)
+    }
 
     private fun show(p: Page, address: String?) {
         screen?.let { s ->
@@ -183,7 +197,7 @@ class MainActivity : Activity() {
         val s = when (p) {
             Page.HOME -> HomeScreen(this, state)
             Page.BATTERY -> BatteryScreen(this, address ?: "", state)
-            Page.HELP -> HelpScreen(this, state)
+            Page.HELP -> GuideScreen(this, state, helpSection)
         }
         screen = s
         renderTopBar()
@@ -205,6 +219,7 @@ class MainActivity : Activity() {
     private fun handleBack() {
         when {
             overlay.isShowing -> overlay.dismiss()
+            screen?.onBack() == true -> Unit
             page != Page.HOME -> goBack()
         }
     }
@@ -409,6 +424,11 @@ class MainActivity : Activity() {
         const val EXTRA_PAGE = "page"
         const val EXTRA_DIALOG = "dialog"
         const val EXTRA_LANG = "lang"
+        /** Debug (знімки CI): розділ інструкції разом з `page HELP`. */
+        const val EXTRA_SECTION = "section"
+        /** T34: кнопки мови й інструкції на головній — однакові квадрати. */
+        private const val SQUARE_DP = 52
+        private const val SQUARE_ICON_DP = 28
         private const val KEY_PAGE = "page"
         private const val KEY_ADDRESS = "address"
         private const val KEY_RETURN = "returnTo"
