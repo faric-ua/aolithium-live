@@ -62,20 +62,43 @@ object JbdParser {
         return ERROR_COUNT_NAMES.mapIndexed { i, name -> name to u16(data, i * 2) }
     }
 
-    /** Порядок — як у протоколі (esphome-jbd-bms `on_error_counts_data_`). */
+    /**
+     * Порядок — як у протоколі (esphome-jbd-bms `on_error_counts_data_`).
+     * T12: це **ключі**, а не текст для екрана — зберігаються в пам'яті телефона (`data/LastSnapshot`) і за ними
+     * шукає `Glossary.forCounter`, тож лишаються українськими обома мовами. Показувати — через [counterTitle].
+     */
     val ERROR_COUNT_NAMES = listOf(
-        "Коротке замикання",
-        "Завеликий струм заряду",
-        "Завеликий струм розряду",
-        "Перезаряд комірки",
-        "Переразряд комірки",
-        "Гаряче для заряду",
-        "Холодно для заряду",
-        "Гаряче для розряду",
-        "Холодно для розряду",
-        "Перезаряд батареї",
-        "Переразряд батареї",
+        "Коротке замикання", // uk-only: ключ
+        "Завеликий струм заряду", // uk-only: ключ
+        "Завеликий струм розряду", // uk-only: ключ
+        "Перезаряд комірки", // uk-only: ключ
+        "Переразряд комірки", // uk-only: ключ
+        "Гаряче для заряду", // uk-only: ключ
+        "Холодно для заряду", // uk-only: ключ
+        "Гаряче для розряду", // uk-only: ключ
+        "Холодно для розряду", // uk-only: ключ
+        "Перезаряд батареї", // uk-only: ключ
+        "Переразряд батареї", // uk-only: ключ
     )
+
+    /** Той самий захист, що й лічильник з [ERROR_COUNT_NAMES] (порядок той самий) — його назва вже обома мовами. */
+    private val ERROR_COUNT_PROTECTIONS = listOf(
+        Protection.SHORT_CIRCUIT,
+        Protection.CHARGE_OVERCURRENT,
+        Protection.DISCHARGE_OVERCURRENT,
+        Protection.CELL_OVER,
+        Protection.CELL_UNDER,
+        Protection.CHARGE_HOT,
+        Protection.CHARGE_COLD,
+        Protection.DISCHARGE_HOT,
+        Protection.DISCHARGE_COLD,
+        Protection.PACK_OVER,
+        Protection.PACK_UNDER,
+    )
+
+    /** Назва лічильника для екрана поточною мовою (T12); незнайомий ключ — як є. */
+    fun counterTitle(name: String): String =
+        ERROR_COUNT_NAMES.indexOf(name).takeIf { it >= 0 }?.let { ERROR_COUNT_PROTECTIONS[it].title } ?: name
 
     private fun u8(d: ByteArray, i: Int) = d[i].toInt() and 0xFF
     private fun u16(d: ByteArray, i: Int) = (u8(d, i) shl 8) or u8(d, i + 1)

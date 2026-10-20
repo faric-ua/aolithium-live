@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import ua.faric.aolithium.ble.LinkLog
+import ua.faric.aolithium.core.tr
 
 /**
  * Будильник фонового запису, увімкнення телефона й оновлення застосунку → служба `RecordService`.
@@ -28,7 +29,13 @@ class BgReceiver : BroadcastReceiver() {
                 }
             }
             Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                if (RecordService.ensure(context, RecordService.ACTION_TICK)) LinkLog.add("фон: запущено після ${if (intent.action == Intent.ACTION_BOOT_COMPLETED) "увімкнення телефона" else "оновлення"}")
+                if (RecordService.ensure(context, RecordService.ACTION_TICK)) {
+                    val boot = intent.action == Intent.ACTION_BOOT_COMPLETED
+                    LinkLog.add(
+                        if (boot) tr("фон: запущено після увімкнення телефона", "background: started after phone start-up")
+                        else tr("фон: запущено після оновлення", "background: started after app update"),
+                    )
+                }
             }
         }
     }

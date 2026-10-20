@@ -47,7 +47,10 @@ object Jk {
 
     /** Команда читання: `AA 55 90 EB <код> 00 00…00 <сума>`. */
     fun readCommand(cmd: Int): ByteArray {
-        require(cmd in READ_COMMANDS) { "Застосунок лише читає плату: команда 0x%02X не з читання".format(cmd) }
+        require(cmd in READ_COMMANDS) {
+            tr("Застосунок лише читає плату: команда 0x%02X не з читання", "The app only reads the BMS: 0x%02X is not a read command")
+                .format(cmd)
+        }
         val frame = ByteArray(CMD_LEN)
         CMD_HEAD.copyInto(frame)
         frame[4] = cmd.toByte()
@@ -277,9 +280,9 @@ data class JkExtra(
     val balancing: Boolean get() = balancerAction != 0
 
     val stageTitle: String? get() = when (chargeStage) {
-        0 -> "основний заряд"
-        1 -> "дозаряд"
-        2 -> "підтримка (float)"
+        0 -> tr("основний заряд", "bulk charge")
+        1 -> tr("дозаряд", "absorption")
+        2 -> tr("підтримка (float)", "float")
         else -> null
     }
 }

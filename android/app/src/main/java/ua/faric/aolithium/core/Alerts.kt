@@ -18,15 +18,36 @@ object Alerts {
     enum class Level { HIGH, DEFAULT, QUIET }
 
     /** Види сповіщень — кожен свій перемикач у «Ще» і свій канал Android (звук можна змінити в налаштуваннях телефона). */
-    enum class Kind(val key: String, val title: String, val hint: String, val level: Level) {
-        OUTAGE("outage", "Світло зникло / повернулось", "", Level.HIGH),
-        LOW("low", "Мало заряду", "20 %, 10 %, 5 %", Level.HIGH),
-        FULL("full", "Батарея повна", "щоб вчасно вимкнути генератор", Level.DEFAULT),
-        PROTECTION("protect", "Захист плати", "і коли плата вимкнула заряд чи розряд", Level.HIGH),
-        CELLS("cells", "Велика різниця комірок", "", Level.DEFAULT),
-        TEMP("temp", "Холод / спека", "нижче 0 °C, вище 50 °C", Level.HIGH),
-        NO_DATA("nodata", "Нема даних понад 1 год", "тихе, без звуку", Level.QUIET),
+    enum class Kind(val key: String, val level: Level) {
+        OUTAGE("outage", Level.HIGH),
+        LOW("low", Level.HIGH),
+        FULL("full", Level.DEFAULT),
+        PROTECTION("protect", Level.HIGH),
+        CELLS("cells", Level.DEFAULT),
+        TEMP("temp", Level.HIGH),
+        NO_DATA("nodata", Level.QUIET),
         ;
+
+        /** Назва (перемикач у «Ще», канал Android) — обома мовами (T12), через `get()`: мову можуть перемкнути. */
+        val title: String get() = when (this) {
+            OUTAGE -> tr("Світло зникло / повернулось", "Power gone / back")
+            LOW -> tr("Мало заряду", "Low charge")
+            FULL -> tr("Батарея повна", "Battery full")
+            PROTECTION -> tr("Захист плати", "BMS protection")
+            CELLS -> tr("Велика різниця комірок", "Large cell difference")
+            TEMP -> tr("Холод / спека", "Cold / heat")
+            NO_DATA -> tr("Нема даних понад 1 год", "No data for over 1 h")
+        }
+
+        /** Підказка під назвою; "" — без підказки. */
+        val hint: String get() = when (this) {
+            OUTAGE, CELLS -> ""
+            LOW -> "20 %, 10 %, 5 %"
+            FULL -> tr("щоб вчасно вимкнути генератор", "to turn off the generator in time")
+            PROTECTION -> tr("і коли плата вимкнула заряд чи розряд", "also when the BMS turns off charge or discharge")
+            TEMP -> tr("нижче 0 °C, вище 50 °C", "below 0 °C, above 50 °C")
+            NO_DATA -> tr("тихе, без звуку", "quiet, no sound")
+        }
 
         companion object {
             fun of(key: String): Kind? = entries.firstOrNull { it.key == key }
@@ -135,8 +156,11 @@ object Alerts {
         if (lastOkAt == null || st.noData || now - lastOkAt < NO_DATA_MS) return Step(st, emptyList())
         val e = Event(
             Kind.NO_DATA,
-            "Нема даних з ${Background.hhmm(lastOkAt, tz)}",
-            "Телефон далеко від батареї або вона зайнята іншим телефоном. Про світло й заряд дізнаюсь, коли знову буду поруч.",
+            tr("Нема даних з ${Background.hhmm(lastOkAt, tz)}", "No data since ${Background.hhmm(lastOkAt, tz)}"),
+            tr(
+                "Телефон далеко від батареї або вона зайнята іншим телефоном. Про світло й заряд дізнаюсь, коли знову буду поруч.",
+                "The phone is far from the battery, or another phone is using it. I will know about power and charge when I am near again.",
+            ),
         )
         return Step(st.copy(noData = true), listOf(e))
     }
@@ -151,28 +175,39 @@ object Alerts {
             if (s.current > -Outages.START_A) return n.copy(cand = 0L)
             if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc)
             if (t - n.cand < Outages.MIN_MS) return n
-            ev += Event(Kind.OUTAGE, "Світло зникло", outageStartText(s))
+            ev += Event(Kind.OUTAGE, tr("Світло зникло", "Power is gone"), outageStartText(s))
             return n.copy(outage = true, outStart = n.cand, outSoc = n.candSoc, outGap = false, cand = 0L)
         }
         if (s.current <= Outages.END_A) return n.copy(cand = 0L)
         if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc)
         if (t - n.cand < Outages.MIN_MS) return n
-        val used = "витрачено ${n.outSoc} → ${n.candSoc} %"
-        val now = if (s.flow == BatterySnapshot.Flow.CHARGING) "батарея заряджається" else "батарея стоїть"
+        val used = tr("витрачено ${n.outSoc} → ${n.candSoc} %", "used ${n.outSoc} → ${n.candSoc} %")
+        val now = if (s.flow == BatterySnapshot.Flow.CHARGING) tr("батарея заряджається", "battery is charging")
+            else tr("батарея стоїть", "battery is idle")
         val text = if (n.outGap) {
-            "Відключення почалось о ${Background.hhmm(n.outStart, tz)}; поки телефон був далеко, даних нема · $used · $now"
+            val start = Background.hhmm(n.outStart, tz)
+            tr(
+                "Відключення почалось о $start; поки телефон був далеко, даних нема · $used · $now",
+                "The outage started at $start; no data while the phone was far · $used · $now",
+            )
         } else {
-            "Не було ${Fmt.duration((n.cand - n.outStart) / 3_600_000.0)} · $used · $now"
+            val long = Fmt.duration((n.cand - n.outStart) / 3_600_000.0)
+            tr("Не було $long · $used · $now", "Gone for $long · $used · $now")
         }
-        ev += Event(Kind.OUTAGE, "Світло повернулось", text)
+        ev += Event(Kind.OUTAGE, tr("Світло повернулось", "Power is back"), text)
         return n.copy(outage = false, outGap = false, cand = 0L)
     }
 
     fun outageStartText(s: BatterySnapshot): String {
-        val parts = mutableListOf("Батарея віддає ${Fmt.watts(abs(s.power))}", "${s.soc} %")
+        val w = Fmt.watts(abs(s.power))
+        val parts = mutableListOf(tr("Батарея віддає $w", "Battery discharging at $w"), "${s.soc} %")
         TimeLeft.discharge(s.remainAh, s.fullAh, s.current)?.let { d ->
             val to20 = d.toThreshold.firstOrNull { it.first == 20 }?.second
-            parts += if (to20 != null) "вистачить ≈ ${Fmt.duration(to20)} до 20 %" else "до кінця ≈ ${Fmt.duration(d.totalH)}"
+            parts += if (to20 != null) {
+                tr("вистачить ≈ ${Fmt.duration(to20)} до 20 %", "lasts ≈ ${Fmt.duration(to20)} to 20 %")
+            } else {
+                tr("до кінця ≈ ${Fmt.duration(d.totalH)}", "until empty ≈ ${Fmt.duration(d.totalH)}")
+            }
         }
         return parts.joinToString(" · ")
     }
@@ -185,7 +220,7 @@ object Alerts {
         while (level != 0 && s.soc >= level + LOW_RESET) level = LOW_LEVELS.filter { it > level }.minOrNull() ?: 0
         val crossed = LOW_LEVELS.filter { s.soc <= it }.minOrNull()
         if (crossed != null && (level == 0 || crossed < level) && s.flow != BatterySnapshot.Flow.CHARGING) {
-            ev += Event(Kind.LOW, "Мало заряду: ${s.soc} %", lowText(s, crossed))
+            ev += Event(Kind.LOW, tr("Мало заряду: ${s.soc} %", "Low charge: ${s.soc} %"), lowText(s, crossed))
             level = crossed
         }
         return st.copy(low = level)
@@ -194,14 +229,23 @@ object Alerts {
     fun lowText(s: BatterySnapshot, crossed: Int): String {
         val next = LOW_LEVELS.filter { it < crossed }.maxOrNull()
         val d = TimeLeft.discharge(s.remainAh, s.fullAh, s.current)
+        val w = Fmt.watts(abs(s.power))
         return when {
-            crossed == LOW_LEVELS.min() -> "Нижче ${crossed} % не варто — потрібна зарядка (генератор?)." +
-                (d?.let { " Віддає ${Fmt.watts(abs(s.power))}, до кінця ≈ ${Fmt.duration(it.totalH)}." } ?: "")
+            crossed == LOW_LEVELS.min() -> tr(
+                "Нижче ${crossed} % не варто — потрібна зарядка (генератор?).",
+                "Better not go below ${crossed} % — it needs charging (generator?).",
+            ) + (d?.let {
+                val left = Fmt.duration(it.totalH)
+                tr(" Віддає $w, до кінця ≈ $left.", " Discharging at $w, until empty ≈ $left.")
+            } ?: "")
             d != null && next != null -> {
                 val h = d.toThreshold.firstOrNull { it.first == next }?.second
-                "Віддає ${Fmt.watts(abs(s.power))}" + (h?.let { " · до $next % ≈ ${Fmt.duration(it)}" } ?: "") + " · далі — ${LOW_LEVELS.filter { it < crossed }.joinToString(" і ") { "$it %" }}"
+                val later = LOW_LEVELS.filter { it < crossed }.joinToString(tr(" і ", " and ")) { "$it %" }
+                tr("Віддає $w", "Discharging at $w") +
+                    (h?.let { tr(" · до $next % ≈ ${Fmt.duration(it)}", " · to $next % ≈ ${Fmt.duration(it)}") } ?: "") +
+                    tr(" · далі — $later", " · next — $later")
             }
-            else -> "Батарея стоїть. Варто зарядити, поки є світло."
+            else -> tr("Батарея стоїть. Варто зарядити, поки є світло.", "The battery is idle. Better charge it while there is power.")
         }
     }
 
@@ -218,9 +262,10 @@ object Alerts {
             val stopped = topProtection(s) || !s.chargeOn || s.flow != BatterySnapshot.Flow.CHARGING
             ev += Event(
                 Kind.FULL,
-                "Батарея повна — ${s.soc} %",
-                (if (stopped) "Плата сама зупинила заряд." else "Заряд закінчується, плата зупинить сама.") +
-                    " Якщо працює генератор — можна вимикати.",
+                tr("Батарея повна — ${s.soc} %", "Battery full — ${s.soc} %"),
+                (if (stopped) tr("Плата сама зупинила заряд.", "The BMS stopped charging by itself.")
+                else tr("Заряд закінчується, плата зупинить сама.", "Charging is ending, the BMS will stop it by itself.")) +
+                    tr(" Якщо працює генератор — можна вимикати.", " If a generator is running, you can turn it off."),
             )
         }
         return st.copy(full = true)
@@ -248,26 +293,28 @@ object Alerts {
         if (fresh.isNotEmpty()) {
             ev += protectionEvent(s, active)
         } else if (active.isEmpty() && st.prot.isNotEmpty()) {
-            ev += Event(Kind.PROTECTION, "Захист знято", "Плата знову дозволяє заряд і розряд.")
+            ev += Event(Kind.PROTECTION, tr("Захист знято", "Protection cleared"),
+                tr("Плата знову дозволяє заряд і розряд.", "The BMS allows charge and discharge again."))
         }
         return st.copy(prot = active)
     }
 
     fun protectionEvent(s: BatterySnapshot, active: Set<String>): Event {
         val prots = s.protections.filter { it.name in active }
-        val reasons = prots.map { it.title } + s.unknownProtectionBits.filter { "bit$it" in active }.map { "невідомий захист (біт $it)" }
+        val reasons = prots.map { it.title } +
+            s.unknownProtectionBits.filter { "bit$it" in active }.map { tr("невідомий захист (біт $it)", "unknown protection (bit $it)") }
         val title = when {
-            DSG_OFF in active -> "Плата вимкнула розряд"
-            CHG_OFF in active -> "Плата вимкнула заряд"
-            prots.size == 1 -> "Захист: ${prots[0].title.replaceFirstChar { it.lowercase() }}"
-            else -> "Спрацював захист плати"
+            DSG_OFF in active -> tr("Плата вимкнула розряд", "BMS turned off discharge")
+            CHG_OFF in active -> tr("Плата вимкнула заряд", "BMS turned off charging")
+            prots.size == 1 -> tr("Захист: ", "Protection: ") + prots[0].title.replaceFirstChar { it.lowercase() }
+            else -> tr("Спрацював захист плати", "BMS protection is on")
         }
         val text = buildString {
-            if (DSG_OFF in active) append("Батарея зараз не віддає енергію. ")
+            if (DSG_OFF in active) append(tr("Батарея зараз не віддає енергію. ", "The battery gives no power now. "))
             when {
                 prots.size == 1 && reasons.size == 1 -> append(prots[0].explain)
-                reasons.isNotEmpty() -> append("Причина: ").append(reasons.joinToString(", ")).append('.')
-                else -> append("Плата не пояснила причину — подивись вкладку «Плата».")
+                reasons.isNotEmpty() -> append(tr("Причина: ", "Reason: ")).append(reasons.joinToString(", ")).append('.')
+                else -> append(tr("Плата не пояснила причину — подивись вкладку «Плата».", "The BMS gave no reason — see the \"BMS\" tab."))
             }
         }.trim()
         return Event(Kind.PROTECTION, title, text)
@@ -280,7 +327,7 @@ object Alerts {
         if (st.cells) return if (d < CELLS_RESET_MV) st.copy(cells = false) else st
         val alarm = (d >= CELLS_ANY_MV && s.soc < TOP_SOC) || (d >= CELLS_MID_MV && s.soc in CELLS_MID_SOC)
         if (!alarm) return st
-        ev += Event(Kind.CELLS, "Велика різниця комірок: $d мВ", cellsText(s))
+        ev += Event(Kind.CELLS, tr("Велика різниця комірок: ", "Large cell difference: ") + Fmt.millivolts(d), cellsText(s))
         return st.copy(cells = true)
     }
 
@@ -288,8 +335,9 @@ object Alerts {
         val avg = s.cellsMv.average()
         val lo = s.minCell ?: 0
         val hi = s.maxCell ?: 0
-        val who = if (avg - s.cellsMv[lo] >= s.cellsMv[hi] - avg) "№${lo + 1} нижча за інших" else "№${hi + 1} вища за інших"
-        return "$who при ${s.soc} %. Подивись «Комірки»."
+        val who = if (avg - s.cellsMv[lo] >= s.cellsMv[hi] - avg) tr("№${lo + 1} нижча за інших", "No. ${lo + 1} is lower than others")
+            else tr("№${hi + 1} вища за інших", "No. ${hi + 1} is higher than others")
+        return tr("$who при ${s.soc} %. Подивись «Комірки».", "$who at ${s.soc} %. See \"Cells\".")
     }
 
     // ---------- температура ----------
@@ -302,13 +350,17 @@ object Alerts {
         if (n.cold) {
             if (min >= COLD_RESET_C) n = n.copy(cold = false)
         } else if (min < COLD_C) {
-            ev += Event(Kind.TEMP, "Холодно: ${Fmt.celsius(min)}", "Нижче 0 °C плата не дає заряджати. Віддавати може.")
+            ev += Event(Kind.TEMP, tr("Холодно: ", "Cold: ") + Fmt.celsius(min),
+                tr("Нижче 0 °C плата не дає заряджати. Віддавати може.", "Below 0 °C the BMS blocks charging. Discharge still works."))
             n = n.copy(cold = true)
         }
         if (n.hot) {
             if (max <= HOT_RESET_C) n = n.copy(hot = false)
         } else if (max > HOT_C) {
-            ev += Event(Kind.TEMP, "Гаряче: ${Fmt.celsius(max)}", "Вище 50 °C плата може вимкнути заряд і розряд. Перевір, чи нічого не гріє батарею.")
+            ev += Event(Kind.TEMP, tr("Гаряче: ", "Hot: ") + Fmt.celsius(max), tr(
+                "Вище 50 °C плата може вимкнути заряд і розряд. Перевір, чи нічого не гріє батарею.",
+                "Above 50 °C the BMS may turn off charge and discharge. Check that nothing heats the battery.",
+            ))
             n = n.copy(hot = true)
         }
         return n

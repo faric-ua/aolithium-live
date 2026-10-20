@@ -11,6 +11,7 @@ import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
@@ -62,8 +63,11 @@ object Notifier {
      */
     fun test(ctx: Context, address: String, s: BatterySnapshot?) {
         val text = s?.takeIf { it.fullAh > 0 }?.let { Alerts.outageStartText(it.copy(current = -24.0)) }
-            ?: "Батарея віддає 320 Вт · 64 % · вистачить ≈ 9 год 50 хв до 20 %"
-        post(ctx, address, listOf(Alerts.Event(Alerts.Kind.OUTAGE, "Перевірка: світло зникло", "Так виглядатиме справжнє. $text")), force = true)
+            ?: tr("Батарея віддає 320 Вт · 64 % · вистачить ≈ 9 год 50 хв до 20 %",
+                "Battery discharging at 320 W · 64 % · lasts ≈ 9 h 50 min to 20 %")
+        val e = Alerts.Event(Alerts.Kind.OUTAGE, tr("Перевірка: світло зникло", "Test: power is gone"),
+            tr("Так виглядатиме справжнє. $text", "This is how the real one looks. $text"))
+        post(ctx, address, listOf(e), force = true)
     }
 
     private fun post(ctx: Context, address: String, events: List<Alerts.Event>, force: Boolean = false) {
@@ -101,10 +105,11 @@ object Notifier {
                 .build()
             try {
                 nm.notify(id, note)
-                LinkLog.add("сповіщення ${BmsMatch.shortAddress(address)}: ${e.title}")
+                val short = BmsMatch.shortAddress(address)
+                LinkLog.add(tr("сповіщення $short: ${e.title}", "notification $short: ${e.title}"))
             } catch (x: SecurityException) {
                 // Android 13+: сповіщення заборонені — у «Ще» є кнопка «Дозволити сповіщення».
-                LinkLog.add("сповіщення заборонені Android: ${e.title}")
+                LinkLog.add(tr("сповіщення заборонені Android: ${e.title}", "notifications blocked by Android: ${e.title}"))
             }
         }
     }

@@ -11,6 +11,7 @@ import android.widget.RemoteViews
 import ua.faric.aolithium.R
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.core.WidgetModel
+import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.LastSnapshot
@@ -82,7 +83,7 @@ object Widgets {
             mgr.updateAppWidget(id, views)
         } catch (e: RuntimeException) {
             // Віджет — не головне: помилка тут не повинна зупиняти запис у фоні.
-            LinkLog.add("віджет: не оновився (${e.javaClass.simpleName})")
+            LinkLog.add(tr("віджет: не оновився (${e.javaClass.simpleName})", "widget: not updated (${e.javaClass.simpleName})"))
         }
     }
 }
