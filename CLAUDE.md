@@ -80,6 +80,7 @@
 | Екрани | `…/ui/` (`Palette.kt` — кольори, `Ui.kt` — кнопки/картки; `Overlay`, `LineIcon`, `FlowLayout` — з Track Catcher) |
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |
 | CI | `.github/workflows/android.yml` (тести, лінтер, збірка, реліз), `checks.yml`, `ui-screens.yml` |
+| Мова інтерфейсу (T12): `tr()`, вибір, перемикачі | `core/Lang.kt`, `data/LangSettings.kt`, `AolithiumApp.kt`, `docs/LANG_EN.md` |
 | Аудити, контракти | `scripts/audit_*.py`, `tests/` |
 | Перевірки для Claude без Gradle | `tools/dev/run_core_tests.sh`, `tools/dev/compile_android.sh` |
 
@@ -89,7 +90,11 @@
 - **Жодних бібліотек** у застосунку (навіть androidx) — лише Android. Тести — JUnit.
 - Тести ядра локально (без Gradle): `bash tools/dev/run_core_tests.sh` (Kotlin-компілятор і JUnit з `/opt/gradle-*/lib`).
 - Компіляція всього застосунку локально: `ANDROID_JAR=… bash tools/dev/compile_android.sh` (android.jar — з GitHub
-  `Reginer/aosp-android-jar`, тека `android-36`; там є й приховані API, тож справжня перевірка — CI).
+  `Reginer/aosp-android-jar`, тека `android-36`; там є й приховані API, тож справжня перевірка — CI). Сайт
+  raw.githubusercontent закритий для середовища Claude, а git — ні: `git clone --depth 1 --filter=blob:none --sparse
+  https://github.com/Reginer/aosp-android-jar aosp && git -C aosp sparse-checkout set android-36` (20.10).
+- **Мова (T12):** кожен текст для людини — `tr("укр", "англ")`; одиниці — `Fmt.V/A/W/AH…`; словник і пастки —
+  `docs/LANG_EN.md`; сторож — `scripts/audit_lang.py` (CI).
 - Python: `python3 -m unittest discover -s tests`, `python3 scripts/audit_ui.py`, `python3 scripts/audit_repo.py`.
 - Логи Actions недоступні — усе важливе CI виводить анотаціями: `gh api repos/faric-ua/aolithium-live/check-runs/<id>/annotations`.
 - Знімки екранів без телефона: пуш у `diag/ui-screens` → емулятор (демо-режим) → PNG у гілці `diag/ui-screens-out`.
