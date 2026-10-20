@@ -77,6 +77,7 @@
 | Сповіщення (v0.3): правила — без Android, показ — канали Android, перемикачі — «Ще» | `core/Alerts.kt` (+ `AlertsTest`), `bg/Notifier.kt`, `data/AlertSettings.kt` |
 | Віджет (v0.3.1): що писати — без Android, малюнок — Canvas, оновлення | `core/WidgetModel.kt` (+ тест), `widget/WidgetArt.kt`, `widget/Widgets.kt`, `res/xml/widget_*.xml` |
 | «Мої батареї» (пам'ять телефона) | `…/data/Batteries.kt` |
+| Оновлення з Google Диска (T37, з Track Catcher): правила без Android, мережа (єдине місце з інтернетом — контракт `test_internet_only_for_drive_update`), свій провайдер APK замість androidx, картка внизу головної, автопублікація автора. **Сховати все — `UpdateFeature.VISIBLE = false`** (код лишається). Вбудоване посилання — `DriveUpdate.BUILT_IN_MANIFEST_ID` (поки порожнє) | `core/DriveUpdate.kt` (+ `DriveUpdateTest`), `core/UpdateFeature.kt`, `update/DriveHttp.kt`, `update/UpdateApkProvider.kt`, `ui/UpdateUi.kt`; інструкція — розділ `update` |
 | Екрани | `…/ui/` (`Palette.kt` — кольори, `Ui.kt` — кнопки/картки; `Overlay`, `LineIcon`, `FlowLayout` — з Track Catcher) |
 | Інструкція (T7): одне джерело обома мовами → сторінка в застосунку (значок ? на головній) | `docs/guide/guide.html` → `scripts/build_guide.py` → `assets/guide/index.html`; картинки — `scripts/guide_images.py`; показ — `ui/GuideScreen.kt`; тест — `tests/test_guide.py` |
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |

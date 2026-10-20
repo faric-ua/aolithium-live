@@ -24,6 +24,7 @@ import ua.faric.aolithium.bg.Notifier
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.core.Lang
+import ua.faric.aolithium.core.UpdateFeature
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.LangSettings
 import ua.faric.aolithium.widget.Widgets
@@ -81,7 +82,7 @@ class MainActivity : Activity() {
         buildChrome()
         if (page == Page.BATTERY && batteryAddress == null) page = Page.HOME
         show(page, batteryAddress)
-        savedInstanceState?.getString(KEY_DIALOG)?.let { screen?.restoreDialog(it) }
+        savedInstanceState?.getString(KEY_DIALOG)?.let { restoreDialog(it) }
         if (savedInstanceState == null) applyIntent(intent)
     }
 
@@ -106,7 +107,17 @@ class MainActivity : Activity() {
         i.getStringExtra(EXTRA_PAGE)?.let { name -> Page.entries.firstOrNull { it.name == name } }?.let {
             if (it == Page.HELP) openHelp(i.getStringExtra(EXTRA_SECTION) ?: "home") else if (it != Page.BATTERY) show(it, null)
         }
-        i.getStringExtra(EXTRA_DIALOG)?.let { screen?.restoreDialog(it) }
+        i.getStringExtra(EXTRA_DIALOG)?.let { restoreDialog(it) }
+    }
+
+    /** Вікно після перестворення (зміна мови): вікна оновлення (T37, ключі `update:…`) — свої, решта — екрана. */
+    private fun restoreDialog(key: String) {
+        if (key.startsWith("update:")) UpdateUi(this).restore(key) else screen?.restoreDialog(key)
+    }
+
+    /** T37: стан оновлення змінився (публікація, перемикач) — перемалювати картку «Оновлення застосунку» на головній. */
+    fun updateChanged() {
+        (screen as? HomeScreen)?.renderUpdate()
     }
 
     // ---------- каркас ----------
@@ -308,6 +319,10 @@ class MainActivity : Activity() {
             finishSave(if (resultCode == RESULT_OK) data?.data else null)
             return
         }
+        if (requestCode == UpdateUi.REQ_APK || requestCode == UpdateUi.REQ_JSON) {
+            UpdateUi(this).onFilePicked(requestCode, resultCode, data)
+            return
+        }
         screen?.onAccessChanged()
     }
 
@@ -401,16 +416,24 @@ class MainActivity : Activity() {
         // Запис у фоні ввімкнено, а службу Android зупинив (оновлення, «Очистити все» в диспетчері задач) —
         // запускаємо знову, поки застосунок на екрані (з фону Android 12+ не дозволяє).
         if (!RecordService.running) RecordService.ensure(this, RecordService.ACTION_TICK)
+        // T37: оновлення з Google Диска — тиха перевірка раз на день / автопублікація автора. Сховано — нічого.
+        if (UpdateFeature.VISIBLE) {
+            Updater.attach(this)
+            UpdateUi(this).onAppOpened()
+        }
     }
 
     override fun onResume() {
         super.onResume()
         screen?.onResume()
+        // Повернулись з «Дозволити з цього джерела» — встановлення перевіреного оновлення продовжується саме.
+        if (UpdateFeature.VISIBLE) UpdateUi(this).resumePendingInstall()
     }
 
     override fun onStop() {
         started = false
         screen?.onStop()
+        Updater.detach(this)
         super.onStop()
     }
 

@@ -72,7 +72,7 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
                     if (scene != null) host.openBattery("demo:" + scene.name)
                     return true
                 }
-                // Зовнішні посилання (GitHub) — у браузері; самому застосунку інтернет не потрібен.
+                // Зовнішні посилання (GitHub) — у браузері; сам застосунок ходить в інтернет лише по оновлення (T37).
                 try {
                     host.startActivity(Intent(Intent.ACTION_VIEW, url))
                 } catch (e: ActivityNotFoundException) {
