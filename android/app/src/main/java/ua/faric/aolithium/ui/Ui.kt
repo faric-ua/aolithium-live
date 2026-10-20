@@ -15,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import ua.faric.aolithium.core.TextFit
+import ua.faric.aolithium.core.VersionLine
 import ua.faric.aolithium.core.tr
 
 /**
@@ -268,6 +269,34 @@ class Ui(val ctx: Context) {
         addView(muted(name, 14f), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         addView(numbers(text(keepUnits(value), 15f, valueColor, medium = true)).apply { gravity = Gravity.END },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f))
+    }
+
+    /**
+     * T51: рядок «назва — значення», де значення ніколи не розривається (версія «0.4.10 · збірка 26»).
+     * Значення бере свою ширину, назва — решту; разом не влазять — назва стає над значенням ([VersionLine.stacked]).
+     */
+    fun factOneLine(name: String, value: String): LinearLayout = row(12).apply {
+        gravity = Gravity.TOP
+        val gapPx = dp(12).toFloat()
+        val label = muted(name, 14f)
+        val num = fitOneLine(numbers(text(value, 15f, Palette.text, medium = true)), 12f)
+        addView(label, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        addView(num, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        addOnLayoutChangeListener { v, l, _, r, _, _, _, _, _ ->
+            val row = v as LinearLayout
+            val wantStacked = VersionLine.stacked(
+                label.paint.measureText(label.text.toString()), num.paint.measureText(num.text.toString()),
+                (r - l - row.paddingLeft - row.paddingRight).toFloat(), gapPx)
+            val isStacked = row.orientation == LinearLayout.VERTICAL
+            if (wantStacked != isStacked) row.post {
+                row.orientation = if (wantStacked) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+                label.layoutParams = if (wantStacked) LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    else LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                num.layoutParams = if (wantStacked) LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    else LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                num.gravity = if (wantStacked) Gravity.START else Gravity.END
+            }
+        }
     }
 
     companion object {

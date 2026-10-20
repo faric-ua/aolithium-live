@@ -274,6 +274,10 @@ adb shell wm density 450
 sleep 3
 start --es page HOME
 shot n01-home-uk-narrow 4
+# T51 (скрін faric 21.10 00:05): унизу головної «Встановлено 0.4.10 · збірка 26» — в один рядок, номер не переноситься.
+scroll_down
+scroll_down
+shot n01b-home-uk-narrow-update 2
 start --es demo IDLE --es dialog tab:CELLS
 shot n02-cells-uk-narrow 4
 start --es demo IDLE --es dialog tab:BOARD
@@ -285,6 +289,20 @@ start --es demo IDLE --es dialog tab:CELLS
 shot n05-cells-en-narrow 4
 start --es demo IDLE --es dialog tab:BOARD
 shot n06-board-en-narrow 4
+start --es page HOME
+scroll_down
+scroll_down
+shot n04b-home-en-narrow-update 2
+# T51 найгірший випадок: вузький екран і шрифт 1.3 — версія ціла; не влазить у рядок — «Встановлено» над числом.
+adb shell settings put system font_scale 1.3
+sleep 2
+adb shell am force-stop "$PKG"
+start --es lang uk --es page HOME
+scroll_down
+scroll_down
+shot n07-home-uk-narrow-font130-update 4
+adb shell settings put system font_scale 1.0
+sleep 2
 adb shell am force-stop "$PKG"
 start --es lang uk --es page HOME
 adb shell wm density reset
