@@ -30,7 +30,7 @@ object Alerts {
 
         /** Назва (перемикач у «Ще», канал Android) — обома мовами (T12), через `get()`: мову можуть перемкнути. */
         val title: String get() = when (this) {
-            OUTAGE -> tr("Світло зникло / повернулось", "Power gone / back")
+            OUTAGE -> tr("Світло зникло / повернулось", "Power outage / restored")
             LOW -> tr("Мало заряду", "Low charge")
             FULL -> tr("Батарея повна", "Battery full")
             PROTECTION -> tr("Захист плати", "BMS protection")
@@ -175,7 +175,7 @@ object Alerts {
             if (s.current > -Outages.START_A) return n.copy(cand = 0L)
             if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc)
             if (t - n.cand < Outages.MIN_MS) return n
-            ev += Event(Kind.OUTAGE, tr("Світло зникло", "Power is gone"), outageStartText(s))
+            ev += Event(Kind.OUTAGE, tr("Світло зникло", "Power outage"), outageStartText(s))
             return n.copy(outage = true, outStart = n.cand, outSoc = n.candSoc, outGap = false, cand = 0L)
         }
         if (s.current <= Outages.END_A) return n.copy(cand = 0L)
@@ -194,7 +194,7 @@ object Alerts {
             val long = Fmt.duration((n.cand - n.outStart) / 3_600_000.0)
             tr("Не було $long · $used · $now", "Gone for $long · $used · $now")
         }
-        ev += Event(Kind.OUTAGE, tr("Світло повернулось", "Power is back"), text)
+        ev += Event(Kind.OUTAGE, tr("Світло повернулось", "Power restored"), text)
         return n.copy(outage = false, outGap = false, cand = 0L)
     }
 

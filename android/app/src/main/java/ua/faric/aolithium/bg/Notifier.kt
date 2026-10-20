@@ -65,7 +65,7 @@ object Notifier {
         val text = s?.takeIf { it.fullAh > 0 }?.let { Alerts.outageStartText(it.copy(current = -24.0)) }
             ?: tr("Батарея віддає 320 Вт · 64 % · вистачить ≈ 9 год 50 хв до 20 %",
                 "Battery discharging at 320 W · 64 % · lasts ≈ 9 h 50 min to 20 %")
-        val e = Alerts.Event(Alerts.Kind.OUTAGE, tr("Перевірка: світло зникло", "Test: power is gone"),
+        val e = Alerts.Event(Alerts.Kind.OUTAGE, tr("Перевірка: світло зникло", "Test: power outage"),
             tr("Так виглядатиме справжнє. $text", "This is how the real one looks. $text"))
         post(ctx, address, listOf(e), force = true)
     }
