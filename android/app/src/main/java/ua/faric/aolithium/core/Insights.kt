@@ -120,25 +120,25 @@ object CellTrend {
     /**
      * Найвища й найнижча комірка (T19, виправлено T24).
      *
-     * Мітка завжди на **справжній** найвищій / найнижчій. «Липка» — лише між **рівними**: коли кілька комірок
-     * однакові, мітка лишається на тій, де була (без цього при 3,334 / 3,334 рамка «найнижча» стрибала №3 ↔ №4
-     * кожні 2 с — відео faric 19.10 13:57).
+     * Мітка завжди на **справжній** найвищій / найнижчій. **Рівні — однаково** (T33, відео faric 20.10 06:21):
+     * при 3,326 / 3,329 / 3,328 / 3,329 «найвища» стояла лише на №2, а №4 з тим самим числом — без рамки, і це
+     * виглядало як помилка. Раніше (T19, T24) мітка між рівними була «липкою» — трималась на одній, щоб не стрибала
+     * №3 ↔ №4 (відео 19.10 13:57). Тепер рамку мають **усі** рівні: стрибка нема, бо нема вибору між ними, а мітка
+     * змінюється лише разом із числом на плитці.
      * Помилка v0.2.6 (скрін faric 19.10 22:06): мітка трималась, доки інша не стане нижчою на 2 мВ, — і при
      * 3,332 / 3,331 / 3,330 / 3,329 «найнижча» стояла на №3, хоча найнижча №4. Правило «±1 мВ — шум» тут не годиться:
      * число на плитці видно, і мітка мусить з ним збігатись.
      * Різниця всього 1 мВ або 0 — це точність плати, «найвищої» й «найнижчої» нема: міток нема.
-     * Повертає (найвища, найнижча) — індекси або null.
+     * Повертає (найвищі, найнижчі) — множини індексів (порожні — міток нема).
      */
     const val NO_MARKS_MV = 1
 
-    fun extremes(cellsMv: List<Int>, prevHi: Int?, prevLo: Int?): Pair<Int?, Int?> {
-        if (cellsMv.size < 2) return null to null
+    fun marks(cellsMv: List<Int>): Pair<Set<Int>, Set<Int>> {
+        if (cellsMv.size < 2) return emptySet<Int>() to emptySet()
         val max = cellsMv.max()
         val min = cellsMv.min()
-        if (max - min <= NO_MARKS_MV) return null to null
-        val hi = prevHi?.takeIf { it in cellsMv.indices && cellsMv[it] == max } ?: cellsMv.indexOf(max)
-        val lo = prevLo?.takeIf { it in cellsMv.indices && cellsMv[it] == min } ?: cellsMv.indexOf(min)
-        return hi to lo
+        if (max - min <= NO_MARKS_MV) return emptySet<Int>() to emptySet()
+        return cellsMv.indices.filter { cellsMv[it] == max }.toSet() to cellsMv.indices.filter { cellsMv[it] == min }.toSet()
     }
 }
 

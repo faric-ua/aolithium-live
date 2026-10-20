@@ -125,9 +125,10 @@ class MainActivity : Activity() {
     private fun renderTopBar() {
         topBar.removeAllViews()
         if (page == Page.HOME) {
-            val brand = ui.row(8)
+            val brand = ui.row(8).apply { gravity = Gravity.CENTER_VERTICAL }
             brand.addView(View(this).apply { background = ui.rounded(Palette.accent, radiusDp = 6) }, LinearLayout.LayoutParams(ui.dp(10), ui.dp(10)))
-            brand.addView(ui.text("Aolithium Live", 18f, Palette.text, medium = true))
+            brand.addView(ui.fitOneLine(ui.text("Aolithium Live", 18f, Palette.text, medium = true), 13f),
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             topBar.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             // T12: перемикач мови — назва ІНШОЇ мови її ж мовою («English» / «Українська»), щоб знайти без перекладу.
             topBar.addView(ui.button(if (Lang.isEn) "УКР" else "EN", Ui.Kind.QUIET) { // uk-only — назва мови її ж мовою

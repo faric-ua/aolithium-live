@@ -64,24 +64,18 @@ class InsightsTest {
     }
 
     @Test
-    fun extremesAreTrueAndStickyOnlyBetweenEqual() {
-        // Відео faric 19.10 13:57: №4 3,333 → 3,334 → 3,333… — «найнижча» не стрибає на №3, коли вони рівні.
-        val a = listOf(3336, 3337, 3334, 3333)
-        assertEquals(1 to 3, CellTrend.extremes(a, null, null))
-        val b = listOf(3336, 3337, 3334, 3334)
-        assertEquals(1 to 3, CellTrend.extremes(b, 1, 3))
-        // Без попередньої — перша з рівних.
-        assertEquals(1 to 2, CellTrend.extremes(b, null, null))
-        // Скрін faric 19.10 22:06 (T24): 3,332 / 3,331 / 3,330 / 3,329 — найнижча №4, хоч раніше була №3.
-        assertEquals(0 to 3, CellTrend.extremes(listOf(3332, 3331, 3330, 3329), 0, 2))
-        // Інша нижча навіть на 1 мВ — мітка переходить (число на плитці видно).
-        assertEquals(1 to 2, CellTrend.extremes(listOf(3336, 3337, 3333, 3334), 1, 3))
-        // Найвища так само: №1 3,337 = №2 3,337 — лишається №2.
-        assertEquals(1 to 3, CellTrend.extremes(listOf(3337, 3337, 3335, 3333), 1, 3))
+    fun marksAreTrueAndEqualCellsAllMarked() {
+        // T33 (відео faric 20.10 06:21): 3,326 / 3,329 / 3,328 / 3,329 — «найвища» і на №2, і на №4.
+        assertEquals(setOf(1, 3) to setOf(0), CellTrend.marks(listOf(3326, 3329, 3328, 3329)))
+        // Відео 19.10 13:57: №3 і №4 обидві 3,334 — обидві «найнижча», нема між чим стрибати.
+        assertEquals(setOf(1) to setOf(2, 3), CellTrend.marks(listOf(3336, 3337, 3334, 3334)))
+        assertEquals(setOf(1) to setOf(3), CellTrend.marks(listOf(3336, 3337, 3334, 3333)))
+        // Скрін 19.10 22:06 (T24): 3,332 / 3,331 / 3,330 / 3,329 — найвища №1, найнижча №4.
+        assertEquals(setOf(0) to setOf(3), CellTrend.marks(listOf(3332, 3331, 3330, 3329)))
         // Усі однакові або різниця 1 мВ (точність плати) — без міток; одна комірка — без міток.
-        assertEquals(null to null, CellTrend.extremes(listOf(3335, 3335, 3335, 3335), 1, 3))
-        assertEquals(null to null, CellTrend.extremes(listOf(3336, 3335, 3335, 3336), 0, 1))
-        assertEquals(null to null, CellTrend.extremes(listOf(3335), null, null))
+        assertEquals(emptySet<Int>() to emptySet<Int>(), CellTrend.marks(listOf(3335, 3335, 3335, 3335)))
+        assertEquals(emptySet<Int>() to emptySet<Int>(), CellTrend.marks(listOf(3336, 3335, 3335, 3336)))
+        assertEquals(emptySet<Int>() to emptySet<Int>(), CellTrend.marks(listOf(3335)))
     }
 
     @Test
