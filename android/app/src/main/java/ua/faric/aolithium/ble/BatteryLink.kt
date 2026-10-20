@@ -1,6 +1,7 @@
 package ua.faric.aolithium.ble
 
 import ua.faric.aolithium.core.BatterySnapshot
+import ua.faric.aolithium.core.tr
 
 /**
  * Зв'язок з однією батареєю: підключитись, читати по колу, віддавати знімки стану.
@@ -30,14 +31,26 @@ interface BatteryLink {
  * [attempt] / [ofAttempts] — котрий повтор з усіх (T25: «повтор 2 з 3» в одному рядку, без розбору тексту).
  */
 data class LinkStatus(val phase: Phase, val message: String = "", val attempt: Int = 0, val ofAttempts: Int = 0) {
-    enum class Phase(val title: String) {
-        IDLE("Не підключено"),
-        CONNECTING("Підключаюсь…"),
-        READING("Читаю плату…"),
-        LIVE("На зв'язку"),
-        NO_ANSWER("Плата мовчить"),
-        LOST("Зв'язок втрачено"),
-        FAILED("Не вдалось"),
+    enum class Phase {
+        IDLE,
+        CONNECTING,
+        READING,
+        LIVE,
+        NO_ANSWER,
+        LOST,
+        FAILED,
+        ;
+
+        val title: String
+            get() = when (this) {
+                IDLE -> tr("Не підключено", "Not connected")
+                CONNECTING -> tr("Підключаюсь…", "Connecting…")
+                READING -> tr("Читаю плату…", "Reading BMS…")
+                LIVE -> tr("На зв'язку", "Connected")
+                NO_ANSWER -> tr("Плата мовчить", "BMS is silent")
+                LOST -> tr("Зв'язок втрачено", "Connection lost")
+                FAILED -> tr("Не вдалось", "Failed")
+            }
     }
 
     companion object {

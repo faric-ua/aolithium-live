@@ -13,6 +13,7 @@ import ua.faric.aolithium.core.JkCells
 import ua.faric.aolithium.core.JkDemo
 import ua.faric.aolithium.core.JkDevice
 import ua.faric.aolithium.core.JkParser
+import ua.faric.aolithium.core.tr
 
 /**
  * Демо без батареї: ті самі байти, що шле плата JBD, проходять той самий розбір, що й справжні.
@@ -74,8 +75,13 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
         lastSnapshot = snap
         lastSnapshotAt = now
         listener?.onSnapshot(snap, now)
-        status(LinkStatus(LinkStatus.Phase.LIVE, "Демо: «${scene.title}». Справжньої батареї тут нема."))
+        status(LinkStatus(LinkStatus.Phase.LIVE, demoMessage()))
     }
+
+    private fun demoMessage() = tr(
+        "Демо: «${scene.title}». Справжньої батареї тут нема.",
+        "Demo: \"${scene.title}\". No real battery here.",
+    )
 
     /** JK: «хто ти» + «комірки» шматками по 20 байт → той самий `JkAssembler` / `JkParser`, що в `JkLink`. */
     private fun publishJk() {
@@ -94,7 +100,7 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
         lastSnapshot = snap
         lastSnapshotAt = now
         listener?.onSnapshot(snap, now)
-        status(LinkStatus(LinkStatus.Phase.LIVE, "Демо: «${scene.title}». Справжньої батареї тут нема."))
+        status(LinkStatus(LinkStatus.Phase.LIVE, demoMessage()))
     }
 
     private fun status(s: LinkStatus) {
@@ -107,7 +113,11 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
         const val ADDRESS_PREFIX = "demo:"
 
         /** Приклад довгого пояснення для знімка стану «Не вдалось» (T25). */
-        const val FAILED_SAMPLE = "Не вдалось підключитись (код 133). Батарея далеко (сигнал -90 dBm, слабкий) — підійди ближче, на 1–3 м."
+        val FAILED_SAMPLE: String
+            get() = tr(
+                "Не вдалось підключитись (код 133). Батарея далеко (сигнал -90 dBm, слабкий) — підійди ближче, на 1–3 м.",
+                "Could not connect (code 133). The battery is far (signal -90 dBm, weak). Move closer, within 1–3 m.",
+            )
 
         fun sceneOf(address: String): DemoFrames.Scene? =
             if (!address.startsWith(ADDRESS_PREFIX)) null

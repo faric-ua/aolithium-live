@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Signal
+import ua.faric.aolithium.core.tr
 
 /**
  * Пошук пристроїв Bluetooth LE поруч ([SCAN_MS]). Кожен знайдений — з оцінкою, чи це плата батареї.
@@ -56,18 +57,18 @@ class BleScanner(context: Context) {
         smoothed.clear()
         val scanner = BtAccess.adapter(app)?.bluetoothLeScanner
         if (scanner == null || !BtAccess.bluetoothOn(app)) {
-            l.onFinished("Bluetooth вимкнено.")
+            l.onFinished(tr("Bluetooth вимкнено.", "Bluetooth is off."))
             return
         }
         val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
         try {
             scanner.startScan(null, settings, callback)
         } catch (e: SecurityException) {
-            l.onFinished("Android не дав дозволу шукати пристрої.")
+            l.onFinished(tr("Android не дав дозволу шукати пристрої.", "Android did not allow searching for devices."))
             return
         }
         scanning = true
-        LinkLog.add("пошук: почато")
+        LinkLog.add(tr("пошук: почато", "search: started"))
         main.postDelayed(endScan, SCAN_MS)
     }
 
@@ -88,7 +89,7 @@ class BleScanner(context: Context) {
             }
         }
         scanning = false
-        LinkLog.add("пошук: кінець, знайдено ${found.size}" + (error?.let { " ($it)" } ?: ""))
+        LinkLog.add(tr("пошук: кінець, знайдено ${found.size}", "search: done, found ${found.size}") + (error?.let { " ($it)" } ?: ""))
         listener?.onFinished(error)
     }
 
@@ -145,8 +146,11 @@ class BleScanner(context: Context) {
     private fun scanError(code: Int) = when (code) {
         ScanCallback.SCAN_FAILED_ALREADY_STARTED -> null
         ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED ->
-            "Android не дав почати пошук (код $code). Вимкни й увімкни Bluetooth і спробуй ще раз."
-        else -> "Пошук не вдався (код Android $code)."
+            tr(
+                "Android не дав почати пошук (код $code). Вимкни й увімкни Bluetooth і спробуй ще раз.",
+                "Android did not let the search start (code $code). Turn Bluetooth off and on, then try again.",
+            )
+        else -> tr("Пошук не вдався (код Android $code).", "Search failed (Android code $code).")
     }
 
     companion object {

@@ -16,6 +16,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import ua.faric.aolithium.core.Fmt
+import ua.faric.aolithium.core.tr
 
 /**
  * Простий графік лініями за час. Кілька ліній; розриви (застосунок був закритий) — не з'єднуються.
@@ -62,7 +63,7 @@ class ChartView(context: Context) : View(context) {
         this.zeroSplit = zeroSplit
         this.fixedMin = min
         this.fixedMax = max
-        contentDescription = "Графік: " + series.joinToString { it.name }
+        contentDescription = tr("Графік: ", "Chart: ") + series.joinToString { it.name }
         invalidate()
     }
 
@@ -119,7 +120,7 @@ class ChartView(context: Context) : View(context) {
         val bottom = height - 22 * dp
         val values = series.flatMap { s -> s.points.mapNotNull { it?.second } }
         if (values.isEmpty()) {
-            canvas.drawText("Ще немає записів за цей час", width / 2f, height / 2f, empty)
+            canvas.drawText(tr("Ще немає записів за цей час", "No records for this period yet"), width / 2f, height / 2f, empty)
             return
         }
         var lo = fixedMin ?: values.min()

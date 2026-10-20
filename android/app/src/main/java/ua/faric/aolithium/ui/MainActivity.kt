@@ -128,9 +128,9 @@ class MainActivity : Activity() {
             brand.addView(ui.text("Aolithium Live", 18f, Palette.text, medium = true))
             topBar.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             // T12: перемикач мови — назва ІНШОЇ мови її ж мовою («English» / «Українська»), щоб знайти без перекладу.
-            topBar.addView(ui.button(if (Lang.isEn) "УКР" else "EN", Ui.Kind.QUIET) {
+            topBar.addView(ui.button(if (Lang.isEn) "УКР" else "EN", Ui.Kind.QUIET) { // uk-only — назва мови її ж мовою
                 setLanguage(if (Lang.isEn) Lang.Code.UK else Lang.Code.EN)
-            }.apply { contentDescription = if (Lang.isEn) "Українська" else "English" })
+            }.apply { contentDescription = if (Lang.isEn) "Українська" else "English" }) // uk-only
             topBar.addView(ui.iconButton(LineIcon.HELP, tr("Довідка", "Help"), Ui.Kind.QUIET) { show(Page.HELP, null) })
         } else {
             val toHelp = page == Page.BATTERY && returnTo == Page.HELP
@@ -246,7 +246,7 @@ class MainActivity : Activity() {
         } catch (e: SecurityException) {
             requestPermissions(BtAccess.runtimePermissions(), REQ_PERMS)
         } catch (e: ActivityNotFoundException) {
-            toast("Увімкни Bluetooth у шторці телефона")
+            toast(tr("Увімкни Bluetooth у шторці телефона", "Turn on Bluetooth in the phone's quick settings"))
         }
     }
 
@@ -254,7 +254,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
         } catch (e: ActivityNotFoundException) {
-            toast("Увімкни геолокацію в шторці телефона")
+            toast(tr("Увімкни геолокацію в шторці телефона", "Turn on location in the phone's quick settings"))
         }
     }
 
@@ -262,7 +262,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
         } catch (e: ActivityNotFoundException) {
-            toast("Налаштування → Застосунки → Aolithium Live → Дозволи")
+            toast(tr("Налаштування → Застосунки → Aolithium Live → Дозволи", "Settings → Apps → Aolithium Live → Permissions"))
         }
     }
 
@@ -321,7 +321,7 @@ class MainActivity : Activity() {
             startActivityForResult(i, REQ_SAVE)
         } catch (e: ActivityNotFoundException) {
             pendingSave = null
-            toast("На телефоні немає вікна збереження файлів")
+            toast(tr("На телефоні немає вікна збереження файлів", "This phone has no file save window"))
         }
     }
 
@@ -331,7 +331,7 @@ class MainActivity : Activity() {
         if (uri == null) return
         if (write == null) {
             // Вікно повернули після повороту екрана — вміст загубився. Чесно кажемо.
-            toast("Не збереглося — натисни «Зберегти CSV» ще раз")
+            toast(tr("Не збереглося — натисни «Зберегти CSV» ще раз", "Not saved. Tap \"Save CSV\" again"))
             return
         }
         Thread {
@@ -342,7 +342,7 @@ class MainActivity : Activity() {
             } catch (e: SecurityException) {
                 false
             }
-            runOnUiThread { toast(if (ok) "Збережено" else "Не вдалось зберегти файл") }
+            runOnUiThread { toast(if (ok) tr("Збережено", "Saved") else tr("Не вдалось зберегти файл", "Could not save the file")) }
         }.start()
     }
 
@@ -352,7 +352,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent.createChooser(i, subject))
         } catch (e: ActivityNotFoundException) {
-            toast("Немає застосунку, щоб поділитися")
+            toast(tr("Немає застосунку, щоб поділитися", "No app to share with"))
         }
     }
 

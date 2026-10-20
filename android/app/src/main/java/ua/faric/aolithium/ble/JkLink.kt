@@ -20,6 +20,7 @@ import ua.faric.aolithium.core.JkDevice
 import ua.faric.aolithium.core.JkFrame
 import ua.faric.aolithium.core.JkParser
 import ua.faric.aolithium.core.Signal
+import ua.faric.aolithium.core.tr
 
 /**
  * Зв'язок з платою **JK BMS** (Logic Power у мами faric) по Bluetooth LE: лише **читання**. T5, v0.4.
@@ -59,11 +60,16 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private var everLive = false
     private var attempt = 0
     private var pendingConnect = false
-    private val short = (if (quick) "фон " else "") + "JK " + BmsMatch.shortAddress(address)
+    private val short get() = (if (quick) tr("фон ", "bg ") else "") + "JK " + BmsMatch.shortAddress(address)
     private val maxReconnects = if (quick) JbdLink.QUICK_RECONNECTS else JbdLink.MAX_RECONNECTS
 
-    private val connectTimeout = Runnable { failConnect("Батарея не відповіла за ${JbdLink.CONNECT_TIMEOUT_MS / 1000} с.") }
-    private val deviceTimeout = Runnable { askCells("на «хто ти» відповіді нема — прошу дані й так") }
+    private val connectTimeout = Runnable {
+        failConnect(tr("Батарея не відповіла за ${JbdLink.CONNECT_TIMEOUT_MS / 1000} с.",
+            "The battery did not answer in ${JbdLink.CONNECT_TIMEOUT_MS / 1000} s."))
+    }
+    private val deviceTimeout = Runnable {
+        askCells(tr("на «хто ти» відповіді нема — прошу дані й так", "no answer to \"who are you\", asking for data anyway"))
+    }
     private val silence = Runnable { onSilence() }
 
     override fun start() {
@@ -91,12 +97,15 @@ class JkLink(context: Context, override val address: String, private val quick: 
         if (!running) return
         val adapter = BtAccess.adapter(app)
         if (adapter == null || !BtAccess.bluetoothOn(app)) {
-            status(LinkStatus.Phase.FAILED, "Bluetooth вимкнено. Увімкни його й натисни «Підключити ще раз».")
+            status(LinkStatus.Phase.FAILED, tr(
+                "Bluetooth вимкнено. Увімкни його й натисни «Підключити ще раз».",
+                "Bluetooth is off. Turn it on and tap \"Reconnect\".",
+            ))
             return
         }
         if (!android.bluetooth.BluetoothAdapter.checkBluetoothAddress(address.uppercase())) {
             running = false
-            status(LinkStatus.Phase.FAILED, "Неправильна адреса батареї ($address).")
+            status(LinkStatus.Phase.FAILED, tr("Неправильна адреса батареї ($address).", "Wrong battery address ($address)."))
             return
         }
         resetSession()
@@ -104,12 +113,13 @@ class JkLink(context: Context, override val address: String, private val quick: 
         val token = ++attempt
         val known = BleScanner.seen[address]
         if (known != null) {
-            LinkLog.add("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}" +
-                (BleScanner.lastRssi[address]?.let { ", сигнал ${Signal.describe(it)}" } ?: ""))
+            LinkLog.add(tr("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}",
+                "$short: connecting (device from search), attempt ${reconnects + 1}") +
+                (BleScanner.lastRssi[address]?.let { tr(", сигнал ", ", signal ") + Signal.describe(it) } ?: ""))
             h.postDelayed({ connectTo(known, token) }, JbdLink.AFTER_SCAN_MS)
             return
         }
-        LinkLog.add("$short: шукаю батарею в ефірі перед підключенням…")
+        LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням…", "$short: looking for the battery on air before connecting…"))
         main.post {
             BleScanner.findOne(app, address, JbdLink.FIND_MS) { found ->
                 h.post {
@@ -125,15 +135,17 @@ class JkLink(context: Context, override val address: String, private val quick: 
                     }
                     when {
                         found != null -> {
-                            LinkLog.add("$short: знайшлась, підключаюсь")
+                            LinkLog.add(tr("$short: знайшлась, підключаюсь", "$short: found, connecting"))
                             h.postDelayed({ connectTo(found, token) }, JbdLink.AFTER_SCAN_MS)
                         }
                         direct != null -> {
-                            LinkLog.add("$short: у пошуку не видно — пробую напряму за адресою")
+                            LinkLog.add(tr("$short: у пошуку не видно — пробую напряму за адресою",
+                                "$short: not seen in search, trying directly by address"))
                             h.postDelayed({ connectTo(direct, token) }, JbdLink.AFTER_SCAN_MS)
                         }
                         else -> {
-                            LinkLog.add("$short: за ${JbdLink.FIND_MS / 1000} с у пошуку не з'явилась")
+                            LinkLog.add(tr("$short: за ${JbdLink.FIND_MS / 1000} с у пошуку не з'явилась",
+                                "$short: did not appear in search in ${JbdLink.FIND_MS / 1000} s"))
                             running = false
                             status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
                         }
@@ -146,7 +158,8 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private fun connectTo(device: BluetoothDevice, token: Int) {
         if (!running || token != attempt) return
         val wait = !quick && reconnects >= JbdLink.MAX_RECONNECTS
-        if (wait) LinkLog.add("$short: остання спроба — чекаю, доки Android сам підключиться (до ${JbdLink.WAIT_CONNECT_MS / 1000} с)")
+        if (wait) LinkLog.add(tr("$short: остання спроба — чекаю, доки Android сам підключиться (до ${JbdLink.WAIT_CONNECT_MS / 1000} с)",
+            "$short: last attempt, waiting for Android to connect by itself (up to ${JbdLink.WAIT_CONNECT_MS / 1000} s)"))
         pendingConnect = true
         main.post {
             val g = try {
@@ -159,7 +172,10 @@ class JkLink(context: Context, override val address: String, private val quick: 
                 pendingConnect = false
                 if (g == null) {
                     running = false
-                    status(LinkStatus.Phase.FAILED, "Android не дав дозволу на Bluetooth. Дозволь на головному екрані застосунку.")
+                    status(LinkStatus.Phase.FAILED, tr(
+                        "Android не дав дозволу на Bluetooth. Дозволь на головному екрані застосунку.",
+                        "Android did not give Bluetooth permission. Allow it on the app's main screen.",
+                    ))
                     return@post
                 }
                 if (!running || token != attempt) {
@@ -189,10 +205,14 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private fun retryOrGiveUp(why: String) {
         if (!running) return
         val reason = BleScanner.lastRssi[address]?.takeIf { Signal.tooFar(it) }
-            ?.let { "$why Батарея далеко (сигнал ${Signal.describe(it)}) — підійди ближче, на 1–3 м." } ?: why
+            ?.let {
+                tr("$why Батарея далеко (сигнал ${Signal.describe(it)}) — підійди ближче, на 1–3 м.",
+                    "$why The battery is far (signal ${Signal.describe(it)}). Move closer, within 1–3 m.")
+            } ?: why
         if (reconnects < maxReconnects) {
             reconnects++
-            status(LinkStatus.Phase.LOST, "$reason Пробую ще раз ($reconnects з $maxReconnects)…", reconnects)
+            status(LinkStatus.Phase.LOST, tr("$reason Пробую ще раз ($reconnects з $maxReconnects)…",
+                "$reason Trying again ($reconnects of $maxReconnects)…"), reconnects)
             h.postDelayed({ connect() }, JbdLink.RECONNECT_DELAY_MS * reconnects)
         } else {
             status(LinkStatus.Phase.FAILED, "$reason $BUSY_HINT")
@@ -229,7 +249,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
         }
 
         // Android 8–12: значення — у самій характеристиці.
-        @Deprecated("Android 13+ кличе версію з value")
+        @Deprecated("Android 13+ кличе версію з value") // uk-only — анотація для компілятора, людина її не бачить
         override fun onCharacteristicChanged(g: BluetoothGatt, c: BluetoothGattCharacteristic) {
             if (Build.VERSION.SDK_INT >= 33) return
             @Suppress("DEPRECATION")
@@ -247,17 +267,22 @@ class JkLink(context: Context, override val address: String, private val quick: 
         when {
             newState == BluetoothProfile.STATE_CONNECTED && statusCode == BluetoothGatt.GATT_SUCCESS -> {
                 h.removeCallbacks(connectTimeout)
-                LinkLog.add("$short: підключено, шукаю службу FFE0")
+                LinkLog.add(tr("$short: підключено, шукаю службу FFE0", "$short: connected, looking for service FFE0"))
                 status(LinkStatus.Phase.READING)
-                h.postDelayed({ if (g == gatt && safe { g.discoverServices() } != true) failConnect("Не вдалось прочитати служби батареї.") }, 600)
+                h.postDelayed({
+                    if (g == gatt && safe { g.discoverServices() } != true) {
+                        failConnect(tr("Не вдалось прочитати служби батареї.", "Could not read the battery's services."))
+                    }
+                }, 600)
             }
             newState == BluetoothProfile.STATE_DISCONNECTED -> {
-                LinkLog.add("$short: відключено (код Android $statusCode" + (if (everLive) ", після даних)" else ")"))
+                LinkLog.add(tr("$short: відключено (код Android $statusCode", "$short: disconnected (Android code $statusCode") +
+                    (if (everLive) tr(", після даних)", ", after data)") else ")"))
                 closeGatt()
                 val reason = if (statusCode == 133 || statusCode == 8 || statusCode == 62) {
-                    "Android не зміг утримати зв'язок (код $statusCode)."
+                    tr("Android не зміг утримати зв'язок (код $statusCode).", "Android could not keep the connection (code $statusCode).")
                 } else {
-                    "Батарея відключилась."
+                    tr("Батарея відключилась.", "The battery disconnected.")
                 }
                 if (everLive) reconnects = 0
                 everLive = false
@@ -270,10 +295,14 @@ class JkLink(context: Context, override val address: String, private val quick: 
         if (g != gatt) return
         val service = g.getService(UUID.fromString(Jk.SERVICE_UUID))
         if (statusCode != BluetoothGatt.GATT_SUCCESS || service == null) {
-            LinkLog.add("$short: служби FFE0 немає (код $statusCode); є: " + g.services.joinToString { it.uuid.toString().substring(4, 8) })
+            LinkLog.add(tr("$short: служби FFE0 немає (код $statusCode); є: ", "$short: no service FFE0 (code $statusCode); found: ") +
+                g.services.joinToString { it.uuid.toString().substring(4, 8) })
             running = false
             closeGatt()
-            status(LinkStatus.Phase.FAILED, "Це не плата JK BMS: у неї немає потрібної служби Bluetooth (FFE0).")
+            status(LinkStatus.Phase.FAILED, tr(
+                "Це не плата JK BMS: у неї немає потрібної служби Bluetooth (FFE0).",
+                "This is not a JK BMS: it lacks the needed Bluetooth service (FFE0).",
+            ))
             return
         }
         // Як aiobmsble: серед каналів FFE1 беремо той, що вміє сповіщати, і той, у який можна писати (буває один і той самий).
@@ -285,7 +314,10 @@ class JkLink(context: Context, override val address: String, private val quick: 
         if (notify == null || write == null) {
             running = false
             closeGatt()
-            status(LinkStatus.Phase.FAILED, "У плати немає каналу FFE1 для читання — це не JK BMS або інша версія.")
+            status(LinkStatus.Phase.FAILED, tr(
+                "У плати немає каналу FFE1 для читання — це не JK BMS або інша версія.",
+                "The BMS has no FFE1 channel for reading. It is not JK BMS, or a different version.",
+            ))
             return
         }
         writeChar = write
@@ -314,7 +346,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private fun startReading() {
         if (!running || reading) return
         reading = true
-        LinkLog.add("$short: сповіщення ввімкнено, питаю «хто ти» (0x97)")
+        LinkLog.add(tr("$short: сповіщення ввімкнено, питаю «хто ти» (0x97)", "$short: notifications on, asking \"who are you\" (0x97)"))
         send(Jk.CMD_DEVICE_INFO)
         h.postDelayed(deviceTimeout, DEVICE_TIMEOUT_MS)
     }
@@ -350,27 +382,32 @@ class JkLink(context: Context, override val address: String, private val quick: 
                 g.writeCharacteristic(c)
             }
         } == true
-        LinkLog.add("→ " + LinkLog.hex(bytes) + if (ok) "" else "  (Android не прийняв запис)")
+        LinkLog.add("→ " + LinkLog.hex(bytes) + if (ok) "" else tr("  (Android не прийняв запис)", "  (Android rejected the write)"))
     }
 
     private fun onBytes(bytes: ByteArray) {
         // Кадр 300 байт — у журнал лише початок шматка, щоб журнал не розпухав.
-        LinkLog.add("← " + LinkLog.hex(if (bytes.size > 24) bytes.copyOf(24) else bytes) + if (bytes.size > 24) " …(${bytes.size} байт)" else "")
+        LinkLog.add("← " + LinkLog.hex(if (bytes.size > 24) bytes.copyOf(24) else bytes) +
+            if (bytes.size > 24) " …(${bytes.size} " + tr("байт", "bytes") + ")" else "")
         val badBefore = assembler.badSums
         for (f in assembler.feed(bytes)) onFrame(f)
-        if (assembler.badSums != badBefore) LinkLog.add("   кадр із неправильною сумою — пропущено")
+        if (assembler.badSums != badBefore) {
+            LinkLog.add(tr("   кадр із неправильною сумою — пропущено", "   frame with wrong checksum, skipped"))
+        }
     }
 
     private fun onFrame(f: JkFrame) {
         when (f.type) {
             Jk.TYPE_DEVICE -> {
                 device = JkParser.device(f.bytes)
-                LinkLog.add("   плата: ${device?.model} · програма ${device?.sw} · залізо ${device?.hw}")
-                if (!askedCells) askCells("прошу «комірки й стан» (0x96)")
+                LinkLog.add(tr("   плата: ${device?.model} · програма ${device?.sw} · залізо ${device?.hw}",
+                    "   BMS: ${device?.model} · firmware ${device?.sw} · hardware ${device?.hw}"))
+                if (!askedCells) askCells(tr("прошу «комірки й стан» (0x96)", "asking for \"cells and state\" (0x96)"))
             }
-            Jk.TYPE_SETTINGS -> LinkLog.add("   налаштування плати (лише прочитано, не показуємо)")
+            Jk.TYPE_SETTINGS ->
+                LinkLog.add(tr("   налаштування плати (лише прочитано, не показуємо)", "   BMS settings (read only, not shown)"))
             Jk.TYPE_CELLS -> onCells(f)
-            else -> LinkLog.add("   невідомий кадр 0x%02x".format(f.type))
+            else -> LinkLog.add(tr("   невідомий кадр 0x%02x", "   unknown frame 0x%02x").format(f.type))
         }
     }
 
@@ -383,7 +420,9 @@ class JkLink(context: Context, override val address: String, private val quick: 
         // Плата шле кадри часто — екрану досить раз на [JbdLink.POLL_MS], як і з JBD.
         if (now - lastPublished < JbdLink.POLL_MS - 200 && everLive) return
         lastPublished = now
-        if (!everLive) LinkLog.add("   розкладка ${c.layout.title}, комірок ${c.cellsMv.size}")
+        if (!everLive) {
+            LinkLog.add(tr("   розкладка ${c.layout.title}, комірок ${c.cellsMv.size}", "   layout ${c.layout.title}, cells ${c.cellsMv.size}"))
+        }
         everLive = true
         reconnects = 0
         val snap = BatterySnapshot.fromJk(c, device)
@@ -397,9 +436,10 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private fun onSilence() {
         if (!running || gatt == null) return
         silentRounds++
-        LinkLog.add("   ${SILENT_MS / 1000} с без даних (раз $silentRounds)")
+        val sec = SILENT_MS / 1000
+        LinkLog.add(tr("   $sec с без даних (раз $silentRounds)", "   $sec s without data (time $silentRounds)"))
         if (silentRounds >= JbdLink.SILENT_CYCLES_LIMIT) status(LinkStatus.Phase.NO_ANSWER, NO_ANSWER_HINT)
-        askCells("прошу «комірки й стан» ще раз")
+        askCells(tr("прошу «комірки й стан» ще раз", "asking for \"cells and state\" again"))
     }
 
     private fun status(phase: LinkStatus.Phase, message: String = "", attempt: Int = 0) {
@@ -412,7 +452,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private inline fun <T> safe(block: () -> T): T? = try {
         block()
     } catch (e: SecurityException) {
-        LinkLog.add("$short: Android заборонив (${e.message})")
+        LinkLog.add(tr("$short: Android заборонив (${e.message})", "$short: Android refused (${e.message})"))
         null
     }
 
@@ -420,11 +460,27 @@ class JkLink(context: Context, override val address: String, private val quick: 
         const val DEVICE_TIMEOUT_MS = 3_000L
         const val SILENT_MS = 6_000L
 
-        const val NOT_ADVERTISING_HINT = "Батарея не з'являється в ефірі. Вона поруч? Застосунок JK BMS / Logic Power на інших " +
-            "телефонах закритий? Поки плата з кимось на зв'язку, її не видно. Закрий інші застосунки й натисни «Підключити ще раз»."
-        const val BUSY_HINT = "Можливо, батарея зараз підключена до іншого телефона чи до застосунку JK BMS — " +
-            "плата тримає лише одне підключення. Закрий той застосунок і натисни «Підключити ще раз»."
-        const val NO_ANSWER_HINT = "Підключились, але плата JK не шле даних. Пароль для читання не потрібен — " +
-            "надішли Claude «Журнал зв'язку»."
+        val NOT_ADVERTISING_HINT: String
+            get() = tr(
+                "Батарея не з'являється в ефірі. Вона поруч? Застосунок JK BMS / Logic Power на інших " +
+                    "телефонах закритий? Поки плата з кимось на зв'язку, її не видно. Закрий інші застосунки й натисни " +
+                    "«Підключити ще раз».",
+                "The battery does not show up on air. Is it nearby? Is the JK BMS / Logic Power app closed on other " +
+                    "phones? While the BMS is connected to someone, it is hidden. Close other apps and tap \"Reconnect\".",
+            )
+        val BUSY_HINT: String
+            get() = tr(
+                "Можливо, батарея зараз підключена до іншого телефона чи до застосунку JK BMS — " +
+                    "плата тримає лише одне підключення. Закрий той застосунок і натисни «Підключити ще раз».",
+                "Maybe the battery is now connected to another phone or to the JK BMS app. " +
+                    "The BMS allows only one connection. Close that app and tap \"Reconnect\".",
+            )
+        val NO_ANSWER_HINT: String
+            get() = tr(
+                "Підключились, але плата JK не шле даних. Пароль для читання не потрібен — " +
+                    "надішли Claude «Журнал зв'язку».",
+                "Connected, but the JK BMS sends no data. No password is needed for reading. " +
+                    "Send the \"Connection log\" to Claude.",
+            )
     }
 }

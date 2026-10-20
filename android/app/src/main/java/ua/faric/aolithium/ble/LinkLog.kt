@@ -3,6 +3,7 @@ package ua.faric.aolithium.ble
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import ua.faric.aolithium.core.tr
 
 /**
  * Журнал зв'язку з платою: що відправили, що прийшло (байти), помилки Android.
@@ -29,6 +30,6 @@ object LinkLog {
 
     fun hex(b: ByteArray, max: Int = 64): String {
         val s = b.take(max).joinToString(" ") { "%02x".format(it.toInt() and 0xFF) }
-        return if (b.size > max) "$s … (${b.size} байт)" else s
+        return if (b.size > max) "$s … (${b.size} " + tr("байт", "bytes") + ")" else s
     }
 }

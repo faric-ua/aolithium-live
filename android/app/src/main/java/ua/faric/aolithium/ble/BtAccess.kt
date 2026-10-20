@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
 import android.provider.Settings
+import ua.faric.aolithium.core.tr
 
 /**
  * Що потрібно, щоб шукати й читати батарею по Bluetooth. Різне для різних Android:
@@ -62,17 +63,41 @@ object BtAccess {
         if (!locationOn(ctx)) add(Need.LOCATION_OFF)
     }
 
-    enum class Need(val title: String, val explain: String) {
-        NO_BLE("Немає Bluetooth LE", "На цьому телефоні немає Bluetooth LE — з батареєю він говорити не зможе."),
-        PERMISSION(
-            "Дозвіл на Bluetooth",
-            "Android має дозволити застосунку шукати й підключати пристрої поблизу.",
-        ),
-        BLUETOOTH_OFF("Bluetooth вимкнено", "Увімкни Bluetooth — батарея говорить лише через нього."),
-        LOCATION_OFF(
-            "Геолокація вимкнена",
-            "На Android 11 і старіших без геолокації пошук Bluetooth нічого не знаходить. " +
-                "Місцезнаходження застосунок нікуди не передає — інтернету в нього немає.",
-        ),
+    enum class Need {
+        NO_BLE,
+        PERMISSION,
+        BLUETOOTH_OFF,
+        LOCATION_OFF,
+        ;
+
+        val title: String
+            get() = when (this) {
+                NO_BLE -> tr("Немає Bluetooth LE", "No Bluetooth LE")
+                PERMISSION -> tr("Дозвіл на Bluetooth", "Bluetooth permission")
+                BLUETOOTH_OFF -> tr("Bluetooth вимкнено", "Bluetooth is off")
+                LOCATION_OFF -> tr("Геолокація вимкнена", "Location is off")
+            }
+
+        val explain: String
+            get() = when (this) {
+                NO_BLE -> tr(
+                    "На цьому телефоні немає Bluetooth LE — з батареєю він говорити не зможе.",
+                    "This phone has no Bluetooth LE. It cannot talk to the battery.",
+                )
+                PERMISSION -> tr(
+                    "Android має дозволити застосунку шукати й підключати пристрої поблизу.",
+                    "Android must allow the app to find and connect to nearby devices.",
+                )
+                BLUETOOTH_OFF -> tr(
+                    "Увімкни Bluetooth — батарея говорить лише через нього.",
+                    "Turn on Bluetooth. The battery talks only through it.",
+                )
+                LOCATION_OFF -> tr(
+                    "На Android 11 і старіших без геолокації пошук Bluetooth нічого не знаходить. " +
+                        "Місцезнаходження застосунок нікуди не передає — інтернету в нього немає.",
+                    "On Android 11 and older, Bluetooth search finds nothing without location. " +
+                        "The app does not send your location anywhere. It has no internet access.",
+                )
+            }
     }
 }
