@@ -60,6 +60,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Лише debug-збірка (знімки CI, T12): `am start --es lang en` після force-stop — вікно одразу англійською.
+        if (BuildConfig.DEBUG && savedInstanceState == null) intent?.getStringExtra(EXTRA_LANG)?.let { LangSettings.save(this, Lang.of(it)) }
         ui = Ui(this)
         savedInstanceState?.let { s ->
             page = s.getString(KEY_PAGE)?.let { n -> Page.entries.firstOrNull { it.name == n } } ?: Page.HOME
@@ -405,6 +407,7 @@ class MainActivity : Activity() {
         const val EXTRA_DEMO = "demo"
         const val EXTRA_PAGE = "page"
         const val EXTRA_DIALOG = "dialog"
+        const val EXTRA_LANG = "lang"
         private const val KEY_PAGE = "page"
         private const val KEY_ADDRESS = "address"
         private const val KEY_RETURN = "returnTo"

@@ -436,6 +436,29 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
     }
 
+    /**
+     * T31: рядок картки відключення «ліва … права» в один рядок. Частина [keepLeft] (або права, якщо false) — важлива:
+     * не стискається й не обрізається (відсоток «99 % → 62 %», тривалість). Друга бере, скільки лишилось: спершу менший
+     * шрифт (`TextFit`, не дрібніше 10 dp), далі «…».
+     */
+    private fun outageRow(left: String, right: String, keepLeft: Boolean, color: Int, valueColor: Int, sizeSp: Float = 12.5f): View =
+        ui.row(8).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            val l = numbers(oneLine(ui.text(Ui.keepUnits(left), sizeSp, color, medium = !keepLeft)))
+            val r = numbers(oneLine(ui.text(Ui.keepUnits(right), sizeSp, valueColor, medium = true))).apply { gravity = Gravity.END }
+            val squeeze = if (keepLeft) r else l
+            addView(l, if (keepLeft) LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                else LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(r, if (keepLeft) LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                else LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            squeeze.addOnLayoutChangeListener { v, x0, _, x1, _, _, _, _, _ ->
+                val tv = v as TextView
+                val avail = (x1 - x0 - tv.paddingLeft - tv.paddingRight).toFloat()
+                val size = TextFit.size(tv.textSize, tv.paint.measureText(tv.text.toString()), avail, ui.dp(OUTAGE_MIN_DP).toFloat())
+                if (size < tv.textSize - 0.5f) tv.post { tv.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, size) }
+            }
+        }
+
     private fun oneLine(tv: TextView): TextView = tv.apply {
         maxLines = 1
         setSingleLine(true)
@@ -694,21 +717,6 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     /** Номер комірки: «№3» / «#3». */
     private fun cellNo(n: Int) = tr("№$n", "#$n")
-
-    /**
-     * Назва лічильника захисту для екрана. Самі назви — ключі з протоколу (`JbdParser.ERROR_COUNT_NAMES`, українською;
-     * так само лежать у `LastSnapshot` і `Glossary.forCounter`), тож перекладаємо лише під час показу.
-     */
-    private fun counterTitle(name: String): String {
-        if (!Lang.isEn) return name
-        // Той самий порядок, що й у ERROR_COUNT_NAMES (протокол).
-        val en = listOf(
-            "Short circuit", "Charge overcurrent", "Discharge overcurrent", "Cell overcharge", "Cell over-discharge",
-            "Too hot to charge", "Too cold to charge", "Too hot to discharge", "Too cold to discharge",
-            "Battery overcharge", "Battery over-discharge",
-        )
-        return en.getOrNull(JbdParser.ERROR_COUNT_NAMES.indexOf(name)) ?: name
-    }
 
     // ---------- «Комірки» ----------
 
@@ -1147,15 +1155,18 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                     isClickable = true
                     setOnClickListener { showInfo("outages") }
                 }
-                val title = if (ongoing) tr("Зараз — світла нема, з ${hm.format(java.util.Date(o.start))}",
-                        "Now — no power since ${hm.format(java.util.Date(o.start))}")
+                // T31 (скрін faric 20.10 05:14): у демо JK «99 % → 62…» — права частина (чотиризначні Вт·год) витісняла
+                // відсоток. Тепер у кожному рядку важлива частина ніколи не обрізається, а другорядна спершу зменшує шрифт.
+                val title = if (ongoing) tr("Світла нема з ${hm.format(java.util.Date(o.start))}", "No power since ${hm.format(java.util.Date(o.start))}")
                 else "${day.format(java.util.Date(o.start))} ${hm.format(java.util.Date(o.start))} → ${hm.format(java.util.Date(o.end))}"
-                box.addView(miniRow(title, Fmt.duration((if (ongoing) now - o.start else o.durationMs) / 3_600_000.0), if (ongoing) Palette.danger else Palette.text).also {
-                    ((it as LinearLayout).getChildAt(0) as TextView).apply { setTextColor(if (ongoing) Palette.danger else Palette.text); textSize = 14f }
-                })
-                box.addView(miniRow("${o.socFrom} % → ${o.socTo} %", "${Fmt.num(o.ah, 1)} ${Fmt.AH} ≈ ${Fmt.num(o.wh, 0)} ${Fmt.WH}", Palette.muted))
-                box.addView(miniRow(tr("в середньому ${Fmt.watts(o.avgW)}", "average ${Fmt.watts(o.avgW)}"),
-                    tr("пік ${Fmt.watts(o.peakW)}", "peak ${Fmt.watts(o.peakW)}"), Palette.muted))
+                val titleColor = if (ongoing) Palette.danger else Palette.text
+                box.addView(outageRow(title, Fmt.duration((if (ongoing) now - o.start else o.durationMs) / 3_600_000.0),
+                    keepLeft = false, color = titleColor, valueColor = titleColor, sizeSp = 14f), ui.matchWrap())
+                box.addView(outageRow("${o.socFrom} % → ${o.socTo} %", "${Fmt.num(o.ah, 1)} ${Fmt.AH} ≈ ${Fmt.num(o.wh, 0)} ${Fmt.WH}",
+                    keepLeft = true, color = Palette.muted, valueColor = Palette.text), ui.matchWrap())
+                box.addView(outageRow(tr("в середньому ${Fmt.watts(o.avgW)}", "average ${Fmt.watts(o.avgW)}"),
+                    tr("пік ${Fmt.watts(o.peakW)}", "peak ${Fmt.watts(o.peakW)}"),
+                    keepLeft = true, color = Palette.muted, valueColor = Palette.text), ui.matchWrap())
                 oc.addView(box, ui.matchWrap())
             }
             oc.addView(ui.muted(tr("Видно лише години, коли застосунок записував (відкритий або «Запис у фоні»).",
@@ -1309,7 +1320,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             c.addView(labelRow(tr("Захисти за весь час", "Protections, all time"), LineIcon.LIST, "counters"))
             c.addView(ui.muted(tr("Скільки разів плата вмикала кожен захист. Торкнись рядка — що це і що робити.",
                     "How many times the BMS triggered each protection. Tap a row to see what it is and what to do."), 12.5f))
-            for ((name, n) in counts) c.addView(fact(counterTitle(name), n.toString(), Glossary.forCounter(name), if (n > 0) Palette.warning else Palette.muted))
+            for ((name, n) in counts) c.addView(fact(JbdParser.counterTitle(name), n.toString(), Glossary.forCounter(name), if (n > 0) Palette.warning else Palette.muted))
             // Назви лічильників — ключі з протоколу (українські, і в LastSnapshot теж) — тож шукаємо через довідник, не за текстом.
             val over = counts.firstOrNull { Glossary.forCounter(it.first) == "cnt_cell_over" }?.second ?: 0
             Health.overchargeAdvice(over)?.let { advice ->
@@ -1758,6 +1769,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val HEAD_DP = 24
         /** T30: значення плитки підсумків — не дрібніше (далі вже «…»). */
         const val SUMMARY_MIN_DP = 12
+        /** T31: другорядна частина рядка відключення — не дрібніше (далі «…»). */
+        const val OUTAGE_MIN_DP = 10
         const val INSIGHT_RELOAD_MS = 5 * 60_000L
     }
 }

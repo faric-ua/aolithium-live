@@ -97,8 +97,8 @@ object JbdParser {
     )
 
     /** Назва лічильника для екрана поточною мовою (T12); незнайомий ключ — як є. */
-    fun counterTitle(name: String): String =
-        ERROR_COUNT_NAMES.indexOf(name).takeIf { it >= 0 }?.let { ERROR_COUNT_PROTECTIONS[it].title } ?: name
+    fun counterTitle(name: String): String = if (!Lang.isEn) name
+    else ERROR_COUNT_NAMES.indexOf(name).takeIf { it >= 0 }?.let { ERROR_COUNT_PROTECTIONS[it].title } ?: name
 
     private fun u8(d: ByteArray, i: Int) = d[i].toInt() and 0xFF
     private fun u16(d: ByteArray, i: Int) = (u8(d, i) shl 8) or u8(d, i + 1)
