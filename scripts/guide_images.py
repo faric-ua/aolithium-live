@@ -10,7 +10,7 @@ from pathlib import Path
 
 NAMES = [
     "home", "now-charging", "now-discharging", "until-full", "link-lost", "cells", "outages",
-    "charts-days", "board", "info", "alerts", "widget", "jk-cells",
+    "charts-days", "board", "info", "alerts", "widget", "jk-cells", "guard", "guard-setup",
 ]
 LANGS = ["uk", "en"]
 OUT = Path(__file__).resolve().parents[1] / "android/app/src/main/assets/guide/img"

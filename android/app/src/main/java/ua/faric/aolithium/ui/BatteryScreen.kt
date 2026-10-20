@@ -227,6 +227,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     override fun restoreDialog(key: String): Boolean {
         when {
+            // CI: «guard:card» — вкладка «Ще», прокрутити до «Сторожа» (знімок для інструкції)
+            key == "guard:card" -> {
+                selectTab(Tab.MORE)
+                scrollToGuard()
+            }
+            key.startsWith("guard:") -> return guardUi().restore(key)
             key == DLG_RENAME -> showRename()
             key == DLG_LOG -> showLog()
             // CI, лише демо (T47): довгий журнал — перевірити, що шапка й кнопки стоять, а прокручується лише журнал.
@@ -1385,7 +1391,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         help.addView(ui.iconButton(LineIcon.HELP, tr("Відкрити інструкцію", "Open the guide"), Ui.Kind.NORMAL) { host.openHelp("home") },
                 ui.matchWrap())
 
-        columns(listOf(backgroundCard(), alertsCard(), langCard(), actions, hist, help), listOf(dict))
+        columns(listOf(backgroundCard(), alertsCard(), guardUi().card().also { guardCard = it }, langCard(), actions, hist, help), listOf(dict))
     }
 
     /** T12: «Мова / Language» — обидві назви, щоб картку знайшов і той, хто не читає поточною мовою. */
@@ -1405,6 +1411,24 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
      * «Запис у фоні» (v0.2.5, T3): перемикач для цієї батареї, останній запис, і що ще заважає
      * (сповіщення заборонені, Android обмежує батарею для застосунку).
      */
+    /** T48: «Сторож (Telegram)» — картка й вікна в `GuardUi`; у демо — як виглядає налаштований (без мережі). */
+    private fun guardUi() = GuardUi(host, address, sample = demo != null) { render() }
+
+    /** Картка сторожа — щоб CI-знімок («guard:card») прокрутив саме до неї. */
+    private var guardCard: View? = null
+
+    private fun scrollToGuard() {
+        scroll.postDelayed({
+            var v: View? = guardCard ?: return@postDelayed
+            var y = 0
+            while (v != null && v !== scroll) {
+                y += v.top
+                v = v.parent as? View
+            }
+            scroll.scrollTo(0, (y - ui.dp(8)).coerceAtLeast(0))
+        }, 400L)
+    }
+
     private fun backgroundCard(): View {
         val on = demo == null && bg.isOn(address)
         val card = if (on) ui.card(8, fill = Palette.accentFill, stroke = Palette.accent) else ui.card(8)

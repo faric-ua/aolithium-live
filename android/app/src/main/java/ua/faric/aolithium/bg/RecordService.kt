@@ -29,6 +29,7 @@ import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
+import ua.faric.aolithium.guard.GuardRunner
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
 import ua.faric.aolithium.ui.MainActivity
@@ -79,6 +80,7 @@ class RecordService : Service() {
         super.onCreate()
         settings = BgSettings(this)
         instance = this
+        GuardRunner.ensure(this) // T48: сторож живе разом із записом у фоні
         try {
             // Системне повідомлення — прапорець EXPORTED / NOT_EXPORTED (Android 13+) для нього не потрібен.
             registerReceiver(unlock, IntentFilter(Intent.ACTION_USER_PRESENT))
@@ -235,6 +237,7 @@ class RecordService : Service() {
             return
         }
         busy = true
+        GuardRunner.ensure(this)
         settings.lastTickAt = System.currentTimeMillis()
         schedule()
         Wake.hold(this, Background.READ_TIMEOUT_MS * list.size + 30_000L)
