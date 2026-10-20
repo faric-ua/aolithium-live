@@ -8,6 +8,7 @@ import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import ua.faric.aolithium.core.Zones
+import ua.faric.aolithium.core.tr
 
 /**
  * Найнижчий заряд по днях — стовпчики (faric 19.10 03:31: «хвилями… до порогу, потім генератор»).
@@ -34,8 +35,8 @@ class DayBarsView(context: Context) : View(context) {
 
     fun set(list: List<Bar>) {
         bars = list
-        contentDescription = "Найнижчий заряд по днях: " + list.joinToString("; ") {
-            "${it.dayLabel} — ${it.minSoc} %" + if (it.generator) ", генератор" else ""
+        contentDescription = tr("Найнижчий заряд по днях: ", "Lowest charge by day: ") + list.joinToString("; ") {
+            "${it.dayLabel} — ${it.minSoc} %" + if (it.generator) tr(", генератор", ", generator") else ""
         }
         invalidate()
     }
@@ -64,7 +65,7 @@ class DayBarsView(context: Context) : View(context) {
             canvas.drawText("${b.minSoc}", cx, bottom - h - text.textSize * 0.5f, text)
             text.color = if (b.generator) Palette.warning else Palette.faint
             canvas.drawText(b.dayLabel, cx, bottom + text.textSize * 1.3f, text)
-            if (b.generator) canvas.drawText("Г", cx, bottom + text.textSize * 2.45f, text)
+            if (b.generator) canvas.drawText(tr("Г", "G"), cx, bottom + text.textSize * 2.45f, text)
         }
     }
 

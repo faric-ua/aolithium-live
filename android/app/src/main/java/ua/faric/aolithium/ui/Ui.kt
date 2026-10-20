@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import ua.faric.aolithium.core.tr
 
 /**
  * Будівельні блоки інтерфейсу (як у Track Catcher). Кожен новий елемент — звідси.
@@ -176,7 +177,7 @@ class Ui(val ctx: Context) {
             else rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12),
             12,
         )
-        contentDescription = if (selected) "$label · вибрано" else label
+        contentDescription = if (selected) tr("$label · вибрано", "$label · selected") else label
     }
 
     /**

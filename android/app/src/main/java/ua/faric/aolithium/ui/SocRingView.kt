@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.TypedValue
 import android.view.View
+import ua.faric.aolithium.core.tr
 
 /**
  * Великий циферблат заряду: дуга 270°, посередині «93 %» і підпис.
@@ -15,7 +16,7 @@ class SocRingView(context: Context) : View(context) {
     var percent: Int = 0
         set(value) {
             field = value.coerceIn(0, 100)
-            contentDescription = "Заряд $field відсотків"
+            contentDescription = tr("Заряд $field відсотків", "Charge $field percent")
             invalidate()
         }
     var caption: String = ""
