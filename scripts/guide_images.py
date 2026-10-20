@@ -8,8 +8,6 @@
 import sys
 from pathlib import Path
 
-from PIL import Image
-
 NAMES = [
     "home", "now-charging", "now-discharging", "until-full", "link-lost", "cells", "outages",
     "charts-days", "board", "info", "alerts", "widget", "jk-cells",
@@ -19,6 +17,8 @@ OUT = Path(__file__).resolve().parents[1] / "android/app/src/main/assets/guide/i
 
 
 def main() -> int:
+    from PIL import Image  # лише тут: тест інструкції читає NAMES і без Pillow (у CI його нема)
+
     src = Path(sys.argv[1])
     total = 0
     for lang in LANGS:
