@@ -26,6 +26,8 @@ jobs:
         run: python3 scripts/audit_ui.py
       - name: Public repo audit
         run: python3 scripts/audit_repo.py
+      - name: Language audit (T12 — every Ukrainian text has English)
+        run: python3 scripts/audit_lang.py
       - name: Contract tests
         run: |
           set -o pipefail

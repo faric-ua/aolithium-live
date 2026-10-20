@@ -9,6 +9,7 @@ import ua.faric.aolithium.ble.BleScanner
 import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Signal
+import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
 
 /**
@@ -75,7 +76,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         val needs = BtAccess.problems(host)
         if (needs.isEmpty()) return
         val card = ui.card(fill = Palette.warningFill, stroke = Palette.warning)
-        card.addView(ui.label("Що потрібно, щоб бачити батарею", LineIcon.BLUETOOTH))
+        card.addView(ui.label(tr("Що потрібно, щоб бачити батарею", "What is needed to see the battery"), LineIcon.BLUETOOTH))
         for (n in needs) {
             card.addView(ui.text(n.title, 16f, Palette.text, medium = true))
             card.addView(ui.muted(n.explain, 14f))
@@ -83,11 +84,16 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         if (BtAccess.Need.NO_BLE !in needs) {
             val buttons = ArrayList<View>()
             when {
-                BtAccess.Need.PERMISSION in needs -> buttons += ui.button("Дозволити", Ui.Kind.PRIMARY) { host.requestAccess() }
-                BtAccess.Need.BLUETOOTH_OFF in needs -> buttons += ui.button("Увімкнути Bluetooth", Ui.Kind.PRIMARY) { host.enableBluetooth() }
-                BtAccess.Need.LOCATION_OFF in needs -> buttons += ui.button("Увімкнути геолокацію", Ui.Kind.PRIMARY) { host.openLocationSettings() }
+                BtAccess.Need.PERMISSION in needs ->
+                    buttons += ui.button(tr("Дозволити", "Allow"), Ui.Kind.PRIMARY) { host.requestAccess() }
+                BtAccess.Need.BLUETOOTH_OFF in needs ->
+                    buttons += ui.button(tr("Увімкнути Bluetooth", "Turn on Bluetooth"), Ui.Kind.PRIMARY) { host.enableBluetooth() }
+                BtAccess.Need.LOCATION_OFF in needs ->
+                    buttons += ui.button(tr("Увімкнути геолокацію", "Turn on location"), Ui.Kind.PRIMARY) { host.openLocationSettings() }
             }
-            if (BtAccess.Need.PERMISSION in needs) buttons += ui.button("Налаштування застосунку", Ui.Kind.QUIET) { host.openAppSettings() }
+            if (BtAccess.Need.PERMISSION in needs) {
+                buttons += ui.button(tr("Налаштування застосунку", "App settings"), Ui.Kind.QUIET) { host.openAppSettings() }
+            }
             card.addView(ui.grid(buttons), ui.matchWrap())
         }
         accessBox.addView(card, ui.matchWrap())
@@ -98,10 +104,13 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     private fun renderSaved() {
         savedBox.removeAllViews()
         val card = ui.card()
-        card.addView(ui.label("Мої батареї", LineIcon.BATTERY))
+        card.addView(ui.label(tr("Мої батареї", "My batteries"), LineIcon.BATTERY))
         val list = batteries.all()
         if (list.isEmpty()) {
-            card.addView(ui.muted("Ще жодної. Натисни «Шукати батареї поруч» — і вибери свою (у Aolithium вона називається на кшталт «AL12-100-4S…»).", 14f))
+            card.addView(ui.muted(tr(
+                "Ще жодної. Натисни «Шукати батареї поруч» — і вибери свою (у Aolithium вона називається на кшталт «AL12-100-4S…»).",
+                "None yet. Tap \"Find batteries nearby\" and pick yours (in Aolithium it is named like \"AL12-100-4S…\").",
+            ), 14f))
         }
         for (b in list) {
             card.addView(batteryRow(b.title, kindLine(b.kind, b.address)) { host.openBattery(b.address) }, ui.matchWrap())
@@ -114,12 +123,16 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     private fun renderScan() {
         scanBox.removeAllViews()
         val card = ui.card()
-        card.addView(ui.label("Пошук поруч", LineIcon.SEARCH))
+        card.addView(ui.label(tr("Пошук поруч", "Search nearby"), LineIcon.SEARCH))
         val ready = BtAccess.problems(host).isEmpty()
         val button = if (scanner.isScanning) {
-            ui.button("Шукаю… (до ${BleScanner.SCAN_MS / 1000} с) — зупинити", Ui.Kind.NORMAL) { scanner.stop(); renderScan() }
+            val sec = BleScanner.SCAN_MS / 1000
+            ui.button(tr("Шукаю… (до $sec с) — зупинити", "Searching… (up to $sec s), stop"), Ui.Kind.NORMAL) {
+                scanner.stop()
+                renderScan()
+            }
         } else {
-            ui.iconButton(LineIcon.SEARCH, "Шукати батареї поруч", Ui.Kind.PRIMARY, large = true) {
+            ui.iconButton(LineIcon.SEARCH, tr("Шукати батареї поруч", "Find batteries nearby"), Ui.Kind.PRIMARY, large = true) {
                 scanError = null
                 scannedOnce = true
                 scanner.start(this)
@@ -128,29 +141,37 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         }
         ui.setEnabled(button, ready)
         card.addView(button, ui.matchWrap())
-        if (!ready) card.addView(ui.muted("Спершу дозволь Bluetooth (картка вгорі).", 13f))
+        if (!ready) card.addView(ui.muted(tr("Спершу дозволь Bluetooth (картка вгорі).", "First allow Bluetooth (card at the top)."), 13f))
         scanError?.let { card.addView(ui.text(it, 14f, Palette.danger)) }
 
         val results = scanner.results
         val batteriesFound = results.filter { it.kind != BmsMatch.Kind.OTHER }
         val others = results.filter { it.kind == BmsMatch.Kind.OTHER }
         for (f in batteriesFound) {
-            val sub = kindLine(f.kind, f.address) + " · сигнал " + Signal.describe(f.rssi)
-            card.addView(batteryRow(f.name ?: "Без назви", sub) { connectTo(f) }, ui.matchWrap())
+            val sub = kindLine(f.kind, f.address) + tr(" · сигнал ", " · signal ") + Signal.describe(f.rssi)
+            card.addView(batteryRow(f.name ?: NO_NAME, sub) { connectTo(f) }, ui.matchWrap())
             if (Signal.tooFar(f.rssi)) card.addView(ui.text(FAR_HINT, 14f, Palette.warning))
         }
         if (scannedOnce && !scanner.isScanning && batteriesFound.isEmpty()) {
             card.addView(ui.muted(NOTHING_FOUND, 14f))
         }
         if (others.isNotEmpty()) {
-            card.addView(ui.button(if (showOthers) "Сховати інші пристрої" else "Інші пристрої поруч: ${others.size}", Ui.Kind.NORMAL) {
+            val othersText = if (showOthers) tr("Сховати інші пристрої", "Hide other devices")
+            else tr("Інші пристрої поруч: ${others.size}", "Other devices nearby: ${others.size}")
+            card.addView(ui.button(othersText, Ui.Kind.NORMAL) {
                 showOthers = !showOthers
                 renderScan()
             }, ui.matchWrap())
             if (showOthers) {
-                card.addView(ui.muted("Це не схоже на плату батареї. Підключатись — лише якщо точно знаєш, що це вона: застосунок тільки читає, нічого не змінює.", 13f))
+                card.addView(ui.muted(tr(
+                    "Це не схоже на плату батареї. Підключатись — лише якщо точно знаєш, що це вона: " +
+                        "застосунок тільки читає, нічого не змінює.",
+                    "This does not look like a battery BMS. Connect only if you are sure it is one. " +
+                        "The app only reads, it changes nothing.",
+                ), 13f))
                 for (f in others) {
-                    card.addView(batteryRow(f.name ?: "Без назви", BmsMatch.shortAddress(f.address) + " · сигнал " + Signal.describe(f.rssi)) { connectTo(f) }, ui.matchWrap())
+                    val sub = BmsMatch.shortAddress(f.address) + tr(" · сигнал ", " · signal ") + Signal.describe(f.rssi)
+                    card.addView(batteryRow(f.name ?: NO_NAME, sub) { connectTo(f) }, ui.matchWrap())
                 }
             }
         }
@@ -197,11 +218,22 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     }
 
     private companion object {
-        const val FAR_HINT = "Сигнал слабкий — батарея далеко або за стіною. З таким сигналом підключення " +
-            "зазвичай зривається. Підійди ближче (1–3 м) і пошукай ще раз."
+        val FAR_HINT: String
+            get() = tr(
+                "Сигнал слабкий — батарея далеко або за стіною. З таким сигналом підключення " +
+                    "зазвичай зривається. Підійди ближче (1–3 м) і пошукай ще раз.",
+                "Weak signal: the battery is far or behind a wall. With such a signal the connection " +
+                    "usually drops. Move closer (1–3 m) and search again.",
+            )
         const val KEY_OTHERS = "others"
         const val KEY_SCANNED = "scanned"
-        const val NOTHING_FOUND = "Батареї не знайдено. Перевір: батарея поруч (до 5–10 м); застосунок Aolithium на інших " +
-            "телефонах закритий — поки плата з кимось на зв'язку, її не видно в пошуку."
+        val NOTHING_FOUND: String
+            get() = tr(
+                "Батареї не знайдено. Перевір: батарея поруч (до 5–10 м); застосунок Aolithium на інших " +
+                    "телефонах закритий — поки плата з кимось на зв'язку, її не видно в пошуку.",
+                "No batteries found. Check: the battery is near (within 5–10 m); the Aolithium app is closed on other " +
+                    "phones. While the BMS is connected to someone, search cannot see it.",
+            )
+        val NO_NAME: String get() = tr("Без назви", "No name")
     }
 }

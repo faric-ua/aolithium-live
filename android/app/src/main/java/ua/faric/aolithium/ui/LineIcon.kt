@@ -35,6 +35,8 @@ enum class LineIcon(vararg val parts: Part) {
     REPEAT(Part("M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"), Part("M18 3v4h-4M6 21v-4h4")),
     INFO(Part(SvgPath.circle(12f, 12f, 9f)), Part("M12 11v6M12 7.5v.3")),
     HELP(Part(SvgPath.circle(12f, 12f, 9f)), Part("M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.3")),
+    /** T12: мова — куля з меридіаном і паралеллю. */
+    GLOBE(Part(SvgPath.circle(12f, 12f, 9f)), Part("M3 12h18"), Part("M12 3c-3 2.5-3 15.5 0 18c3-2.5 3-15.5 0-18z")),
     BOOK(Part("M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"), Part("M4 20a2 2 0 0 0 2 2h13v-4M9 7h6")),
     SLIDERS(
         Part("M4 7h9M17 7h3M4 17h3M11 17h9"),

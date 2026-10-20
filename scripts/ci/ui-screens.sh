@@ -161,6 +161,51 @@ scroll_down
 shot p20c-charts-font130-scrolled2
 adb shell settings put system font_scale 1.0
 
+# T12: англійська. Мову ставить debug-прапорець `lang` на свіжому старті (після force-stop); далі тримається.
+adb shell am force-stop "$PKG"
+start --es lang en --es page HOME
+shot e01-home-en 5
+start --es demo CHARGING
+shot e02-now-charging-en 4
+scroll_down
+shot e02b-now-charging-en-scrolled
+start --es demo CHARGING --es dialog tab:CELLS
+shot e03-cells-en 4
+start --es demo JK --es dialog tab:CHARTS:D1
+shot e04-jk-charts-en 5
+scroll_down
+shot e04b-jk-charts-en-scrolled
+scroll_down
+shot e04c-jk-charts-en-scrolled2
+start --es demo IDLE --es dialog tab:BOARD
+shot e05-board-en 4
+start --es demo IDLE --es dialog tab:MORE
+shot e06-more-en 4
+scroll_down
+shot e06b-more-en-scrolled
+scroll_down
+shot e06c-more-en-scrolled2
+start --es page HELP
+shot e07-help-en 4
+scroll_down
+shot e07b-help-en-scrolled
+start --es demo DISCHARGING --es dialog widgets
+shot e08-widget-en 10
+start --es demo DISCHARGING --es dialog status:LOST
+shot e09-link-lost-en 4
+adb shell settings put system font_scale 1.3
+sleep 2
+start --es demo CHARGING
+shot e10-now-en-font130 4
+start --es demo CHARGING --es dialog tab:CELLS
+shot e10b-cells-en-font130 4
+start --es demo JK --es dialog tab:CHARTS:D1
+shot e10c-jk-charts-en-font130 5
+adb shell settings put system font_scale 1.0
+adb shell am force-stop "$PKG"
+start --es lang uk --es page HOME
+shot e11-home-back-uk 5
+
 # Падіння лише нашого застосунку (системні застосунки емулятора теж іноді падають — їх не рахуємо).
 adb logcat -d -b crash > "$OUT/crash-all.txt" || true
 grep -A 30 "Process: $PKG" "$OUT/crash-all.txt" > "$OUT/crash.txt" || true

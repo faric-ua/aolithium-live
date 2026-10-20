@@ -11,6 +11,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import ua.faric.aolithium.core.Fmt
 import ua.faric.aolithium.core.Zones
+import ua.faric.aolithium.core.tr
 
 /**
  * «Спідометр» заряду (faric 18.10 20:47): посередині «100 %», під ним потужність або струм ([showAmps],
@@ -52,7 +53,7 @@ class GaugeView(context: Context) : View(context) {
     var noData: Boolean = false
         set(value) {
             field = value
-            if (value) contentDescription = "Заряд невідомий — немає даних"
+            if (value) contentDescription = tr("Заряд невідомий — немає даних", "Charge unknown, no data")
             invalidate()
         }
     var caption: String = ""
@@ -83,11 +84,12 @@ class GaugeView(context: Context) : View(context) {
 
     private fun describe() {
         val dir = when {
-            current > IDLE -> "заряджається ${Fmt.amps(current)}"
-            current < -IDLE -> "віддає ${Fmt.amps(-current)}"
-            else -> "струму майже нема"
+            current > IDLE -> tr("заряджається ${Fmt.amps(current)}", "charging ${Fmt.amps(current)}")
+            current < -IDLE -> tr("віддає ${Fmt.amps(-current)}", "discharging ${Fmt.amps(-current)}")
+            else -> tr("струму майже нема", "almost no current")
         }
-        contentDescription = "Заряд $soc відсотків, ${Zones.of(soc).title.lowercase()}, $dir"
+        val zone = Zones.of(soc).title.lowercase()
+        contentDescription = tr("Заряд $soc відсотків, $zone, $dir", "Charge $soc percent, $zone, $dir")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -188,9 +190,9 @@ class GaugeView(context: Context) : View(context) {
         small.textSize = sp(13f)
         val other = if (showAmps) Fmt.watts(absW) else Fmt.amps(absA)
         val line3 = when (flow) {
-            1 -> "$other · бере заряд"
-            -1 -> "$other · віддає"
-            else -> if (voltage > 0) Fmt.volts(voltage) + " · стоїть" else "стоїть"
+            1 -> "$other · " + tr("бере заряд", "charging")
+            -1 -> "$other · " + tr("віддає", "discharging")
+            else -> if (voltage > 0) Fmt.volts(voltage) + " · " + tr("стоїть", "idle") else tr("стоїть", "idle")
         }
         fit(small, line3, inner * 0.72f)
         val size3 = small.textSize

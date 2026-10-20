@@ -51,7 +51,10 @@ object Jbd {
 
     /** Команда читання: `DD A5 <код> 00 <сума> 77`, напр. `DD A5 03 00 FF FD 77`. */
     fun readCommand(cmd: Int): ByteArray {
-        require(cmd in READ_COMMANDS) { "Застосунок лише читає плату: команда 0x%02X не з читання".format(cmd) }
+        require(cmd in READ_COMMANDS) {
+            tr("Застосунок лише читає плату: команда 0x%02X не з читання", "The app only reads the BMS: 0x%02X is not a read command")
+                .format(cmd)
+        }
         val frame = ByteArray(7)
         frame[0] = START.toByte()
         frame[1] = READ.toByte()

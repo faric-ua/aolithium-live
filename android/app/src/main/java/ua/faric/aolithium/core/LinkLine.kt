@@ -45,22 +45,25 @@ object LinkLine {
         demo: Boolean = false,
     ): Model {
         val signal = rssi?.let { Signal.describe(it) }
-        val repeat = if (attempt > 0 && ofAttempts > 0) "повтор $attempt з $ofAttempts" else ""
+        val repeat = if (attempt > 0 && ofAttempts > 0) tr("повтор $attempt з $ofAttempts", "retry $attempt of $ofAttempts") else ""
         val detail = when (state) {
-            State.LIVE -> if (demo) "демо, без батареї" else "дані наживо"
-            State.CONNECTING -> join(repeat.ifEmpty { "зазвичай 2–5 с" }, signal)
-            State.READING -> "читаю дані плати"
-            State.LOST -> join(repeat.ifEmpty { "пробую ще раз" }, signal)
+            State.LIVE -> if (demo) tr("демо, без батареї", "demo, no battery") else tr("дані наживо", "live data")
+            State.CONNECTING -> join(repeat.ifEmpty { tr("зазвичай 2–5 с", "usually 2–5 s") }, signal)
+            State.READING -> tr("читаю дані плати", "reading BMS data")
+            State.LOST -> join(repeat.ifEmpty { tr("пробую ще раз", "trying again") }, signal)
             // Далеко — головне, що треба знати; інакше — перше речення пояснення (без повтору слова з пігулки).
-            State.NO_ANSWER, State.FAILED -> if (rssi != null && Signal.tooFar(rssi)) "батарея далеко · $signal"
-                else firstSentence(message).removePrefix(pillOf(state)).trim().ifEmpty { "торкни — що робити" }
-            State.IDLE -> join("торкни «Ще раз»", null)
+            State.NO_ANSWER, State.FAILED -> if (rssi != null && Signal.tooFar(rssi)) {
+                tr("батарея далеко · $signal", "battery far away · $signal")
+            } else {
+                firstSentence(message).removePrefix(pillOf(state)).trim().ifEmpty { tr("торкни — що робити", "tap — what to do") }
+            }
+            State.IDLE -> join(tr("торкни «Ще раз»", "tap \"Retry\""), null)
         }
         val (at, stamp) = if (liveAt > 0L) liveAt to liveStamp else savedAt to savedStamp
         val second = when {
-            state == State.LIVE && liveAt > 0L -> "оновлено " + Fmt.ago(now - liveAt)
-            at > 0L -> "нижче — дані від $stamp (${Fmt.ago(now - at)})"
-            else -> "даних ще нема — замість чисел прочерки"
+            state == State.LIVE && liveAt > 0L -> tr("оновлено ", "updated ") + Fmt.ago(now - liveAt)
+            at > 0L -> tr("нижче — дані від $stamp (${Fmt.ago(now - at)})", "below — data from $stamp (${Fmt.ago(now - at)})")
+            else -> tr("даних ще нема — замість чисел прочерки", "no data yet — dashes instead of numbers")
         }
         val tone = when (state) {
             State.LIVE -> Tone.GOOD
@@ -74,13 +77,13 @@ object LinkLine {
     }
 
     fun pillOf(state: State): String = when (state) {
-        State.IDLE -> "Не підключено"
-        State.CONNECTING -> "Підключаюсь…"
-        State.READING -> "Читаю плату…"
-        State.LIVE -> "На зв'язку"
-        State.NO_ANSWER -> "Плата мовчить"
-        State.LOST -> "Зв'язок втрачено"
-        State.FAILED -> "Не вдалось"
+        State.IDLE -> tr("Не підключено", "Not connected")
+        State.CONNECTING -> tr("Підключаюсь…", "Connecting…")
+        State.READING -> tr("Читаю плату…", "Reading BMS…")
+        State.LIVE -> tr("На зв'язку", "Connected")
+        State.NO_ANSWER -> tr("Плата мовчить", "BMS is silent")
+        State.LOST -> tr("Зв'язок втрачено", "Connection lost")
+        State.FAILED -> tr("Не вдалось", "Failed")
     }
 
     /** «Bluetooth вимкнено. Увімкни його…» → «Bluetooth вимкнено». Без крапки в кінці — рядок короткий. */

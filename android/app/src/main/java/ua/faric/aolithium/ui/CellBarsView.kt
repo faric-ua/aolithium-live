@@ -7,6 +7,7 @@ import android.graphics.RectF
 import android.util.TypedValue
 import android.view.View
 import ua.faric.aolithium.core.Fmt
+import ua.faric.aolithium.core.tr
 
 /**
  * Комірки стовпчиками: «1 ▬▬▬▬▬▬▬ 3,329 В». Шкала — від [LOW_MV] до [HIGH_MV] (межі LiFePO4,
@@ -46,7 +47,9 @@ class CellBarsView(context: Context) : View(context) {
         balancing = balancingCells.toSet()
         minIdx = if (cellsMv.size > 1) min ?: -1 else -1
         maxIdx = if (cellsMv.size > 1) max ?: -1 else -1
-        contentDescription = cellsMv.mapIndexed { i, mv -> "комірка ${i + 1}: ${Fmt.cellVolts(mv)}" }.joinToString("; ")
+        contentDescription = cellsMv.mapIndexed { i, mv ->
+            tr("комірка ${i + 1}: ${Fmt.cellVolts(mv)}", "cell ${i + 1}: ${Fmt.cellVolts(mv)}")
+        }.joinToString("; ")
         requestLayout()
         invalidate()
     }
@@ -58,7 +61,7 @@ class CellBarsView(context: Context) : View(context) {
 
     override fun onDraw(canvas: Canvas) {
         val labelW = label.measureText("32") + 10 * dp
-        val valueW = value.measureText("3,333 В") + 12 * dp
+        val valueW = value.measureText(Fmt.cellVolts(3333)) + 12 * dp // найширше число — для місця справа
         val left = paddingLeft + labelW
         val right = width - paddingRight - valueW
         val barH = 10 * dp

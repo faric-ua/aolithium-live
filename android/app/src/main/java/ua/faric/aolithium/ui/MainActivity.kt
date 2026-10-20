@@ -20,8 +20,13 @@ import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import ua.faric.aolithium.BuildConfig
+import ua.faric.aolithium.bg.Notifier
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BtAccess
+import ua.faric.aolithium.core.Lang
+import ua.faric.aolithium.core.tr
+import ua.faric.aolithium.data.LangSettings
+import ua.faric.aolithium.widget.Widgets
 
 /**
  * Одне вікно, три сторінки: «Батареї» (головна), «Батарея» (живі показники), «Довідка».
@@ -55,6 +60,8 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Лише debug-збірка (знімки CI, T12): `am start --es lang en` після force-stop — вікно одразу англійською.
+        if (BuildConfig.DEBUG && savedInstanceState == null) intent?.getStringExtra(EXTRA_LANG)?.let { LangSettings.save(this, Lang.of(it)) }
         ui = Ui(this)
         savedInstanceState?.let { s ->
             page = s.getString(KEY_PAGE)?.let { n -> Page.entries.firstOrNull { it.name == n } } ?: Page.HOME
@@ -122,13 +129,30 @@ class MainActivity : Activity() {
             brand.addView(View(this).apply { background = ui.rounded(Palette.accent, radiusDp = 6) }, LinearLayout.LayoutParams(ui.dp(10), ui.dp(10)))
             brand.addView(ui.text("Aolithium Live", 18f, Palette.text, medium = true))
             topBar.addView(brand, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            topBar.addView(ui.iconButton(LineIcon.HELP, "Довідка", Ui.Kind.QUIET) { show(Page.HELP, null) })
+            // T12: перемикач мови — назва ІНШОЇ мови її ж мовою («English» / «Українська»), щоб знайти без перекладу.
+            topBar.addView(ui.button(if (Lang.isEn) "УКР" else "EN", Ui.Kind.QUIET) { // uk-only — назва мови її ж мовою
+                setLanguage(if (Lang.isEn) Lang.Code.UK else Lang.Code.EN)
+            }.apply { contentDescription = if (Lang.isEn) "Українська" else "English" }) // uk-only
+            topBar.addView(ui.iconButton(LineIcon.HELP, tr("Довідка", "Help"), Ui.Kind.QUIET) { show(Page.HELP, null) })
         } else {
             val toHelp = page == Page.BATTERY && returnTo == Page.HELP
-            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) "Довідка" else "Батареї", Ui.Kind.QUIET) { goBack() })
+            topBar.addView(ui.iconButton(LineIcon.BACK, if (toHelp) tr("Довідка", "Help") else tr("Батареї", "Batteries"), Ui.Kind.QUIET) { goBack() })
             topBar.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
         }
         topBar.gravity = Gravity.CENTER_VERTICAL
+    }
+
+    /**
+     * T12: змінити мову. Зберегти, перейменувати канали сповіщень, перемалювати віджети й шторку «Запис у фоні», а
+     * вікно перестворити — сторінка, відкрита батарея й прокрутка відновлюються так само, як після повороту.
+     */
+    fun setLanguage(code: Lang.Code) {
+        if (code == Lang.current) return
+        LangSettings.save(this, code)
+        Notifier.refreshChannels(this)
+        Widgets.refresh(this)
+        if (RecordService.running) RecordService.ensure(this)
+        recreate()
     }
 
     fun openBattery(address: String) = show(Page.BATTERY, address)
@@ -224,7 +248,7 @@ class MainActivity : Activity() {
         } catch (e: SecurityException) {
             requestPermissions(BtAccess.runtimePermissions(), REQ_PERMS)
         } catch (e: ActivityNotFoundException) {
-            toast("Увімкни Bluetooth у шторці телефона")
+            toast(tr("Увімкни Bluetooth у шторці телефона", "Turn on Bluetooth in the phone's quick settings"))
         }
     }
 
@@ -232,7 +256,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
         } catch (e: ActivityNotFoundException) {
-            toast("Увімкни геолокацію в шторці телефона")
+            toast(tr("Увімкни геолокацію в шторці телефона", "Turn on location in the phone's quick settings"))
         }
     }
 
@@ -240,7 +264,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
         } catch (e: ActivityNotFoundException) {
-            toast("Налаштування → Застосунки → Aolithium Live → Дозволи")
+            toast(tr("Налаштування → Застосунки → Aolithium Live → Дозволи", "Settings → Apps → Aolithium Live → Permissions"))
         }
     }
 
@@ -299,7 +323,7 @@ class MainActivity : Activity() {
             startActivityForResult(i, REQ_SAVE)
         } catch (e: ActivityNotFoundException) {
             pendingSave = null
-            toast("На телефоні немає вікна збереження файлів")
+            toast(tr("На телефоні немає вікна збереження файлів", "This phone has no file save window"))
         }
     }
 
@@ -309,7 +333,7 @@ class MainActivity : Activity() {
         if (uri == null) return
         if (write == null) {
             // Вікно повернули після повороту екрана — вміст загубився. Чесно кажемо.
-            toast("Не збереглося — натисни «Зберегти CSV» ще раз")
+            toast(tr("Не збереглося — натисни «Зберегти CSV» ще раз", "Not saved. Tap \"Save CSV\" again"))
             return
         }
         Thread {
@@ -320,7 +344,7 @@ class MainActivity : Activity() {
             } catch (e: SecurityException) {
                 false
             }
-            runOnUiThread { toast(if (ok) "Збережено" else "Не вдалось зберегти файл") }
+            runOnUiThread { toast(if (ok) tr("Збережено", "Saved") else tr("Не вдалось зберегти файл", "Could not save the file")) }
         }.start()
     }
 
@@ -330,7 +354,7 @@ class MainActivity : Activity() {
         try {
             startActivity(Intent.createChooser(i, subject))
         } catch (e: ActivityNotFoundException) {
-            toast("Немає застосунку, щоб поділитися")
+            toast(tr("Немає застосунку, щоб поділитися", "No app to share with"))
         }
     }
 
@@ -383,6 +407,7 @@ class MainActivity : Activity() {
         const val EXTRA_DEMO = "demo"
         const val EXTRA_PAGE = "page"
         const val EXTRA_DIALOG = "dialog"
+        const val EXTRA_LANG = "lang"
         private const val KEY_PAGE = "page"
         private const val KEY_ADDRESS = "address"
         private const val KEY_RETURN = "returnTo"
