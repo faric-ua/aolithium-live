@@ -11,7 +11,8 @@ import re
 import sys
 from pathlib import Path
 
-ALLOWED_LATIN_LABELS = {"Aolithium Live"}
+# T12: назва мови на перемикачі — її ж мовою («English» / «EN»), щоб знайшов той, хто не читає українською.
+ALLOWED_LATIN_LABELS = {"Aolithium Live", "English", "EN"}
 CANCEL_WORDS = ("Скасувати", "Закрити", "Не зараз", "Назад")
 
 
@@ -55,7 +56,7 @@ def audit(root: Path) -> list[tuple[str, str]]:
             line = text.count("\n", 0, m.start()) + 1
             problems.append(("UI-07", f"{rel}:{line}: фіксована висота — довгий підпис обріжеться"))
 
-        # UI-09: підписи українською.
+        # UI-09: підписи українською (з T12 — парою tr("укр", "англ"), її перевіряє audit_lang.py).
         for m in re.finditer(r'ui\.(button|choice|title|label)\(\s*"([^"]*)"', text):
             label = m.group(2)
             if "$" in label or label in ALLOWED_LATIN_LABELS:
