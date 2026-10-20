@@ -16,7 +16,7 @@ class SocRingView(context: Context) : View(context) {
     var percent: Int = 0
         set(value) {
             field = value.coerceIn(0, 100)
-            contentDescription = tr("Заряд $field відсотків", "Charge $field percent")
+            contentDescription = tr("Заряд $field %", "Charge $field percent")
             invalidate()
         }
     var caption: String = ""

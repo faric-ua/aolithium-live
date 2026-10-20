@@ -23,7 +23,7 @@ fi
 local_sha="$(git rev-parse HEAD)"
 remote_sha="$(git rev-parse refs/remotes/origin/main)"
 if [ "$local_sha" = "$remote_sha" ]; then
-  [ "$quiet" = 1 ] || ok "Меню вже актуальне: $(git rev-parse --short HEAD)"
+  [ "$quiet" = 1 ] || ok "Меню вже найновіше: $(git rev-parse --short HEAD)"
   exit 10
 fi
 if git merge-base --is-ancestor "$local_sha" "$remote_sha"; then

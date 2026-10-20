@@ -399,7 +399,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
 <section id="connect" class="page" hidden>
   <div class="title-block">
     <h2 class="uk">Підключити батарею</h2><h2 class="en">Connect the battery</h2>
-    <p class="page-lead uk">Батарея говорить Bluetooth'ом на кілька метрів. Плата тримає <b>лише одне</b> підключення — тому старий застосунок треба закрити.</p>
+    <p class="page-lead uk">Батарея говорить через Bluetooth на кілька метрів. Плата тримає <b>лише одне</b> підключення — тому старий застосунок треба закрити.</p>
     <p class="page-lead en">The battery talks over Bluetooth, a few meters. The BMS keeps <b>only one</b> connection, so close the old app first.</p>
   </div>
   <ol class="steps uk">
@@ -524,7 +524,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <ul class="dots uk">
     <li><b>Під відсотками</b> — вати або ампери (перемикач <span class="btn sel">Вати</span> <span class="btn norm">Ампери</span>). <b style="color:var(--bad)">Червоне й стрілка ▲ вгору</b> — батарея віддає (світла нема). <b style="color:var(--ok)">Зелене й стрілка ▼ вниз</b> — заряджається.</li>
     <li>Нижче — струм і «70,2 з 92,3 А·год»: скільки лишилось з повної ємності.</li>
-    <li><b>«Вистачить на»</b> (коли віддає): час до 20 %, 10 % і 5 % — смуга зелена / жовта / червона. Число не скаче: рахується з середнього струму за 2 хв і міняється, лише коли струм стабільно змінився.</li>
+    <li><b>«Вистачить на»</b> (коли віддає): час до 20 %, 10 % і 5 % — смуга зелена / жовта / червона. Число не скаче: рахується з середнього струму за 2 хв і змінюється, лише коли струм стабільно змінився.</li>
     <li><b>«До повної»</b> (коли заряджається): час до 100 % (заряд зупиняє сама плата) і скільки додасть 1–2 години такого заряду — зручно вирішити, скільки ганяти генератор.</li>
     <li><b>«Стан плати»</b>: заряд і розряд дозволені, чи вирівнює комірки, чи спрацював захист. Спрацював — угорі червона картка «Що спрацювало» з поясненням, що робити.</li>
   </ul>
@@ -574,7 +574,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
 <section id="charts" class="page" hidden>
   <div class="title-block">
     <h2 class="uk">Графіки</h2><h2 class="en">Charts</h2>
-    <p class="page-lead uk">Що було, поки ти не дивився: відключення світла, найнижчий заряд по днях, генератор, комірки, зарядний. І вся історія за 15 хв … 7 днів.</p>
+    <p class="page-lead uk">Що було, поки ти не дивився: відключення світла, найнижчий заряд за днями, генератор, комірки, зарядний. І вся історія за 15 хв … 7 днів.</p>
     <p class="page-lead en">What happened while you were not looking: power outages, lowest charge by day, the generator, cells, the charger. And all history for 15 min … 7 days.</p>
   </div>
   <div class="grid2">
@@ -585,11 +585,11 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </div>
     <div class="panel stack-s">
       <h3 class="uk">Як застосунок це бачить</h3><h3 class="en">How the app sees it</h3>
-      <p class="uk">Поки світло є, інвертор лише заряджає або батарея стоїть повна. Батарея <b>віддає більше 0,5 А довше 3 хвилин</b> — значить, світла нема. Короткі стрибки не рахуються.</p>
+      <p class="uk">Поки світло є, інвертор лише заряджає або батарея стоїть повна. Батарея <b>віддає більше 0,5 А довше 3 хвилин</b> — отже, світла нема. Короткі стрибки не рахуються.</p>
       <p class="en">While there is power, the inverter only charges or the battery stands full. If the battery <b>gives more than 0.5 A for longer than 3 minutes</b>, there is no power. Short spikes do not count.</p>
     </div>
     <div class="panel stack-s">
-      <h3 class="uk">Найнижчий заряд по днях</h3><h3 class="en">Lowest charge by day</h3>
+      <h3 class="uk">Найнижчий заряд за днями</h3><h3 class="en">Lowest charge by day</h3>
       <p class="uk">Стовпчик на день — видно «хвилі»: щодня нижче → генератор → знову вгору. Торкнись дня — позначка <b>«Г»</b> (працював генератор): застосунок сам не відрізнить генератор від мережі.</p>
       <p class="en">A bar per day — you see the "waves": lower every day → generator → up again. Tap a day to mark <b>"G"</b> (the generator worked): the app cannot tell the generator from the grid by itself.</p>
     </div>
@@ -610,7 +610,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="shots">
     <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/outages.webp" alt="Відключення світла"><figcaption>«Відключення світла»: плитки за 7 днів і кожне відключення.</figcaption></figure>
     <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/outages.webp" alt="Power outages"><figcaption>"Power outages": tiles for 7 days and each outage.</figcaption></figure>
-    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/charts-days.webp" alt="Найнижчий заряд по днях"><figcaption>«Найнижчий заряд по днях» і підсумок за 24 год; нижче — «Хто відстає», «Зарядний».</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/charts-days.webp" alt="Найнижчий заряд за днями"><figcaption>«Найнижчий заряд за днями» і підсумок за 24 год; нижче — «Хто відстає», «Зарядний».</figcaption></figure>
     <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/charts-days.webp" alt="Lowest charge by day"><figcaption>"Lowest charge by day" and the 24 h summary; further down — "Lagging cell", "Charger".</figcaption></figure>
   </div>
 </section>
@@ -919,8 +919,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <ul class="dots uk">
     <li><b>Головна, угорі:</b> кнопка <b>EN</b> — усе англійською; там же <b>UA</b> — назад українською. Поруч ? — ця інструкція.</li>
     <li><b>Або:</b> батарея → «Ще» → «Мова · Language» → <span class="btn sel">Українська</span> / <span class="btn norm">English</span>.</li>
-    <li>Разом з екранами міняються сповіщення, рядок «Запис у фоні» й віджет; числа — «13,31 В» ↔ «13.31 V».</li>
-    <li>Інструкція відкривається мовою застосунку. Кнопки UA / EN на її головній міняють мову лише інструкції.</li>
+    <li>Разом з екранами змінюються сповіщення, рядок «Запис у фоні» й віджет; числа — «13,31 В» ↔ «13.31 V».</li>
+    <li>Інструкція відкривається мовою застосунку. Кнопки UA / EN на її головній перемикають мову лише інструкції.</li>
   </ul>
   <ul class="dots en">
     <li><b>Home, at the top:</b> the <b>EN</b> button — everything in English; the same spot shows <b>UA</b> to go back to Ukrainian. Next to it, ? opens this guide.</li>
@@ -1006,7 +1006,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </div>
   <div class="panel stack-s">
     <h3 class="uk">Телефон без Termux (Huawei Mate 10 Lite)</h3><h3 class="en">Phone without Termux (Huawei Mate 10 Lite)</h3>
-    <p class="uk">На A26: меню <b>AOLITHIUM LIVE</b> → <b>4</b> — там покроково, як поставити через браузер (скачати APK з GitHub і дозволити встановлення з браузера).</p>
+    <p class="uk">На A26: меню <b>AOLITHIUM LIVE</b> → <b>4</b> — там покроково, як поставити через браузер (завантажити APK з GitHub і дозволити встановлення з браузера).</p>
     <p class="en">On the A26: menu <b>AOLITHIUM LIVE</b> → <b>4</b> — step by step how to install through the browser (download the APK from GitHub and allow installs from the browser).</p>
   </div>
   <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.5 · build …». Ця інструкція — для версії 0.4.5.</p>
@@ -1077,7 +1077,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>0.3.0</b> · 19.10.2026</td><td>сповіщення (7 видів) і «Перевірити сповіщення»</td></tr>
       <tr><td class="k"><b>0.2.6</b> · 19.10.2026</td><td>плитки комірок не «пливуть»; рядки спідометра не налазять</td></tr>
       <tr><td class="k"><b>0.2.5</b> · 19.10.2026</td><td>запис у фоні раз на ~5 хв; «Зберегти CSV»; екран не повертається</td></tr>
-      <tr><td class="k"><b>0.2.4</b> · 19.10.2026</td><td>спідометр зі стрілками, «вистачить на» / «до повної», комірки плитками, відключення світла, найнижчий по днях, хто відстає, зарядний</td></tr>
+      <tr><td class="k"><b>0.2.4</b> · 19.10.2026</td><td>спідометр зі стрілками, «вистачить на» / «до повної», комірки плитками, відключення світла, найнижчий за днями, хто відстає, зарядний</td></tr>
       <tr><td class="k"><b>0.2.3</b> · 19.10.2026</td><td>довгі значення не вилазять за край; сигнал словом; графіки не стрибають</td></tr>
       <tr><td class="k"><b>0.2.2</b> · 18.10.2026</td><td>кнопки на всю ширину, і у вікнах</td></tr>
       <tr><td class="k"><b>0.2.1</b> · 18.10.2026</td><td>без зв'язку всі вкладки показують останні дані або прочерки</td></tr>

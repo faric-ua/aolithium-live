@@ -41,9 +41,9 @@ enum class Protection(val bit: Int, val jkBit: Int = -1) {
     /** Назва й пояснення — обома мовами (T12): через `get()`, бо мову можуть перемкнути вже після створення enum. */
     val title: String get() = when (this) {
         CELL_OVER -> tr("Перезаряд комірки", "Cell overcharge")
-        CELL_UNDER -> tr("Переразряд комірки", "Cell over-discharge")
+        CELL_UNDER -> tr("Перерозряд комірки", "Cell over-discharge")
         PACK_OVER -> tr("Перезаряд батареї", "Battery overcharge")
-        PACK_UNDER -> tr("Переразряд батареї", "Battery over-discharge")
+        PACK_UNDER -> tr("Перерозряд батареї", "Battery over-discharge")
         CHARGE_HOT -> tr("Гаряче для заряду", "Too hot to charge")
         CHARGE_COLD -> tr("Холодно для заряду", "Too cold to charge")
         DISCHARGE_HOT -> tr("Гаряче для розряду", "Too hot to discharge")
@@ -119,7 +119,7 @@ enum class Protection(val bit: Int, val jkBit: Int = -1) {
             "The BMS reports a fault in its measuring chip.",
         )
         SOFTWARE_LOCK -> tr(
-            "Заряд або розряд вимкнено командою з застосунку (не цим — він нічого не вмикає й не вимикає).",
+            "Заряд або розряд вимкнено командою із застосунку (не цим — він нічого не вмикає й не вимикає).",
             "Charge or discharge was turned off by an app command (not this app — it never turns anything on or off).",
         )
         WIRE_RESISTANCE -> tr(

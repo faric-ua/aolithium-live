@@ -36,10 +36,10 @@
 | від середньої · за 1 хв | from average · per 1 min |
 | вирівнюється · балансир | balancing · balancer |
 | Плата (BMS) · ключі заряду / розряду | BMS · charge / discharge switches |
-| захист · перезаряд · переразряд | protection · overcharge · over-discharge |
+| захист · перезаряд · перерозряд | protection · overcharge · over-discharge |
 | Здоров'я · цикли | Health · cycles |
 | Відключення світла · без світла · генератор | Power outages · without power · generator |
-| Найнижчий заряд по днях | Lowest charge by day |
+| Найнижчий заряд за днями | Lowest charge by day |
 | Хто відстає наприкінці заряду | Lagging cell at end of charge |
 | Зарядний (пристрій) | Charger |
 | Запис у фоні | Background recording |

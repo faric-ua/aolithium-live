@@ -220,7 +220,7 @@ class AlertsTest {
         val bad = snap(soc = 60, cells = listOf(3300, 3302, 3268, 3301))
         val (st, ev) = run(t0 to bad, t0 + 5 * min to bad)
         assertEquals("Велика різниця комірок: 34 мВ", ev.single().title)
-        assertEquals("№3 нижча за інших при 60 %. Подивись «Комірки».", ev.single().text)
+        assertEquals("№3 нижча за інші при 60 %. Подивись «Комірки».", ev.single().text)
         assertTrue(st.cells)
         val (st2, ev2) = run(t0 + 60 * min to snap(soc = 60, cells = listOf(3300, 3302, 3290, 3301)), from = st)
         assertTrue(ev2.isEmpty())
@@ -234,7 +234,7 @@ class AlertsTest {
         assertTrue(ev.none { it.kind == Alerts.Kind.CELLS })
         // А при 92 % — 100 мВ уже варто сказати (вища — №4).
         val (_, ev2) = run(t0 to snap(soc = 92, current = 10.0, cells = listOf(3400, 3405, 3402, 3510)))
-        assertEquals("№4 вища за інших при 92 %. Подивись «Комірки».", ev2.single { it.kind == Alerts.Kind.CELLS }.text)
+        assertEquals("№4 вища за інші при 92 %. Подивись «Комірки».", ev2.single { it.kind == Alerts.Kind.CELLS }.text)
     }
 
     // ---------- температура ----------

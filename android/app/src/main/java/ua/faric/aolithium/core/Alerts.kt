@@ -335,8 +335,8 @@ object Alerts {
         val avg = s.cellsMv.average()
         val lo = s.minCell ?: 0
         val hi = s.maxCell ?: 0
-        val who = if (avg - s.cellsMv[lo] >= s.cellsMv[hi] - avg) tr("№${lo + 1} нижча за інших", "No. ${lo + 1} is lower than others")
-            else tr("№${hi + 1} вища за інших", "No. ${hi + 1} is higher than others")
+        val who = if (avg - s.cellsMv[lo] >= s.cellsMv[hi] - avg) tr("№${lo + 1} нижча за інші", "No. ${lo + 1} is lower than others")
+            else tr("№${hi + 1} вища за інші", "No. ${hi + 1} is higher than others")
         return tr("$who при ${s.soc} %. Подивись «Комірки».", "$who at ${s.soc} %. See \"Cells\".")
     }
 

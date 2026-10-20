@@ -61,7 +61,7 @@ object Glossary {
         // ---------- заряд ----------
         e("soc", Group.CHARGE, tr("Заряд, %", "Charge, %"), tr("SOC (стрілка)", "SOC (needle)"),
             tr("Скільки енергії лишилось, у відсотках від повної ємності. Рахує сама плата: міряє струм, що входить і виходить. " +
-                "На 100 % і після повного заряду вона уточнює себе, тому раз на 1–2 тижні корисно дозарядити до кінця.",
+                "На 100 % і після повного заряду вона уточнює свій підрахунок, тому раз на 1–2 тижні корисно дозарядити до кінця.",
                 "How much energy is left, as a percent of full capacity. The BMS counts it itself: it measures the current " +
                     "going in and out. At 100% and after a full charge it corrects itself, so it helps to charge fully " +
                     "once every 1–2 weeks."),
@@ -140,7 +140,7 @@ object Glossary {
 
         // ---------- електрика ----------
         e("voltage", Group.POWER, tr("Напруга батареї, В", "Battery voltage, V"), "Voltage",
-            tr("Напруга всієї батареї (4 комірки разом). Для LiFePO4 вона майже не міняється між 20 і 90 % — " +
+            tr("Напруга всієї батареї (4 комірки разом). Для LiFePO4 вона майже не змінюється між 20 і 90 % — " +
                 "тому відсоток рахує плата, а не напруга.",
                 "Voltage of the whole battery (4 cells together). For LiFePO4 it barely changes between 20 and 90% — " +
                     "so the percent comes from the BMS, not from the voltage."),
@@ -156,14 +156,14 @@ object Glossary {
                     "red with arrow ▲ (energy goes out of the battery) — discharging."),
             tr("Для батареї 100 А·год комфортно до ~50 А тривало; максимум — що дозволяє плата (зазвичай 100 А).",
                 "For a 100 Ah battery, up to ~50 A for a long time is comfortable; the maximum is what the BMS allows (usually 100 A)."),
-            tr("Великий струм розряду довго — гріє батарею; плата може спрацювати «завеликий струм розряду».",
+            tr("Великий струм розряду довго — гріє батарею; може спрацювати захист плати «завеликий струм розряду».",
                 "High discharge current for a long time heats the battery; the BMS may trip \"discharge overcurrent\"."))
         e("power", Group.POWER, tr("Потужність, Вт", "Power, W"), "Power",
             tr("Напруга × струм: скільки ват іде в батарею (+) чи з неї (−) прямо зараз. 1000 Вт протягом години — 1 кВт·год.",
                 "Voltage × current: how many watts go into the battery (+) or out of it (−) right now. 1000 W for one hour is 1 kWh."),
             tr("Порівнюй з потужністю приладів, які живить інвертор.",
                 "Compare with the power of the devices the inverter runs."),
-            tr("Потужність більша, ніж розраховано інвертор або плату, — краще розділити навантаження.",
+            tr("Потужність більша, ніж витримують інвертор чи плата, — краще розділити навантаження.",
                 "Power is higher than the inverter or the BMS is rated for — better split the load."))
         e("energy", Group.POWER, tr("Заряджено / віддано, Вт·год", "Charged / discharged, Wh"), null,
             tr("Скільки енергії зайшло в батарею і вийшло з неї за вибраний період. Рахує застосунок із записаних точок " +
@@ -183,7 +183,7 @@ object Glossary {
                     "Aolithium 1.3 did not show the cells — only the BMS sees them."),
             tr("Спокій: 3,25–3,35 В кожна. Наприкінці заряду — до 3,45–3,6 В.",
                 "Idle: 3.25–3.35 V each. At the end of charge — up to 3.45–3.6 V."),
-            tr("Одна комірка помітно вища чи нижча за інших — розбаланс (див. «Різниця»).",
+            tr("Одна комірка помітно вища чи нижча за інші — розбаланс (див. «Різниця»).",
                 "One cell is clearly higher or lower than the others — imbalance (see \"Cell difference\")."))
         e("avgcell", Group.CELLS, tr("Середня комірка", "Average cell"), "Average voltage",
             tr("Середня напруга однієї комірки (напруга батареї ÷ 4).", "Average voltage of one cell (battery voltage ÷ 4)."),
@@ -210,7 +210,7 @@ object Glossary {
                     "this shows which cell \"runs ahead\" at the end of charge. Frame: light blue — highest, orange — lowest."),
             tr("Від середньої — кілька мВ, за хвилину — кілька мВ в один бік у всіх.",
                 "From average — a few mV; per minute — a few mV in the same direction for all cells."),
-            tr("Одна комірка за хвилину росте набагато швидше за інших наприкінці заряду — вона «менша», балансування її стримує.",
+            tr("Одна комірка за хвилину росте набагато швидше за інші наприкінці заряду — вона «менша», балансування її стримує.",
                 "At the end of charge one cell rises much faster per minute than the others — it is \"smaller\", " +
                     "and balancing holds it back."))
         e("balance", Group.CELLS, tr("Балансування", "Balancing"), "Balance State",
@@ -253,7 +253,7 @@ object Glossary {
             tr("Ключ розряду. «Дозволено» — батарея може живити навантаження.",
                 "The discharge switch. \"Allowed\" — the battery can power the load."),
             tr("«Дозволено».", "\"Allowed\"."),
-            tr("«Вимкнено» — батарея нічого не віддає: зазвичай переразряд, перегрів чи завеликий струм.",
+            tr("«Вимкнено» — батарея нічого не віддає: зазвичай перерозряд, перегрів чи завеликий струм.",
                 "\"Off\" — the battery gives nothing: usually over-discharge, overheating or overcurrent."))
         e("protState", Group.BOARD, tr("Захист: усе гаразд / спрацював", "Protection: all OK / tripped"), "Protection State: close",
             tr("Чи діє зараз хоч один захист плати. В Aolithium «close» означало «закрито, усе гаразд».",
@@ -361,7 +361,7 @@ object Glossary {
                 "Hundreds or thousands (faric's battery on Oct 18 — 2016) — the charger probably gives too many volts " +
                     "(for 4S LiFePO4, 14.2–14.4 V for charging and 13.5–13.6 V for float are recommended), " +
                     "or one cell lags behind the others. Check the inverter settings."))
-        e("cnt_cell_under", Group.COUNTERS, tr("Переразряд комірки (лічильник)", "Cell over-discharge (counter)"), null,
+        e("cnt_cell_under", Group.COUNTERS, tr("Перерозряд комірки (лічильник)", "Cell over-discharge (counter)"), null,
             tr("Скільки разів комірка падала нижче межі (у Aolithium — 2,5 В), і плата вимикала розряд.",
                 "How many times a cell fell below the limit (2.5 V on Aolithium) and the BMS turned off discharge."),
             "0.",
@@ -407,7 +407,7 @@ object Glossary {
         // ---------- графіки ----------
         e("outages", Group.CHARTS, tr("Відключення світла", "Power outages"), null,
             tr("Застосунок сам знаходить в історії, коли батарея віддавала струм кілька хвилин поспіль (світла нема) " +
-                "і коли знову почала заряджатись чи стала (світло повернулось). Для кожного: коли, скільки тривало, " +
+                "і коли знову почала заряджатись чи перестала віддавати (світло повернулось). Для кожного: коли, скільки тривало, " +
                 "скільки батарея віддала, з якого відсотка до якого, середня й найбільша потужність.",
                 "The app finds in the history when the battery was discharging for several minutes in a row (no power) " +
                     "and when it started charging again or went idle (power came back). For each one: when, how long, " +
@@ -417,7 +417,7 @@ object Glossary {
             tr("Якщо батарея віддає струм і при світлі (наприклад, інвертор так налаштований) — скажи, підлаштуємо правило.",
                 "If the battery also discharges when there is power (for example, the inverter is set up that way) — " +
                     "tell us, we will adjust the rule."))
-        e("dailyMin", Group.CHARTS, tr("Найнижчий заряд по днях", "Lowest charge by day"), null,
+        e("dailyMin", Group.CHARTS, tr("Найнижчий заряд за днями", "Lowest charge by day"), null,
             tr("Для кожного дня — до скількох відсотків опускалась батарея. Видно «хвилі»: з кожним днем нижче — " +
                 "пора генератор — знову вгору. Торкнись дня, щоб позначити «Г» — у цей день працював генератор " +
                 "(для батареї світло й генератор однакові, сам застосунок їх не розрізнить).",
@@ -449,7 +449,7 @@ object Glossary {
                     "does not reach full, and the BMS rarely corrects the percent. This is a guide, not a diagnosis."))
         e("history", Group.CHARTS, tr("Як записується історія", "How history is recorded"), null,
             tr("Поки застосунок відкритий і на зв'язку, він раз на 10 секунд записує заряд, напругу, струм, температуру й комірки " +
-                "у пам'ять телефона (окремо для кожної батареї). З увімкненим «Запис у фоні» («Ще») — ще й раз на ~5 хв, коли " +
+                "у пам'ять телефона (окремо для кожної батареї). З увімкненим «Записом у фоні» («Ще») — ще й раз на ~5 хв, коли " +
                 "застосунок закритий. Інтернет не потрібен, нікуди не передається. Зберігається 90 днів. «Зберегти CSV» — уся " +
                 "історія батареї одним файлом-таблицею (відкривається в Таблицях Google чи Excel).",
                 "While the app is open and connected, every 10 seconds it records charge, voltage, current, temperature " +
@@ -475,7 +475,7 @@ object Glossary {
                 "батареї відкритий, фон її не чіпає (екран сам пише раз на 10 с).",
                 "At night, when the phone lies still, Android wakes apps less often — points may come every 10 min. " +
                     "If this battery's screen is open, background recording leaves it alone (the screen itself records every 10 s)."),
-            tr("«Нема зв'язку» щоразу — батарея далеко (Bluetooth бере кілька метрів) або зайнята іншим телефоном. Записів " +
+            tr("«Нема зв'язку» щоразу — батарея далеко (Bluetooth дістає кілька метрів) або зайнята іншим телефоном. Записів " +
                 "немає годинами — Android приспав застосунок: у «Ще» натисни «Не обмежувати у фоні».",
                 "\"No connection\" every time — the battery is far away (Bluetooth reaches a few meters) or busy with another phone. " +
                     "No records for hours — Android put the app to sleep: in \"More\" tap \"Don't restrict in background\"."))
@@ -491,7 +491,7 @@ object Glossary {
                     "tripped — and when the protection clears; big cell difference (mid-charge from 30 mV, anywhere below 95% — " +
                     "from 100 mV); cold below 0 °C and heat above 50 °C; a quiet \"No data\" if there was no connection " +
                     "for an hour. Each one comes once, until the state passes; each can be turned on separately."),
-            tr("Працює з того, що застосунок бачить: коли відкритий екран батареї, і раз на ~5 хв з увімкненим «Запис у фоні». " +
+            tr("Спирається на те, що бачить застосунок: коли відкритий екран батареї, і раз на ~5 хв з увімкненим «Записом у фоні». " +
                 "Bluetooth дістає лише кілька метрів — телефон далеко від батареї, і сповіщень про світло й заряд нема, доки не " +
                 "повернешся. «Перезаряд комірки» наприкінці заряду — звичайна робота плати, тому це «Батарея повна», а не тривога.",
                 "It works from what the app sees: when the battery screen is open, and every ~5 min with \"Background recording\" on. " +
@@ -517,7 +517,7 @@ object Glossary {
      */
     fun forCounter(name: String): String = when (name) {
         "Перезаряд комірки" -> "cnt_cell_over" // uk-only: ключ із протоколу
-        "Переразряд комірки" -> "cnt_cell_under" // uk-only: ключ із протоколу
+        "Перерозряд комірки" -> "cnt_cell_under" // uk-only: ключ із протоколу
         "Завеликий струм заряду", "Завеликий струм розряду" -> "cnt_overcurrent" // uk-only: ключ із протоколу
         "Коротке замикання" -> "cnt_short" // uk-only: ключ із протоколу
         "Гаряче для заряду", "Холодно для заряду", "Гаряче для розряду", "Холодно для розряду" -> "cnt_temp" // uk-only: ключ

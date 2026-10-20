@@ -42,5 +42,5 @@ git clone https://github.com/faric-ua/aolithium-live ~/aolithium-live && bash ~/
 ## Резерв — збірка на телефоні
 
 Меню → **11** (як Dorama DEV 17 і Track Catcher 11): потрібні Java 17, `~/android-sdk`, ARM64 `aapt2`, `~/gradle/gradle-8.13`
-і ключ з пункту 7. Перша збірка качає Android Gradle Plugin і Kotlin з інтернету; далі пункт **12** — без інтернету.
-Лог — `Documents/Aolithium Live/logs/`.
+і ключ з пункту 7. Перша збірка завантажує Android Gradle Plugin і Kotlin з інтернету; далі пункт **12** — без інтернету.
+Журнал збірки — `Documents/Aolithium Live/logs/`.
