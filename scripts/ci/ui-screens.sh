@@ -168,8 +168,10 @@ start --es demo DISCHARGING --es dialog link
 shot w01-link-font130 4
 scroll_down
 shot w02-link-font130-scrolled
-start --es demo IDLE --es dialog log
+start --es demo IDLE --es dialog log:long
 shot w03-log-font130 4
+scroll_down
+shot w03b-log-font130-scrolled
 start --es demo IDLE --es dialog info:zones
 shot w04-info-font130 4
 scroll_down

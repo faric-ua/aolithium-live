@@ -229,6 +229,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         when {
             key == DLG_RENAME -> showRename()
             key == DLG_LOG -> showLog()
+            // CI, лише демо (T47): довгий журнал — перевірити, що шапка й кнопки стоять, а прокручується лише журнал.
+            key == "log:long" && demo != null -> {
+                for (n in 1..80) LinkLog.add(tr("демо: рядок журналу №$n", "demo: log line No. $n"))
+                showLog()
+            }
             key == DLG_LINK -> showLinkInfo()
             key == DLG_FORGET -> showForget()
             key == DLG_CLEAR -> showClearHistory()
