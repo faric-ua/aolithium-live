@@ -1,0 +1,1194 @@
+<!doctype html>
+<!-- Зібрано scripts/build_guide.py з docs/guide/guide.html — редагувати там. -->
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Інструкція Aolithium Live</title>
+<style>
+/* Інструкція Aolithium Live (T7, 20.10.2026). Основа — інструкція Track Catcher (faric: «бомба, бери за основу»):
+   головна — плитки розділів групами; розділ — одна колонка: «← Зміст» і лічильник «03 / 18», заголовок, кроки, схема,
+   знімок екрана, унизу «← Назад / Далі →». Кольори — з застосунку (ui/Palette.kt), акцент блакитний.
+   Дві мови в одному файлі: кожен текст — парою (class="uk", одразу за ним class="en"), видно одну.
+   Мову ставить ?lang=en (застосунок передає свою) або перемикач UA / EN угорі головної.
+   Працює без інтернету: системні шрифти, значки — свої (спрайт нижче), картинки — локальні. */
+:root{
+  --bg:#0E1116; --surface:#171C23; --surface-2:#202733; --line:#333D4B;
+  --text:#F2F5F8; --muted:#A3AEBB; --faint:#6B7684;
+  --accent:#5EC8F2; --accent-fill:#13283A;
+  --ok:#62D296; --ok-fill:#16271E; --bad:#FF7A88; --bad-fill:#3A1C21;
+  --warn:#F0B968; --warn-fill:#2B251F; --violet:#A99FFF; --violet-fill:#221F3A; --track:#262E3A;
+  --font-display:"sans-serif-condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-body:system-ui,"Roboto","Segoe UI",sans-serif;
+  --font-mono:"Roboto Mono",ui-monospace,"Droid Sans Mono",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html[lang="en"] .uk, html:not([lang="en"]) .en{display:none !important}
+html:not(.in-app) .app-only, html.in-app .web-only{display:none !important}
+body{margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:16px; line-height:1.55}
+.wrap{max-width:780px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-top:18px; padding-bottom:56px}
+h1,h2,h3{margin:0; line-height:1.15}
+h1{font-family:var(--font-display); font-weight:700; font-size:clamp(1.6rem, 7.4vw, 2.7rem); letter-spacing:-.01em; white-space:nowrap}
+h2{font-family:var(--font-display); font-weight:700; font-size:clamp(1.55rem, 6vw, 2.05rem)}
+h3{font-size:1.06rem; font-weight:650}
+p{margin:0; max-width:65ch}
+ul,ol{margin:0}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+b{font-weight:650}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.mono{font-family:var(--font-mono); font-size:.88em}
+.nowrap{white-space:nowrap}
+.stack{display:flex; flex-direction:column; gap:16px}
+.stack-s{display:flex; flex-direction:column; gap:8px}
+[hidden]{display:none !important}
+svg.ic{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none}
+
+/* ---------- головна ---------- */
+.hero{display:flex; flex-direction:column; gap:14px; padding-bottom:6px}
+.brandrow{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.brand{display:flex; align-items:center; gap:12px; min-width:0}
+.brand .led{width:14px; height:14px; border-radius:5px; background:var(--accent); box-shadow:0 0 0 4px var(--accent-fill); flex:none}
+.langs{display:flex; gap:6px; flex:none}
+.langs button{min-width:48px; min-height:44px; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:transparent;
+  color:var(--muted); font:700 .9rem var(--font-body); cursor:pointer}
+.langs button[aria-pressed="true"]{border-color:var(--ok); background:var(--ok-fill); color:var(--text)}
+.scene{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:12px; overflow:hidden}
+.scene svg{display:block; width:100%; height:auto; font-family:var(--font-body)}
+.lead{font-size:1.05rem; color:var(--muted)}
+.facts{display:flex; flex-wrap:wrap; gap:8px}
+.fact{font-size:.82rem; padding:4px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); color:var(--muted)}
+.fact b{color:var(--text)}
+
+.group{display:flex; flex-direction:column; gap:10px; margin-top:22px}
+.group-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding-bottom:6px}
+.group-head h3{font-family:var(--font-display); font-size:1.25rem; font-weight:700}
+.group-head > span{font-size:.82rem; color:var(--faint); text-align:right}
+.tiles{display:grid; grid-template-columns:1fr; gap:10px; list-style:none; margin:0; padding:0}
+@media (min-width:560px){ .tiles{grid-template-columns:1fr 1fr} }
+.tile{display:grid; grid-template-columns:44px minmax(0,1fr) 18px; gap:12px; align-items:center; min-height:72px; padding:12px 14px;
+  border-radius:16px; background:var(--surface); border:1px solid var(--line); color:var(--text); text-decoration:none;
+  transition:border-color .15s, background-color .15s, transform .15s}
+.tile:active{transform:scale(.985); border-color:var(--ok); background:var(--ok-fill)}
+@media (hover:hover){ .tile:hover{border-color:var(--accent)} }
+.tile .badge{width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--surface-2); color:var(--accent); position:relative}
+.tile .badge .n{position:absolute; top:-6px; left:-6px; min-width:20px; height:20px; border-radius:10px; background:var(--accent); color:var(--bg);
+  font:700 .72rem/20px var(--font-mono); text-align:center; padding:0 5px}
+.tile b{display:block; font-weight:650; line-height:1.3}
+.tile .d{display:block; color:var(--muted); font-size:.86rem; line-height:1.4; margin-top:2px}
+.tile .chev{color:var(--faint); font-size:1.2rem}
+.tile.go .badge{color:var(--ok); background:var(--ok-fill)}
+.foot{margin-top:28px; color:var(--faint); font-size:.84rem; display:flex; flex-direction:column; gap:6px}
+
+/* ---------- розділ ---------- */
+.page{display:flex; flex-direction:column; gap:18px}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.back{display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:8px 14px; border-radius:12px;
+  border:1px solid var(--line); background:var(--surface-2); color:var(--text); text-decoration:none; font-weight:600}
+.counter{font-family:var(--font-mono); font-size:.8rem; color:var(--faint); font-variant-numeric:tabular-nums}
+.counter b{color:var(--accent); font-weight:700}
+.title-block{display:flex; flex-direction:column; gap:8px}
+.page-lead{color:var(--muted); font-size:1.02rem}
+
+ol.steps{list-style:none; margin:0; padding:0; counter-reset:s; display:flex; flex-direction:column; gap:12px}
+ol.steps > li{counter-increment:s; display:grid; grid-template-columns:30px minmax(0,1fr); gap:12px; align-items:start}
+ol.steps > li::before{content:counter(s); width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
+  background:var(--accent-fill); color:var(--accent); font:700 .86rem/1 var(--font-mono)}
+ul.dots{padding-left:1.15em; display:flex; flex-direction:column; gap:8px}
+ul.dots li::marker{color:var(--accent)}
+.btn{display:inline; padding:1px 8px; border-radius:8px; font-weight:600; font-size:.94em; border:1px solid transparent; -webkit-box-decoration-break:clone; box-decoration-break:clone; line-height:1.9}
+.btn.prim{background:var(--accent-fill); color:var(--accent); border-color:var(--accent)}
+.btn.norm{background:var(--surface-2); color:var(--text); border-color:var(--line)}
+.btn.sel{background:var(--ok-fill); color:var(--text); border-color:var(--ok)}
+.btn.quiet{background:transparent; color:var(--muted); border-color:var(--line)}
+.pill{display:inline-block; font-size:.78rem; font-weight:650; padding:2px 9px; border-radius:20px; white-space:nowrap}
+.p-ok{background:var(--ok-fill); color:var(--ok)}
+.p-warn{background:var(--warn-fill); color:var(--warn)}
+.p-bad{background:var(--bad-fill); color:var(--bad)}
+.p-acc{background:var(--accent-fill); color:var(--accent)}
+.p-vio{background:var(--violet-fill); color:var(--violet)}
+.p-mut{background:var(--surface-2); color:var(--muted)}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; min-width:0}
+.panel > h3{margin-bottom:8px}
+.grid2{display:grid; grid-template-columns:1fr; gap:10px}
+@media (min-width:560px){ .grid2{grid-template-columns:1fr 1fr} }
+.note{border-left:3px solid var(--accent); padding:2px 0 2px 12px; color:var(--muted)}
+.warn{background:var(--warn-fill); border:1px solid #6E5A42; border-radius:14px; padding:12px 14px}
+.warn b:first-child{color:var(--warn)}
+.ok-box{background:var(--ok-fill); border:1px solid #2F5A42; border-radius:14px; padding:12px 14px}
+
+.diagram{margin:0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:12px; overflow-x:auto}
+.diagram svg{display:block; width:100%; min-width:300px; max-width:560px; height:auto; margin:0 auto; font-family:var(--font-body)}
+.diagram figcaption{margin:8px auto 0; text-align:center}
+.d-box{fill:var(--surface-2); stroke:var(--line); stroke-width:1.2}
+.d-acc{fill:var(--accent-fill); stroke:var(--accent); stroke-width:1.5}
+.d-ok{fill:var(--ok-fill); stroke:var(--ok); stroke-width:1.5}
+.d-bad{fill:var(--bad-fill); stroke:var(--bad); stroke-width:1.5}
+.d-warn{fill:var(--warn-fill); stroke:var(--warn); stroke-width:1.5}
+.d-vio{fill:var(--violet-fill); stroke:var(--violet); stroke-width:1.5}
+.d-t{fill:var(--text); font-size:14px; font-weight:600}
+.d-tb{fill:var(--text); font-size:22px; font-weight:700}
+.d-s{fill:var(--muted); font-size:12px}
+.d-m{fill:var(--muted); font-size:11.5px; font-family:var(--font-mono)}
+.d-tok{fill:var(--ok); font-size:12px; font-weight:650}
+.d-tbad{fill:var(--bad); font-size:12px; font-weight:650}
+.d-twarn{fill:var(--warn); font-size:12px; font-weight:650}
+.d-tacc{fill:var(--accent); font-size:12px; font-weight:650}
+.d-line{stroke:var(--muted); stroke-width:1.5; fill:none}
+.d-dash{stroke:var(--accent); stroke-width:1.6; stroke-dasharray:4 4; fill:none}
+.d-arrow{fill:var(--muted)}
+.d-arrow-acc{fill:var(--accent)}
+.z-red{stroke:var(--bad)} .z-org{stroke:var(--warn)} .z-grn{stroke:var(--ok)}
+
+figure{margin:0; display:flex; flex-direction:column; gap:8px; align-items:center}
+figure.shot img{display:block; width:100%; max-width:300px; height:auto; border-radius:20px; border:1px solid var(--line); background:var(--surface)}
+figcaption{color:var(--muted); font-size:.85rem; text-align:center; max-width:46ch}
+.shots{display:flex; gap:12px; overflow-x:auto; padding-bottom:4px; scroll-snap-type:x mandatory}
+.shots figure{flex:0 0 min(78%, 260px); scroll-snap-align:start}
+
+.tbl{overflow-x:auto; border:1px solid var(--line); border-radius:14px}
+table{border-collapse:collapse; width:100%; font-size:.93rem}
+th,td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; text-align:left}
+th{background:var(--surface-2); color:var(--muted); font-weight:600; font-size:.82rem}
+tr:last-child td{border-bottom:0}
+td.k{white-space:nowrap; width:1%}
+@media (max-width:520px){
+  .tbl.kv tr{display:block; border-bottom:1px solid var(--line); padding:8px 10px}
+  .tbl.kv tr:last-child{border-bottom:0}
+  .tbl.kv td{display:block; border:0; padding:0}
+  .tbl.kv td.k{white-space:normal; width:auto; padding-bottom:3px}
+  .tbl.kv tr.hd{display:none}
+}
+details{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:2px 14px}
+details[open]{border-color:var(--accent)}
+summary{min-height:48px; display:flex; align-items:center; cursor:pointer; font-weight:600; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+"; margin-left:auto; color:var(--accent); font:700 1.2rem/1 var(--font-mono); padding-left:10px}
+details[open] summary::after{content:"\2212"}
+details > div{padding:0 0 12px; color:var(--muted)}
+.acc{display:flex; flex-direction:column; gap:8px}
+
+/* макети: шторка, картка застосунку */
+.mock{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:10px; max-width:420px; width:100%; margin:0 auto}
+.mock .lbl{display:flex; align-items:center; gap:8px; font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:600}
+.mock .lbl svg{color:var(--accent)}
+.mock.on{background:var(--accent-fill); border-color:var(--accent)}
+.choices{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.choice{text-align:center; padding:10px 8px; border-radius:12px; background:var(--surface-2); border:1px solid var(--line); font-weight:600; color:var(--muted)}
+.choice.on{border-color:var(--ok); background:var(--ok-fill); color:var(--text)}
+.kv-line{display:flex; justify-content:space-between; gap:12px; font-size:.92rem}
+.kv-line span:first-child{color:var(--muted)}
+.notif{background:#1B2129; border:1px solid var(--line); border-radius:18px; padding:12px 14px; display:flex; flex-direction:column; gap:4px; max-width:420px; width:100%; margin:0 auto}
+.notif .n-top{display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--muted)}
+.notif .n-top svg{width:16px; height:16px; color:var(--accent)}
+.notif .n-top .t{margin-left:auto; font-variant-numeric:tabular-nums}
+.notif b{font-size:.98rem}
+.notif .n-txt{font-size:.88rem; color:var(--muted)}
+.notif .n-act{margin-top:6px; color:var(--accent); font-weight:650; font-size:.86rem}
+.topstrip{display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--bg); border:1px solid var(--line); border-radius:16px; max-width:420px; width:100%; margin:0 auto}
+.topstrip .led{width:10px; height:10px; border-radius:4px; background:var(--accent); flex:none}
+.topstrip .nm{font-weight:650; font-size:1.15rem; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sq{width:48px; height:48px; border-radius:12px; border:1px solid var(--line); display:grid; place-items:center; color:var(--muted); font-weight:700; flex:none}
+.sq svg{width:26px; height:26px}
+
+.pager{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px}
+.pager a{display:flex; flex-direction:column; gap:2px; padding:12px 14px; min-height:64px; border-radius:14px; background:var(--surface);
+  border:1px solid var(--line); color:var(--text); text-decoration:none; min-width:0}
+.pager a > span{font:600 .7rem var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+.pager a b{font-weight:600; line-height:1.3}
+.pager a.next{text-align:right; grid-column:2}
+.pager a:active{border-color:var(--ok); background:var(--ok-fill)}
+
+.enter{animation:enter .26s ease-out}
+@keyframes enter{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+.waves path{animation:wave 2.4s ease-in-out infinite}
+.waves path:nth-child(2){animation-delay:.3s} .waves path:nth-child(3){animation-delay:.6s}
+@keyframes wave{0%,100%{opacity:.25} 50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){ .enter, .waves path{animation:none} .tile{transition:none} }
+</style>
+
+<!-- значки: ті самі шляхи, що в застосунку (ui/LineIcon.kt; тест test_app_icons_match_guide) -->
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-battery" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M22 10v4"/><path d="M6.5 9.5v5M10 9.5v5M13.5 9.5v5"/></symbol>
+  <symbol id="i-bluetooth" viewBox="0 0 24 24"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L5 14h6l-1 8 8-12h-6z"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 13.5V5a2 2 0 0 1 4 0v8.5a4 4 0 1 1-4 0z"/><path d="M12 9v7"/></symbol>
+  <symbol id="i-cells" viewBox="0 0 24 24"><path d="M3 7h4v10H3zM10 7h4v10h-4zM17 7h4v10h-4z"/><path d="M4 4h2M11 4h2M18 4h2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M12 8v5M12 16.5v.5"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><path d="M7 7h10v10H7z"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.3"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.3"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c-3 2.5-3 15.5 0 18c3-2.5 3-15.5 0-18z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 20a2 2 0 0 0 2 2h13v-4M9 7h6"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16"/><path d="M7 15l4-5 3 3 5-7"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 13l4-5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+  <!-- лише в інструкції -->
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></symbol>
+  <symbol id="i-widget" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="18" height="8" rx="2"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.5A3.8 3.8 0 0 1 17.5 18z"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+
+<div class="wrap">
+
+<!-- ================= ГОЛОВНА ================= -->
+<main id="home" class="stack">
+  <div class="hero">
+    <div class="brandrow">
+      <div class="brand"><span class="led" aria-hidden="true"></span><h1>Aolithium Live</h1></div>
+      <div class="langs" role="group" aria-label="Мова · Language">
+        <button type="button" data-lang="uk" aria-pressed="true">UA</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+    </div>
+    <p class="lead uk">Свій застосунок для домашніх батарей: <b>Aolithium</b> (плата JBD) і <b>Logic Power</b> (плата JK BMS). Показує заряд, кожну комірку, відключення світла, сам пише історію й сповіщає. Лише читає батарею — нічого в ній не змінює.</p>
+    <p class="lead en">Our own app for home batteries: <b>Aolithium</b> (JBD BMS) and <b>Logic Power</b> (JK BMS). It shows charge, each cell and power outages, records history by itself and notifies you. It only reads the battery and changes nothing in it.</p>
+
+    <div class="scene">
+      <svg viewBox="0 0 360 150">
+        <!-- телефон -->
+        <rect class="d-box" x="8" y="10" width="92" height="132" rx="14"/>
+        <path d="M24 92a30 30 0 1 1 60 0" class="z-grn" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <path d="M24 92a30 30 0 0 1 4-15" class="z-red" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <text class="d-tb" x="54" y="92" text-anchor="middle">76 %</text>
+        <text class="d-tok uk" x="54" y="112" text-anchor="middle">116 Вт ↓</text>
+        <text class="d-tok en" x="54" y="112" text-anchor="middle">116 W ↓</text>
+        <text class="d-s" x="54" y="32" text-anchor="middle">Aolithium Live</text>
+        <!-- хвилі Bluetooth -->
+        <g class="waves" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round">
+          <path d="M124 64q10 14 0 28"/><path d="M138 56q16 22 0 44"/><path d="M152 48q22 30 0 60"/>
+        </g>
+        <use href="#i-bluetooth" x="125" y="14" width="24" height="24" style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <text class="d-m uk" x="146" y="136" text-anchor="middle">1–5 м</text>
+        <text class="d-m en" x="146" y="136" text-anchor="middle">1–5 m</text>
+        <!-- батарея з 4 комірками -->
+        <rect class="d-acc" x="192" y="30" width="154" height="92" rx="12"/>
+        <rect x="346" y="62" width="8" height="28" rx="3" fill="var(--accent)"/>
+        <rect class="d-ok" x="199" y="60" width="33" height="50" rx="5"/>
+        <rect class="d-ok" x="236" y="60" width="33" height="50" rx="5"/>
+        <rect class="d-ok" x="273" y="60" width="33" height="50" rx="5"/>
+        <rect class="d-ok" x="310" y="60" width="33" height="50" rx="5"/>
+        <text class="d-m uk" x="215.5" y="89" text-anchor="middle" style="font-size:10px">3,33</text><text class="d-m en" x="215.5" y="89" text-anchor="middle" style="font-size:10px">3.33</text>
+        <text class="d-m uk" x="252.5" y="89" text-anchor="middle" style="font-size:10px">3,33</text><text class="d-m en" x="252.5" y="89" text-anchor="middle" style="font-size:10px">3.33</text>
+        <text class="d-m uk" x="289.5" y="89" text-anchor="middle" style="font-size:10px">3,32</text><text class="d-m en" x="289.5" y="89" text-anchor="middle" style="font-size:10px">3.32</text>
+        <text class="d-m uk" x="326.5" y="89" text-anchor="middle" style="font-size:10px">3,33</text><text class="d-m en" x="326.5" y="89" text-anchor="middle" style="font-size:10px">3.33</text>
+        <text class="d-s uk" x="269" y="50" text-anchor="middle">плата JBD / JK</text>
+        <text class="d-s en" x="269" y="50" text-anchor="middle">JBD / JK BMS</text>
+      </svg>
+    </div>
+
+    <div class="facts">
+      <span class="fact uk"><b>Bluetooth</b>, без інтернету</span><span class="fact en"><b>Bluetooth</b>, no internet</span>
+      <span class="fact uk">лише <b>читає</b> плату</span><span class="fact en"><b>read-only</b></span>
+      <span class="fact uk">запис <b>у фоні</b></span><span class="fact en"><b>background</b> recording</span>
+      <span class="fact uk"><b>українська</b> · English</span><span class="fact en"><span lang="uk">Українська</span> · <b>English</b></span>
+    </div>
+  </div>
+
+  <section class="group">
+    <div class="group-head"><h3 class="uk">Перші кроки</h3><h3 class="en">First steps</h3><span class="uk">по порядку</span><span class="en">in order</span></div>
+    <ul class="tiles">
+      <li><a class="tile" href="#start"><span class="badge"><span class="n">1</span><svg class="ic"><use href="#i-key"/></svg></span><span><b class="uk">Перший запуск</b><b class="en">First start</b><span class="d uk">Bluetooth, сповіщення — один раз</span><span class="d en">Bluetooth, notifications — once</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#connect"><span class="badge"><span class="n">2</span><svg class="ic"><use href="#i-bluetooth"/></svg></span><span><b class="uk">Підключити батарею</b><b class="en">Connect the battery</b><span class="d uk">пошук поруч, «Мої батареї»</span><span class="d en">search nearby, "My batteries"</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#trouble"><span class="badge"><span class="n">3</span><svg class="ic"><use href="#i-search"/></svg></span><span><b class="uk">Не видно батареї, рветься зв'язок</b><b class="en">Battery not found, link drops</b><span class="d uk">сигнал, рядок «Зв'язок», журнал</span><span class="d en">signal, "Connection" line, log</span></span><span class="chev">›</span></a></li>
+    </ul>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h3 class="uk">Екран батареї</h3><h3 class="en">Battery screen</h3><span class="uk">5 вкладок унизу</span><span class="en">5 tabs at the bottom</span></div>
+    <ul class="tiles">
+      <li><a class="tile" href="#now"><span class="badge"><svg class="ic"><use href="#i-gauge"/></svg></span><span><b class="uk">Зараз</b><b class="en">Now</b><span class="d uk">спідометр, «вистачить на», «до повної»</span><span class="d en">speedometer, "lasts for", "until full"</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#cells"><span class="badge"><svg class="ic"><use href="#i-cells"/></svg></span><span><b class="uk">Комірки</b><b class="en">Cells</b><span class="d uk">кожна комірка, різниця, вирівнювання</span><span class="d en">each cell, difference, balancing</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#charts"><span class="badge"><svg class="ic"><use href="#i-chart"/></svg></span><span><b class="uk">Графіки</b><b class="en">Charts</b><span class="d uk">відключення світла, генератор, історія</span><span class="d en">power outages, generator, history</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#board"><span class="badge"><svg class="ic"><use href="#i-chip"/></svg></span><span><b class="uk">Плата</b><b class="en">BMS</b><span class="d uk">здоров'я, захисти за весь час</span><span class="d en">health, protections all time</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#more"><span class="badge"><svg class="ic"><use href="#i-sliders"/></svg></span><span><b class="uk">Ще</b><b class="en">More</b><span class="d uk">дії, історія в CSV, довідник, ⓘ</span><span class="d en">actions, history to CSV, glossary, ⓘ</span></span><span class="chev">›</span></a></li>
+    </ul>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h3 class="uk">Коли застосунок закритий</h3><h3 class="en">When the app is closed</h3><span class="uk">телефон поруч з батареєю</span><span class="en">phone near the battery</span></div>
+    <ul class="tiles">
+      <li><a class="tile" href="#background"><span class="badge"><svg class="ic"><use href="#i-repeat"/></svg></span><span><b class="uk">Запис у фоні</b><b class="en">Background recording</b><span class="d uk">раз на ~5 хв, навіть уночі</span><span class="d en">every ~5 min, even at night</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#alerts"><span class="badge"><svg class="ic"><use href="#i-bell"/></svg></span><span><b class="uk">Сповіщення</b><b class="en">Notifications</b><span class="d uk">світло, мало заряду, батарея повна…</span><span class="d en">power, low charge, battery full…</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#widget"><span class="badge"><svg class="ic"><use href="#i-widget"/></svg></span><span><b class="uk">Віджет</b><b class="en">Widget</b><span class="d uk">заряд на головному екрані</span><span class="d en">charge on the home screen</span></span><span class="chev">›</span></a></li>
+    </ul>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h3 class="uk">Ще можливості</h3><h3 class="en">More features</h3><span></span></div>
+    <ul class="tiles">
+      <li><a class="tile" href="#jk"><span class="badge"><svg class="ic"><use href="#i-battery"/></svg></span><span><b>Logic Power (JK BMS)</b><span class="d uk">друга батарея, балансир, опір дротів</span><span class="d en">second battery, balancer, wire resistance</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile go" href="#demo"><span class="badge"><svg class="ic"><use href="#i-play"/></svg></span><span><b class="uk">Демо без батареї</b><b class="en">Demo (no battery)</b><span class="d uk">подивитись усе на готових даних</span><span class="d en">see everything on ready-made data</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#language"><span class="badge"><svg class="ic"><use href="#i-globe"/></svg></span><span><b><span lang="uk">Мова</span> · Language</b><span class="d uk">українська або англійська</span><span class="d en">Ukrainian or English</span></span><span class="chev">›</span></a></li>
+    </ul>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h3 class="uk">Довідка</h3><h3 class="en">Reference</h3><span></span></div>
+    <ul class="tiles">
+      <li><a class="tile" href="#numbers"><span class="badge"><svg class="ic"><use href="#i-pulse"/></svg></span><span><b class="uk">Що означають числа</b><b class="en">What the numbers mean</b><span class="d uk">норми, і як це звалось в Aolithium 1.3</span><span class="d en">normal ranges, and Aolithium 1.3 names</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#install"><span class="badge"><svg class="ic"><use href="#i-cloud"/></svg></span><span><b class="uk">Встановити й оновити</b><b class="en">Install and update</b><span class="d uk">меню Termux, телефон без Termux</span><span class="d en">Termux menu, phone without Termux</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#safety"><span class="badge"><svg class="ic"><use href="#i-lock"/></svg></span><span><b class="uk">Безпека й приватність</b><b class="en">Safety and privacy</b><span class="d uk">лише читання, без інтернету</span><span class="d en">read-only, no internet</span></span><span class="chev">›</span></a></li>
+      <li><a class="tile" href="#changes"><span class="badge"><svg class="ic"><use href="#i-clock"/></svg></span><span><b class="uk">Що змінилось</b><b class="en">What's new</b><span class="d uk">усі версії по порядку</span><span class="d en">all versions in order</span></span><span class="chev">›</span></a></li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Застосунок не має навіть дозволу на інтернет. Без реклами й аналітики.</p>
+    <p class="en">Battery data stays on the phone and is not sent anywhere. The app does not even have the internet permission. No ads, no analytics.</p>
+    <p>Aolithium Live 0.4.4 · github.com/faric-ua/aolithium-live</p>
+  </div>
+</main>
+
+<!-- ================= 1. ПЕРШИЙ ЗАПУСК ================= -->
+<section id="start" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Перший запуск</h2><h2 class="en">First start</h2>
+    <p class="page-lead uk">Один раз дати застосунку те, без чого він не бачить батарею. Поки чогось бракує, на головній угорі є картка «Що потрібно, щоб бачити батарею» з кнопками.</p>
+    <p class="page-lead en">Give the app, once, what it needs to see the battery. While something is missing, the home screen shows the card "What is needed to see the battery" at the top, with buttons.</p>
+  </div>
+  <ol class="steps uk">
+    <li><span>Відкрий Aolithium Live. Є картка вгорі — натисни <span class="btn prim">Дозволити</span>.</span></li>
+    <li><span><b>Android 12 і новіші</b> (A26) питають «Пристрої поблизу» — <b>Дозволити</b>. Місцезнаходження не потрібне.</span></li>
+    <li><span><b>Android 8–11</b> (Huawei Mate 10 Lite, M30s) питають місцезнаходження — <b>Дозволити</b>, і потрібна ввімкнена геолокація (<span class="btn norm">Увімкнути геолокацію</span>). Так Android влаштував пошук Bluetooth; місцезнаходження нікуди не передається.</span></li>
+    <li><span>Bluetooth вимкнено — <span class="btn norm">Увімкнути Bluetooth</span>.</span></li>
+    <li><span>Сповіщення Android спитає, коли ввімкнеш «Запис у фоні» чи сповіщення, — <b>Дозволити</b>.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>Open Aolithium Live. If there is a card at the top, tap <span class="btn prim">Allow</span>.</span></li>
+    <li><span><b>Android 12 and newer</b> (A26) ask for "Nearby devices" — <b>Allow</b>. Location is not needed.</span></li>
+    <li><span><b>Android 8–11</b> (Huawei Mate 10 Lite, M30s) ask for location — <b>Allow</b>, and location must be turned on (<span class="btn norm">Turn on location</span>). This is how Android does Bluetooth search; your location is not sent anywhere.</span></li>
+    <li><span>Bluetooth is off — <span class="btn norm">Turn on Bluetooth</span>.</span></li>
+    <li><span>Android asks about notifications when you turn on "Background recording" or notifications — <b>Allow</b>.</span></li>
+  </ol>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Дозвіл</th><th>Навіщо</th></tr>
+      <tr><td class="k"><b>Пристрої поблизу</b> / місцезнаходження</td><td>знайти батарею й підключитись (Bluetooth)</td></tr>
+      <tr><td class="k"><b>Сповіщення</b></td><td>«Світло зникло», «Батарея повна»… і рядок «Запис у фоні» в шторці</td></tr>
+      <tr><td class="k"><b>Без обмежень у фоні</b></td><td>щоб Android не приспав запис у фоні (за бажанням)</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>Permission</th><th>What for</th></tr>
+      <tr><td class="k"><b>Nearby devices</b> / location</td><td>find the battery and connect (Bluetooth)</td></tr>
+      <tr><td class="k"><b>Notifications</b></td><td>"Power outage", "Battery full"… and the "Background recording" line in the shade</td></tr>
+      <tr><td class="k"><b>Unrestricted in background</b></td><td>so Android does not pause background recording (optional)</td></tr>
+    </table>
+  </div>
+  <p class="note uk">Реєстрації, акаунта й інтернету не треба. Застосунок ставиться поруч з Aolithium 1.3 і нічого в ньому не чіпає.</p>
+  <p class="note en">No sign-up, no account, no internet. The app installs next to Aolithium 1.3 and does not touch it.</p>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/home.webp" alt="Головна: Мої батареї і пошук поруч"><figcaption>Головна: «Мої батареї» і «Шукати батареї поруч».</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/home.webp" alt="Home: My batteries and search nearby"><figcaption>Home: "My batteries" and "Find batteries nearby".</figcaption></figure>
+</section>
+
+<!-- ================= 2. ПІДКЛЮЧИТИ ================= -->
+<section id="connect" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Підключити батарею</h2><h2 class="en">Connect the battery</h2>
+    <p class="page-lead uk">Батарея говорить Bluetooth'ом на кілька метрів. Плата тримає <b>лише одне</b> підключення — тому старий застосунок треба закрити.</p>
+    <p class="page-lead en">The battery talks over Bluetooth, a few meters. The BMS keeps <b>only one</b> connection, so close the old app first.</p>
+  </div>
+  <ol class="steps uk">
+    <li><span>Закрий Aolithium 1.3 (і застосунок JK BMS / Logic Power) на всіх телефонах поруч.</span></li>
+    <li><span>Головна → <span class="btn prim">Шукати батареї поруч</span>. Пошук іде кілька секунд, його можна зупинити.</span></li>
+    <li><span>Батарея — угорі списку: назва на кшталт «AL12-100-4S…», під нею <b>«Плата JBD (як в Aolithium)»</b> або <b>«Плата JK BMS»</b> і сигнал словом. Чужі пристрої сховані в «Інші пристрої поруч».</span></li>
+    <li><span>Торкнись її — за кілька секунд угорі <span class="pill p-ok">На зв'язку</span>, числа оновлюються раз на 2 секунди.</span></li>
+    <li><span>Наступного разу вона вже в <b>«Моїх батареях»</b> — шукати не треба. Назву можна змінити: «Ще» → <span class="btn norm">Перейменувати</span>.</span></li>
+    <li><span>Сховав застосунок — через 5 с він відключається, і батарея знову вільна для Aolithium 1.3.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>Close Aolithium 1.3 (and the JK BMS / Logic Power app) on all phones nearby.</span></li>
+    <li><span>Home → <span class="btn prim">Find batteries nearby</span>. Search takes a few seconds; you can stop it.</span></li>
+    <li><span>The battery is at the top of the list: a name like "AL12-100-4S…", below it <b>"JBD BMS (as in Aolithium)"</b> or <b>"JK BMS"</b> and the signal in words. Other devices are hidden under "Other devices nearby".</span></li>
+    <li><span>Tap it. In a few seconds the top shows <span class="pill p-ok">Connected</span>; numbers refresh every 2 seconds.</span></li>
+    <li><span>Next time it is already in <b>"My batteries"</b> — no search needed. You can change the name: "More" → <span class="btn norm">Rename</span>.</span></li>
+    <li><span>When you hide the app, it disconnects after 5 s, and the battery is free for Aolithium 1.3 again.</span></li>
+  </ol>
+  <figure class="diagram">
+    <svg viewBox="0 0 360 200">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="d-arrow-acc"/></marker></defs>
+      <rect class="d-acc" x="10" y="20" width="130" height="58" rx="12"/>
+      <text class="d-t" x="75" y="45" text-anchor="middle">Aolithium Live</text>
+      <text class="d-s uk" x="75" y="64" text-anchor="middle">твій телефон</text>
+      <text class="d-s en" x="75" y="64" text-anchor="middle">your phone</text>
+      <rect class="d-box" x="10" y="122" width="130" height="58" rx="12"/>
+      <text class="d-t" x="75" y="147" text-anchor="middle">Aolithium 1.3</text>
+      <text class="d-s uk" x="75" y="166" text-anchor="middle">або інший телефон</text>
+      <text class="d-s en" x="75" y="166" text-anchor="middle">or another phone</text>
+      <rect class="d-ok" x="220" y="62" width="130" height="76" rx="12"/>
+      <text class="d-t uk" x="285" y="92" text-anchor="middle">Плата батареї</text>
+      <text class="d-t en" x="285" y="92" text-anchor="middle">Battery BMS</text>
+      <text class="d-s uk" x="285" y="112" text-anchor="middle">1 підключення</text>
+      <text class="d-s en" x="285" y="112" text-anchor="middle">1 connection</text>
+      <path d="M142 49C185 49 190 82 218 86" class="d-dash" marker-end="url(#ar)" marker-start="url(#ar)"/>
+      <path d="M142 151C185 151 190 118 218 114" class="d-line" stroke-dasharray="3 5"/>
+      <text class="d-tacc uk" x="176" y="38" text-anchor="middle">читає</text>
+      <text class="d-tacc en" x="176" y="38" text-anchor="middle">reads</text>
+      <text class="d-s uk" x="178" y="178" text-anchor="middle">чекає своєї черги</text>
+      <text class="d-s en" x="178" y="178" text-anchor="middle">waits its turn</text>
+    </svg>
+    <figcaption class="uk">Одночасно плату читає лише один застосунок. Сховай Aolithium Live — за 5 с плата вільна для іншого.</figcaption>
+    <figcaption class="en">Only one app reads the BMS at a time. Hide Aolithium Live — in 5 s the BMS is free for another.</figcaption>
+  </figure>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/now-charging.webp" alt="Батарея на зв'язку, вкладка Зараз"><figcaption>Підключено: угорі «На зв'язку», нижче — вкладка «Зараз».</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/now-charging.webp" alt="Battery connected, Now tab"><figcaption>Connected: "Connected" at the top, the "Now" tab below.</figcaption></figure>
+</section>
+
+<!-- ================= 3. НЕ ВИДНО / ЗВ'ЯЗОК ================= -->
+<section id="trouble" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Не видно батареї, рветься зв'язок</h2><h2 class="en">Battery not found, link drops</h2>
+    <p class="page-lead uk">Найчастіша причина — відстань. Bluetooth дістає кілька метрів, стіни й метал з'їдають сигнал.</p>
+    <p class="page-lead en">The most common reason is distance. Bluetooth reaches a few meters; walls and metal eat the signal.</p>
+  </div>
+  <ul class="dots uk">
+    <li><b>Сигнал біля назви:</b> «сильний», «середній», «слабкий». Слабкий (−88 dBm і менше) — підійди ближче, на 1–3 м: з таким сигналом підключення зривається.</li>
+    <li><b>Батарею вже тримає інший телефон</b> (Aolithium 1.3 чи цей застосунок) — тоді її не видно в пошуку. Закрий там.</li>
+    <li><b>Android 8–11:</b> без дозволу на місцезнаходження й увімкненої геолокації пошук нічого не знайде.</li>
+    <li><b>Bluetooth вимкнено</b> — на головній буде кнопка <span class="btn norm">Увімкнути Bluetooth</span>.</li>
+    <li><b>Батарея далеко, а подивитись хочеться:</b> її все одно можна відкрити з «Моїх батарей» — усі вкладки покажуть останні прочитані дані з часом (або прочерки, якщо зв'язку ще не було).</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Signal next to the name:</b> "strong", "medium", "weak". Weak (−88 dBm or less) — move closer, within 1–3 m: with such a signal the connection drops.</li>
+    <li><b>Another phone already holds the battery</b> (Aolithium 1.3 or this app) — then search cannot see it. Close it there.</li>
+    <li><b>Android 8–11:</b> without the location permission and location turned on, search finds nothing.</li>
+    <li><b>Bluetooth is off</b> — the home screen shows <span class="btn norm">Turn on Bluetooth</span>.</li>
+    <li><b>The battery is far away, but you want to look:</b> you can still open it from "My batteries" — all tabs show the last data read, with the time (or dashes if there was no connection yet).</li>
+  </ul>
+  <div class="panel stack-s">
+    <h3 class="uk">Рядок «Зв'язок» угорі</h3><h3 class="en">The "Connection" line at the top</h3>
+    <p class="uk">Під назвою батареї — завжди той самий рядок сталої висоти, тож спідометр під ним не стрибає. Ліворуч — стан:</p>
+    <p class="en">Under the battery name there is always the same line of fixed height, so the speedometer below does not jump. On the left — the state:</p>
+    <p class="uk"><span class="pill p-ok">На зв'язку</span> <span class="pill p-acc">Підключаюсь…</span> <span class="pill p-acc">Читаю плату…</span> <span class="pill p-warn">Зв'язок втрачено</span> <span class="pill p-bad">Не вдалось</span> <span class="pill p-warn">Плата мовчить</span></p>
+    <p class="en"><span class="pill p-ok">Connected</span> <span class="pill p-acc">Connecting…</span> <span class="pill p-acc">Reading BMS…</span> <span class="pill p-warn">Connection lost</span> <span class="pill p-bad">Failed</span> <span class="pill p-warn">BMS is silent</span></p>
+    <p class="uk">Поруч — коротко, що відбувається («повтор 2 з 3 · −90 dBm, слабкий»), а другим рядком — чиї числа нижче: «оновлено щойно» або «нижче — дані від 19.10 22:04». Зв'язок зірвався — праворуч кнопка <span class="btn norm">Ще раз</span>.</p>
+    <p class="en">Next to it — briefly what is happening ("retry 2 of 3 · −90 dBm, weak"), and the second line says whose numbers are below: "updated just now" or "below — data from 19.10 22:04". If the link drops, a <span class="btn norm">Retry</span> button appears on the right.</p>
+    <p class="uk"><b>Торкнись рядка</b> — вікно з повним поясненням і кнопками <span class="btn norm">Підключити ще раз</span> та <span class="btn norm">Журнал зв'язку</span>.</p>
+    <p class="en"><b>Tap the line</b> — a window with the full explanation and the <span class="btn norm">Reconnect</span> and <span class="btn norm">Connection log</span> buttons.</p>
+  </div>
+  <div class="ok-box">
+    <p class="uk"><b>Не допомогло?</b> «Журнал зв'язку» (торкни рядок «Зв'язок» або «Ще») → «Поділитися» → надішли Claude. У журналі — що і коли відповіла плата, без особистих даних.</p>
+    <p class="en"><b>Still no luck?</b> "Connection log" (tap the "Connection" line, or "More") → "Share" → send it to Claude. The log shows what the BMS answered and when, with no personal data.</p>
+  </div>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/link-lost.webp" alt="Рядок Зв'язок втрачено з кнопкою Ще раз"><figcaption>«Зв'язок втрачено»: рядок той самий, з'явилась кнопка «Ще раз», нижче — останні дані.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/link-lost.webp" alt="Connection lost line with Retry button"><figcaption>"Connection lost": the same line, a "Retry" button, the last data below.</figcaption></figure>
+</section>
+
+<!-- ================= 4. ЗАРАЗ ================= -->
+<section id="now" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Зараз</h2><h2 class="en">Now</h2>
+    <p class="page-lead uk">Головне одним поглядом: скільки заряду, віддає батарея чи заряджається, і на скільки вистачить.</p>
+    <p class="page-lead en">The main things at a glance: how much charge, whether the battery is giving power or charging, and how long it will last.</p>
+  </div>
+  <figure class="diagram">
+    <svg viewBox="0 0 360 196">
+      <!-- обід 270°: точка p % — кут 135° + 2,7° × p від осі x (за годинниковою), радіус 70, центр (180, 112) -->
+      <circle cx="180" cy="112" r="70" fill="none" stroke="var(--track)" stroke-width="2"/>
+      <g fill="none" stroke-width="14" stroke-linecap="butt">
+        <path class="z-red" d="M130.5 161.5A70 70 0 0 1 113.4 133.6"/>
+        <path class="z-org" d="M113.4 133.6A70 70 0 0 1 110.9 101.0"/>
+        <path class="z-grn" d="M110.9 101.0A70 70 0 1 1 246.6 133.6"/>
+        <path class="z-org" d="M246.6 133.6A70 70 0 0 1 229.5 161.5"/>
+      </g>
+      <path d="M255.3 84.9L268.3 85.5L264.9 76.1z" fill="var(--text)"/>
+      <text class="d-tb" x="180" y="114" text-anchor="middle" style="font-size:30px">76 %</text>
+      <text class="d-tbad uk" x="180" y="137" text-anchor="middle" style="font-size:16px">480 Вт ↑</text>
+      <text class="d-tbad en" x="180" y="137" text-anchor="middle" style="font-size:16px">480 W ↑</text>
+      <text class="d-s uk" x="180" y="155" text-anchor="middle">віддає · 36,1 А</text>
+      <text class="d-s en" x="180" y="155" text-anchor="middle">discharging · 36.1 A</text>
+      <text class="d-tbad" x="101" y="170" text-anchor="end">0–10</text>
+      <text class="d-twarn" x="84" y="124" text-anchor="end">10–20</text>
+      <text class="d-tok" x="180" y="24" text-anchor="middle">20–90 %</text>
+      <text class="d-twarn" x="259" y="170">90–100</text>
+      <text class="d-s uk" x="270" y="83">◀ зараз</text>
+      <text class="d-s en" x="270" y="83">◀ now</text>
+    </svg>
+    <figcaption class="uk">Зони на ободі: червона — глибокий розряд, помаранчева — мало, зелена — робоча зона (тут батарея живе найдовше), помаранчева вгорі — повна.</figcaption>
+    <figcaption class="en">Zones on the rim: red — deep discharge, orange — low, green — working zone (the battery lives longest here), orange at the top — full.</figcaption>
+  </figure>
+  <ul class="dots uk">
+    <li><b>Під відсотками</b> — вати або ампери (перемикач <span class="btn sel">Вати</span> <span class="btn norm">Ампери</span>). <b style="color:var(--bad)">Червоне й стрілка ▲ вгору</b> — батарея віддає (світла нема). <b style="color:var(--ok)">Зелене й стрілка ▼ вниз</b> — заряджається.</li>
+    <li>Нижче — струм і «70,2 з 92,3 А·год»: скільки лишилось з повної ємності.</li>
+    <li><b>«Вистачить на»</b> (коли віддає): час до 20 %, 10 % і 5 % — смуга зелена / жовта / червона. Число не скаче: рахується з середнього струму за 2 хв і міняється, лише коли струм стабільно змінився.</li>
+    <li><b>«До повної»</b> (коли заряджається): час до 100 % (заряд зупиняє сама плата) і скільки додасть 1–2 години такого заряду — зручно вирішити, скільки ганяти генератор.</li>
+    <li><b>«Стан плати»</b>: заряд і розряд дозволені, чи вирівнює комірки, чи спрацював захист. Спрацював — угорі червона картка «Що спрацювало» з поясненням, що робити.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Under the percent</b> — watts or amps (the <span class="btn sel">Watts</span> <span class="btn norm">Amps</span> switch). <b style="color:var(--bad)">Red with an arrow ▲ up</b> — the battery is giving power (no grid). <b style="color:var(--ok)">Green with an arrow ▼ down</b> — charging.</li>
+    <li>Below — the current and "70.2 of 92.3 Ah": how much is left of full capacity.</li>
+    <li><b>"Lasts for"</b> (when discharging): time to 20 %, 10 % and 5 % — a green / yellow / red strip. The number does not jump: it uses the average current over 2 min and changes only when the current has really changed.</li>
+    <li><b>"Until full"</b> (when charging): time to 100 % (the BMS stops charging by itself) and how much 1–2 hours of such charging will add — handy for deciding how long to run the generator.</li>
+    <li><b>"BMS state"</b>: charge and discharge allowed, whether it balances cells, whether a protection triggered. If it did, a red "What triggered" card appears at the top, explaining what to do.</li>
+  </ul>
+  <div class="shots">
+    <figure class="shot uk"><img loading="lazy" src="img/uk/now-discharging.webp" alt="Світла нема: червоні вати й вистачить на"><figcaption>Світла нема: червоні вати, «Вистачить на».</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" src="img/en/now-discharging.webp" alt="No power: red watts and lasts for"><figcaption>No power: red watts, "Lasts for".</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" src="img/uk/until-full.webp" alt="Заряджається: до повної"><figcaption>Заряджається: «До повної» і скільки дасть година.</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" src="img/en/until-full.webp" alt="Charging: until full"><figcaption>Charging: "Until full" and what an hour adds.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ================= 5. КОМІРКИ ================= -->
+<section id="cells" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Комірки</h2><h2 class="en">Cells</h2>
+    <p class="page-lead uk">У батареї 4 комірки по ~3,3 В, з'єднані ланцюжком: струм через усі однаковий, а напруга росте й падає трохи по-різному. Тут видно кожну.</p>
+    <p class="page-lead en">The battery has 4 cells of ~3.3 V in a chain: the current through all of them is the same, but the voltage rises and falls a little differently. Here you see each one.</p>
+  </div>
+  <ul class="dots uk">
+    <li><b>Плитка на кожну комірку:</b> напруга, смужка, на скільки мВ від середньої і як змінилась за хвилину (▲ росте / ▼ падає; з'являється через хвилину; ±1 мВ — «без змін», це шум вимірювання).</li>
+    <li><b>Рамки:</b> <span class="pill p-acc">найвища</span> — блакитна, <span class="pill p-warn">найнижча</span> — помаранчева. Кілька рівних — рамка в усіх. Різниця 1 мВ і менше — без рамок.</li>
+    <li><span class="pill p-vio">≈ вирівнюється</span> — плата зараз підтягує цю комірку до інших (наприкінці заряду це нормально).</li>
+    <li><b>Різниця</b> між найвищою й найнижчою: до 30 мВ — рівно, 30–100 — помірно, понад 100 — варто стежити (орієнтир, не діагноз).</li>
+    <li>Нижче: як плата вирівнює комірки, різниця за останню годину, усі датчики температури.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>A tile for each cell:</b> voltage, a bar, how many mV from average, and how it changed in a minute (▲ rising / ▼ falling; appears after a minute; ±1 mV means "no change", it is measurement noise).</li>
+    <li><b>Frames:</b> <span class="pill p-acc">highest</span> — blue, <span class="pill p-warn">lowest</span> — orange. Several equal ones — all get a frame. A difference of 1 mV or less — no frames.</li>
+    <li><span class="pill p-vio">≈ balancing</span> — the BMS is now pulling this cell level with the others (normal at the end of charge).</li>
+    <li><b>Difference</b> between the highest and the lowest: up to 30 mV is even, 30–100 is moderate, over 100 is worth watching (a guide, not a diagnosis).</li>
+    <li>Below: how the BMS balances cells, the difference over the last hour, all temperature sensors.</li>
+  </ul>
+  <p class="note uk">У Logic Power (JK BMS) тут ще балансир — з якої комірки в яку переливає і скільки ампер — та опір дроту кожної комірки (див. «Logic Power»).</p>
+  <p class="note en">For Logic Power (JK BMS) there is also the balancer — from which cell to which it moves charge, and how many amps — and each cell's wire resistance (see "Logic Power").</p>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/cells.webp" alt="Комірки: найнижча, найвища, вирівнюється"><figcaption>Заряд з балансуванням: №1 найнижча, №2 найвища й вирівнюється.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/cells.webp" alt="Cells: lowest, highest, balancing"><figcaption>Charging with balancing: #1 lowest, #2 highest and balancing.</figcaption></figure>
+</section>
+
+<!-- ================= 6. ГРАФІКИ ================= -->
+<section id="charts" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Графіки</h2><h2 class="en">Charts</h2>
+    <p class="page-lead uk">Що було, поки ти не дивився: відключення світла, найнижчий заряд по днях, генератор, комірки, зарядний. І вся історія за 15 хв … 7 днів.</p>
+    <p class="page-lead en">What happened while you were not looking: power outages, lowest charge by day, the generator, cells, the charger. And all history for 15 min … 7 days.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel stack-s">
+      <h3 class="uk">Відключення світла</h3><h3 class="en">Power outages</h3>
+      <p class="uk">Плитки за 7 днів: скільки відключень, скільки годин без світла, скільки батарея віддала, найнижчий заряд. Під ними — кожне відключення: коли, скільки тривало, з якого % до якого, скільки А·год і Вт·год, середня й пікова потужність. Триває зараз — червона рамка «Світла нема з 18:00».</p>
+      <p class="en">Tiles for 7 days: how many outages, hours without power, how much the battery gave, the lowest charge. Below — each outage: when, how long, from which % to which, how many Ah and Wh, average and peak power. If one is going on now — a red frame "No power since 18:00".</p>
+    </div>
+    <div class="panel stack-s">
+      <h3 class="uk">Як застосунок це бачить</h3><h3 class="en">How the app sees it</h3>
+      <p class="uk">Поки світло є, інвертор лише заряджає або батарея стоїть повна. Батарея <b>віддає більше 0,5 А довше 3 хвилин</b> — значить, світла нема. Короткі стрибки не рахуються.</p>
+      <p class="en">While there is power, the inverter only charges or the battery stands full. If the battery <b>gives more than 0.5 A for longer than 3 minutes</b>, there is no power. Short spikes do not count.</p>
+    </div>
+    <div class="panel stack-s">
+      <h3 class="uk">Найнижчий заряд по днях</h3><h3 class="en">Lowest charge by day</h3>
+      <p class="uk">Стовпчик на день — видно «хвилі»: щодня нижче → генератор → знову вгору. Торкнись дня — позначка <b>«Г»</b> (працював генератор): застосунок сам не відрізнить генератор від мережі.</p>
+      <p class="en">A bar per day — you see the "waves": lower every day → generator → up again. Tap a day to mark <b>"G"</b> (the generator worked): the app cannot tell the generator from the grid by itself.</p>
+    </div>
+    <div class="panel stack-s">
+      <h3 class="uk">Хто відстає · Зарядний</h3><h3 class="en">Lagging cell · Charger</h3>
+      <p class="uk">Яка комірка найчастіше найнижча наприкінці заряду і яка тоді різниця. «Зарядний» — до скількох вольт доводить батарею: для 4 комірок LiFePO4 норма 13,8–14,6 В.</p>
+      <p class="en">Which cell is most often the lowest at the end of charge, and what the difference is then. "Charger" — up to how many volts it brings the battery: for 4 LiFePO4 cells the norm is 13.8–14.6 V.</p>
+    </div>
+  </div>
+  <ul class="dots uk">
+    <li><b>Історія</b> — лінії заряду, струму, потужності, напруги, температури й комірок; скільки заряджено й віддано. Період: <span class="btn norm">15 хв</span> <span class="btn norm">1 год</span> <span class="btn norm">6 год</span> <span class="btn sel">24 год</span> <span class="btn norm">7 днів</span>. Торкнись графіка й веди пальцем убік — побачиш значення.</li>
+    <li><b>Звідки дані:</b> поки застосунок відкритий і на зв'язку — запис раз на 10 с; з «Записом у фоні» — ще й раз на ~5 хв, коли закритий. Зберігається 90 днів у телефоні.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>History</b> — lines for charge, current, power, voltage, temperature and cells; how much was charged and given. Period: <span class="btn norm">15 min</span> <span class="btn norm">1 h</span> <span class="btn norm">6 h</span> <span class="btn sel">24 h</span> <span class="btn norm">7 days</span>. Touch a chart and slide your finger sideways to see values.</li>
+    <li><b>Where the data comes from:</b> while the app is open and connected — a record every 10 s; with "Background recording" — also every ~5 min while it is closed. Kept for 90 days on the phone.</li>
+  </ul>
+  <div class="shots">
+    <figure class="shot uk"><img loading="lazy" src="img/uk/outages.webp" alt="Відключення світла"><figcaption>«Відключення світла»: плитки за 7 днів і кожне відключення.</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" src="img/en/outages.webp" alt="Power outages"><figcaption>"Power outages": tiles for 7 days and each outage.</figcaption></figure>
+    <figure class="shot uk"><img loading="lazy" src="img/uk/charts-days.webp" alt="Найнижчий заряд по днях"><figcaption>«Найнижчий заряд по днях» і підсумок за 24 год; нижче — «Хто відстає», «Зарядний».</figcaption></figure>
+    <figure class="shot en"><img loading="lazy" src="img/en/charts-days.webp" alt="Lowest charge by day"><figcaption>"Lowest charge by day" and the 24 h summary; further down — "Lagging cell", "Charger".</figcaption></figure>
+  </div>
+</section>
+
+<!-- ================= 7. ПЛАТА ================= -->
+<section id="board" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Плата</h2><h2 class="en">BMS</h2>
+    <p class="page-lead uk">Що плата знає про себе й про батарею — те, чого Aolithium 1.3 не показував.</p>
+    <p class="page-lead en">What the BMS knows about itself and the battery — things Aolithium 1.3 did not show.</p>
+  </div>
+  <ul class="dots uk">
+    <li><b>Здоров'я:</b> повна ємність, яку знає плата (поруч з етикеткою 100 А·год), залишок, цикли, енергія повної батареї в кВт·год.</li>
+    <li><b>Плата:</b> тип (JBD чи JK), назва, версія програми, дата виготовлення, скільки комірок і датчиків температури.</li>
+    <li><b>Захисти за весь час:</b> скільки разів плата вмикала кожен захист. Торкнись рядка — що це і що робити. «Перезаряд комірки» наприкінці заряду — порада перевірити напругу зарядного.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Health:</b> the full capacity the BMS knows (next to the 100 Ah label), what is left, cycles, the energy of a full battery in kWh.</li>
+    <li><b>BMS:</b> type (JBD or JK), name, software version, manufacture date, how many cells and temperature sensors.</li>
+    <li><b>Protections, all time:</b> how many times the BMS turned on each protection. Tap a row — what it is and what to do. "Cell overcharge" at the end of charge — a hint to check the charger voltage.</li>
+  </ul>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/board.webp" alt="Вкладка Плата"><figcaption>«Плата»: здоров'я і все про плату.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/board.webp" alt="BMS tab"><figcaption>"BMS": health and everything about the board.</figcaption></figure>
+</section>
+
+<!-- ================= 8. ЩЕ ================= -->
+<section id="more" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Ще</h2><h2 class="en">More</h2>
+    <p class="page-lead uk">Налаштування цієї батареї, історія, довідник і дії.</p>
+    <p class="page-lead en">Settings for this battery, history, the glossary and actions.</p>
+  </div>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Картка</th><th>Що там</th></tr>
+      <tr><td class="k"><b>Запис у фоні</b></td><td>писати раз на ~5 хв, навіть коли застосунок закритий — <a href="#background">окремий розділ</a></td></tr>
+      <tr><td class="k"><b>Сповіщення</b></td><td>7 перемикачів і «Перевірити сповіщення» — <a href="#alerts">окремий розділ</a></td></tr>
+      <tr><td class="k"><b><span lang="uk">Мова</span> · Language</b></td><td>українська або англійська — <a href="#language">окремий розділ</a></td></tr>
+      <tr><td class="k"><b>Дії</b></td><td>Перейменувати, Підключити ще раз, Журнал зв'язку, Прибрати зі списку</td></tr>
+      <tr><td class="k"><b>Історія</b></td><td>скільки записано, як часто, 90 днів; <b>«Зберегти CSV (таблиця)»</b> — Android спитає, куди зберегти; «Стерти історію цієї батареї» — лише з підтвердженням</td></tr>
+      <tr><td class="k"><b>Довідник</b></td><td>що означає кожен показник, групами</td></tr>
+      <tr><td class="k"><b>Інструкція</b></td><td>відкриває цю інструкцію</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>Card</th><th>What is there</th></tr>
+      <tr><td class="k"><b>Background recording</b></td><td>record every ~5 min, even when the app is closed — <a href="#background">its own section</a></td></tr>
+      <tr><td class="k"><b>Notifications</b></td><td>7 switches and "Test notifications" — <a href="#alerts">its own section</a></td></tr>
+      <tr><td class="k"><b><span lang="uk">Мова</span> · Language</b></td><td>Ukrainian or English — <a href="#language">its own section</a></td></tr>
+      <tr><td class="k"><b>Actions</b></td><td>Rename, Reconnect, Connection log, Remove from list</td></tr>
+      <tr><td class="k"><b>History</b></td><td>how much is recorded, how often, 90 days; <b>"Save CSV (table)"</b> — Android asks where to save; "Clear this battery's history" — only with confirmation</td></tr>
+      <tr><td class="k"><b>Glossary</b></td><td>what each value means, in groups</td></tr>
+      <tr><td class="k"><b>Guide</b></td><td>opens this guide</td></tr>
+    </table>
+  </div>
+  <div class="panel stack-s">
+    <h3 class="uk">Значок ⓘ</h3><h3 class="en">The ⓘ icon</h3>
+    <p class="uk">Кожен рядок чи картка з ⓘ — торкнись, і відкриється пояснення: що це, яка норма, коли звернути увагу.</p>
+    <p class="en">Tap any line or card with ⓘ to open an explanation: what it is, what is normal, when to pay attention.</p>
+  </div>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/info.webp" alt="Вікно пояснення ⓘ"><figcaption>Пояснення за ⓘ: зони заряду.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/info.webp" alt="Explanation window ⓘ"><figcaption>An ⓘ explanation: charge zones.</figcaption></figure>
+</section>
+
+<!-- ================= 9. ЗАПИС У ФОНІ ================= -->
+<section id="background" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Запис у фоні</h2><h2 class="en">Background recording</h2>
+    <p class="page-lead uk">Щоб бачити відключення, що були без тебе, і отримувати сповіщення, коли застосунок закритий. Раз на ~5 хв телефон коротко підключається, записує показники й відпускає батарею.</p>
+    <p class="page-lead en">To see outages that happened while you were away, and to get notifications while the app is closed. Every ~5 min the phone connects briefly, records values and releases the battery.</p>
+  </div>
+  <figure class="diagram">
+    <svg viewBox="0 0 360 150">
+      <line x1="16" y1="70" x2="344" y2="70" class="d-line"/>
+      <rect class="d-ok" x="16" y="56" width="16" height="28" rx="4"/>
+      <rect class="d-ok" x="92" y="56" width="16" height="28" rx="4"/>
+      <rect class="d-ok" x="168" y="56" width="16" height="28" rx="4"/>
+      <rect class="d-box" x="244" y="56" width="16" height="28" rx="4" stroke-dasharray="3 3"/>
+      <rect class="d-ok" x="320" y="56" width="16" height="28" rx="4"/>
+      <text class="d-m" x="24" y="104" text-anchor="middle">0</text>
+      <text class="d-m" x="100" y="104" text-anchor="middle">5</text>
+      <text class="d-m" x="176" y="104" text-anchor="middle">10</text>
+      <text class="d-m" x="252" y="104" text-anchor="middle">15</text>
+      <text class="d-m uk" x="328" y="104" text-anchor="middle">20 хв</text>
+      <text class="d-m en" x="328" y="104" text-anchor="middle">20 min</text>
+      <text class="d-tok uk" x="24" y="40">підключився → прочитав → відпустив</text>
+      <text class="d-tok en" x="24" y="40">connect → read → release</text>
+      <text class="d-s uk" x="62" y="128" text-anchor="middle">між читаннями</text>
+      <text class="d-s en" x="62" y="128" text-anchor="middle">between reads</text>
+      <text class="d-s uk" x="62" y="143" text-anchor="middle">батарея вільна</text>
+      <text class="d-s en" x="62" y="143" text-anchor="middle">the battery is free</text>
+      <text class="d-s uk" x="252" y="128" text-anchor="middle">телефон далеко —</text>
+      <text class="d-s en" x="252" y="128" text-anchor="middle">phone far away —</text>
+      <text class="d-s uk" x="252" y="143" text-anchor="middle">пропуск у графіку</text>
+      <text class="d-s en" x="252" y="143" text-anchor="middle">a gap in the chart</text>
+    </svg>
+    <figcaption class="uk">Читання триває секунди. Відкритий екран батареї пише сам (раз на 10 с) — фон тоді чекає.</figcaption>
+    <figcaption class="en">A read takes seconds. The open battery screen records by itself (every 10 s) — background waits then.</figcaption>
+  </figure>
+  <ol class="steps uk">
+    <li><span>Відкрий батарею → <b>«Ще»</b> → картка «Запис у фоні» → <span class="btn sel">Увімкнено</span>.</span></li>
+    <li><span>Android спитає Bluetooth і сповіщення — <b>Дозволити</b>. У шторці з'явиться «Запис у фоні · раз на 5 хв» з числами батареї й часом останнього читання вгорі.</span></li>
+    <li><span>Щоб Android не приспав запис — <span class="btn norm">Не обмежувати у фоні</span> (кнопка в тій самій картці, поки обмеження є).</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>Open the battery → <b>"More"</b> → the "Background recording" card → <span class="btn sel">On</span>.</span></li>
+    <li><span>Android asks for Bluetooth and notifications — <b>Allow</b>. The shade shows "Background recording · every 5 min" with the battery numbers and the last read time at the top.</span></li>
+    <li><span>So Android does not pause recording — <span class="btn norm">Don't restrict in background</span> (a button in the same card while the restriction is on).</span></li>
+  </ol>
+  <div class="grid2">
+    <div class="mock on">
+      <span class="lbl"><svg class="ic"><use href="#i-repeat"/></svg><span class="uk">Запис у фоні</span><span class="en">Background recording</span></span>
+      <div class="choices"><span class="choice on uk">Увімкнено</span><span class="choice on en">On</span><span class="choice uk">Вимкнено</span><span class="choice en">Off</span></div>
+      <div class="kv-line uk"><span>Останній запис</span><span>21:05 · стоїть</span></div>
+      <div class="kv-line en"><span>Last record</span><span>21:05 · idle</span></div>
+    </div>
+    <div class="notif">
+      <div class="n-top"><svg class="ic"><use href="#i-battery"/></svg><span>Aolithium Live</span><span class="t">21:05</span></div>
+      <b class="uk">Запис у фоні · раз на 5 хв</b><b class="en">Background recording · every 5 min</b>
+      <span class="n-txt uk">AL12-100-4S: 100 % · 13,36 В · стоїть</span><span class="n-txt en">AL12-100-4S: 100 % · 13.36 V · idle</span>
+      <span class="n-act uk">Вимкнути</span><span class="n-act en">Turn off</span>
+    </div>
+  </div>
+  <ul class="dots uk">
+    <li><b>Лише поруч з батареєю:</b> Bluetooth дістає кілька метрів. Далеко — у шторці «нема зв'язку — батарея далеко», нічого не пишеться.</li>
+    <li>Після перезапуску телефона й після оновлення застосунку запис відновлюється сам.</li>
+    <li>Перемикач — окремо для кожної батареї. Вимкнути — тут або кнопкою «Вимкнути» в шторці.</li>
+    <li>У демо не працює — лише зі справжньою батареєю.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Only near the battery:</b> Bluetooth reaches a few meters. Far away, the shade says "no connection — battery far away" and nothing is recorded.</li>
+    <li>After a phone restart and after an app update, recording resumes by itself.</li>
+    <li>The switch is per battery. Turn it off here or with the "Turn off" button in the shade.</li>
+    <li>Does not work in demo — only with a real battery.</li>
+  </ul>
+</section>
+
+<!-- ================= 10. СПОВІЩЕННЯ ================= -->
+<section id="alerts" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Сповіщення</h2><h2 class="en">Notifications</h2>
+    <p class="page-lead uk">Сім видів, кожен вмикається окремо: батарея → «Ще» → «Сповіщення». Перемикачі спільні для всіх батарей, за замовчуванням усі ввімкнені.</p>
+    <p class="page-lead en">Seven kinds, each turned on separately: battery → "More" → "Notifications". The switches are shared by all batteries; all are on by default.</p>
+  </div>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Сповіщення</th><th>Коли приходить</th></tr>
+      <tr><td class="k"><b>Світло зникло / повернулось</b></td><td>батарея почала віддавати (світла нема) — і коли перестала: скільки не було, з якого % до якого</td></tr>
+      <tr><td class="k"><b>Мало заряду</b></td><td>на 20 %, 10 % і 5 % — скільки ще вистачить</td></tr>
+      <tr><td class="k"><b>Батарея повна</b></td><td>дійшла до повної — щоб вчасно вимкнути генератор</td></tr>
+      <tr><td class="k"><b>Захист плати</b></td><td>спрацював захист, і коли плата вимкнула заряд чи розряд (і коли знову ввімкнула)</td></tr>
+      <tr><td class="k"><b>Велика різниця комірок</b></td><td>30 мВ посеред заряду (15–90 %) або 100 мВ будь-де нижче 95 %</td></tr>
+      <tr><td class="k"><b>Холод / спека</b></td><td>нижче 0 °C або вище 50 °C</td></tr>
+      <tr><td class="k"><b>Нема даних понад 1 год</b></td><td>тихе, без звуку: запис у фоні годину не дістає батарею</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>Notification</th><th>When it comes</th></tr>
+      <tr><td class="k"><b>Power outage / restored</b></td><td>the battery started giving power (no grid) — and when it stopped: how long it lasted, from which % to which</td></tr>
+      <tr><td class="k"><b>Low charge</b></td><td>at 20 %, 10 % and 5 % — how long it will still last</td></tr>
+      <tr><td class="k"><b>Battery full</b></td><td>it reached full — to turn off the generator in time</td></tr>
+      <tr><td class="k"><b>BMS protection</b></td><td>a protection triggered, and when the BMS turned off charge or discharge (and when it turned it back on)</td></tr>
+      <tr><td class="k"><b>Large cell difference</b></td><td>30 mV mid-charge (15–90 %) or 100 mV anywhere below 95 %</td></tr>
+      <tr><td class="k"><b>Cold / heat</b></td><td>below 0 °C or above 50 °C</td></tr>
+      <tr><td class="k"><b>No data for over 1 h</b></td><td>quiet, no sound: background recording has not reached the battery for an hour</td></tr>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="notif">
+      <div class="n-top"><svg class="ic"><use href="#i-battery"/></svg><span>Aolithium Live</span><span class="t">18:02</span></div>
+      <b class="uk">Світло зникло</b><b class="en">Power outage</b>
+      <span class="n-txt uk">Батарея віддає 120 Вт · 99 % · вистачить ≈ 8 год 40 хв до 20 %</span>
+      <span class="n-txt en">Battery discharging at 120 W · 99 % · lasts ≈ 8 h 40 min to 20 %</span>
+    </div>
+    <div class="notif">
+      <div class="n-top"><svg class="ic"><use href="#i-battery"/></svg><span>Aolithium Live</span><span class="t">07:15</span></div>
+      <b class="uk">Батарея повна — 100 %</b><b class="en">Battery full — 100 %</b>
+      <span class="n-txt uk">Плата сама зупинила заряд.</span><span class="n-txt en">The BMS stopped charging by itself.</span>
+    </div>
+  </div>
+  <ul class="dots uk">
+    <li><b>Кожне — один раз</b>, доки стан не мине (наприклад, «Мало заряду 20 %» знову — лише після того, як батарея піднялась вище).</li>
+    <li><b>Коли застосунок закритий</b> — приходять лише з увімкненим «Записом у фоні» і лише поки телефон поруч з батареєю.</li>
+    <li>Захист «перезаряд комірки» наприкінці заряду — це «Батарея повна», не тривога.</li>
+    <li><span class="btn norm">Перевірити сповіщення</span> — у шторці «Перевірка: світло зникло» зі звуком; торкнись — відкриється батарея.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Each comes once</b>, until the state passes (for example, "Low charge 20 %" comes again only after the battery went back above it).</li>
+    <li><b>When the app is closed</b> — they come only with "Background recording" on and only while the phone is near the battery.</li>
+    <li>The "cell overcharge" protection at the end of charge means "Battery full", not an alarm.</li>
+    <li><span class="btn norm">Test notifications</span> — the shade shows "Test: power outage" with sound; tap it and the battery opens.</li>
+  </ul>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: сім перемикачів.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": seven switches.</figcaption></figure>
+</section>
+
+<!-- ================= 11. ВІДЖЕТ ================= -->
+<section id="widget" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Віджет</h2><h2 class="en">Widget</h2>
+    <p class="page-lead uk">Заряд на головному екрані телефона — без відкривання застосунку. Два розміри: великий 4 × 2 і малий 2 × 2.</p>
+    <p class="page-lead en">Charge on the phone's home screen without opening the app. Two sizes: large 4 × 2 and small 2 × 2.</p>
+  </div>
+  <ol class="steps uk">
+    <li><span>Затисни порожнє місце на головному екрані → <b>«Віджети»</b>.</span></li>
+    <li><span>Знайди <b>Aolithium Live</b> → «Aolithium · великий» або «Aolithium · малий».</span></li>
+    <li><span>Перетягни на екран і відпусти.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>Press and hold an empty spot on the home screen → <b>"Widgets"</b>.</span></li>
+    <li><span>Find <b>Aolithium Live</b> → "Aolithium · <span lang="uk">великий</span>" (large) or "Aolithium · <span lang="uk">малий</span>" (small) — these two names are Ukrainian on any phone.</span></li>
+    <li><span>Drag it onto the screen and let go.</span></li>
+  </ol>
+  <ul class="dots uk">
+    <li>Кільце з відсотками, вати зі стрілкою (<b style="color:var(--bad)">червона ▲</b> — віддає, <b style="color:var(--ok)">зелена ▼</b> — заряджається), «вистачить на» і «записано 21:05».</li>
+    <li>Оновлюється з кожним записом — з «Записом у фоні» раз на ~5 хв. Понад 15 хв без даних — сірий, з часом останнього запису.</li>
+    <li>Показує батарею із «Записом у фоні», а якщо такої нема — ту, з якою був останній зв'язок. Торкнись — відкриється батарея.</li>
+  </ul>
+  <ul class="dots en">
+    <li>A ring with the percent, watts with an arrow (<b style="color:var(--bad)">red ▲</b> — giving power, <b style="color:var(--ok)">green ▼</b> — charging), "lasts for" and "recorded 21:05".</li>
+    <li>Updates with each record — every ~5 min with "Background recording". After 15 min without data it turns grey and shows the last record time.</li>
+    <li>Shows the battery with "Background recording", or if there is none, the one last connected. Tap it to open the battery.</li>
+  </ul>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/widget.webp" alt="Віджети великий і малий"><figcaption>Великий і малий віджет (світла нема), нижче — як виглядає «нема даних».</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/widget.webp" alt="Large and small widgets"><figcaption>The large and small widget (no power), below — how "no data" looks.</figcaption></figure>
+</section>
+
+<!-- ================= 12. LOGIC POWER ================= -->
+<section id="jk" class="page" hidden>
+  <div class="title-block">
+    <h2>Logic Power (JK BMS)</h2>
+    <p class="page-lead uk">Друга батарея — Logic Power з платою JK BMS. Той самий застосунок, та сама схема: знайти, торкнутись, дивитись.</p>
+    <p class="page-lead en">The second battery — Logic Power with a JK BMS. The same app, the same steps: find, tap, look.</p>
+  </div>
+  <ol class="steps uk">
+    <li><span>Закрий застосунок JK BMS / Logic Power на інших телефонах — плата тримає одне підключення.</span></li>
+    <li><span>Головна → <span class="btn prim">Шукати батареї поруч</span> → у списку <b>«Плата JK BMS»</b> → торкнись.</span></li>
+    <li><span>Пароль плати для читання не потрібен: у JK він лише для зміни налаштувань, а застосунок їх не змінює.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>Close the JK BMS / Logic Power app on other phones — the BMS keeps one connection.</span></li>
+    <li><span>Home → <span class="btn prim">Find batteries nearby</span> → <b>"JK BMS"</b> in the list → tap it.</span></li>
+    <li><span>No BMS password is needed for reading: in JK it is only for changing settings, and the app does not change them.</span></li>
+  </ol>
+  <div class="grid2">
+    <div class="panel stack-s">
+      <h3 class="uk">Що є понад Aolithium</h3><h3 class="en">Extra compared to Aolithium</h3>
+      <ul class="dots uk">
+        <li><b>Балансир JK</b> — активний: з якої комірки в яку переливає і скільки ампер.</li>
+        <li><b>Опір дроту</b> кожної комірки.</li>
+        <li><b>Ключі плати (MOS)</b> — температура; підігрів.</li>
+        <li>Здоров'я й «пройдено всього» від самої плати, час роботи плати, етап заряду (на нових платах).</li>
+      </ul>
+      <ul class="dots en">
+        <li><b>JK balancer</b> — active: from which cell to which it moves charge, and how many amps.</li>
+        <li><b>Wire resistance</b> of each cell.</li>
+        <li><b>BMS switches (MOS)</b> — temperature; heater.</li>
+        <li>Health and "total passed" from the BMS itself, BMS run time, charge stage (on new boards).</li>
+      </ul>
+    </div>
+    <div class="panel stack-s">
+      <h3 class="uk">Стан перевірки</h3><h3 class="en">Testing status</h3>
+      <p class="uk">Показ перевірено на демо (ті самі кадри, що шле плата JK). На справжній батареї Logic Power — перевірка попереду; якщо щось не так — «Журнал зв'язку» → «Поділитися» → Claude.</p>
+      <p class="en">The screens are checked on the demo (the same frames a JK BMS sends). On the real Logic Power battery the check is still ahead; if something is wrong — "Connection log" → "Share" → Claude.</p>
+    </div>
+  </div>
+  <figure class="shot uk"><img loading="lazy" src="img/uk/jk-cells.webp" alt="Комірки JK з балансиром"><figcaption>Демо Logic Power: комірки JK під час заряду; картка балансира — нижче.</figcaption></figure>
+  <figure class="shot en"><img loading="lazy" src="img/en/jk-cells.webp" alt="JK cells with balancer"><figcaption>Logic Power demo: JK cells while charging; the balancer card is further down.</figcaption></figure>
+</section>
+
+<!-- ================= 13. ДЕМО ================= -->
+<section id="demo" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Демо без батареї</h2><h2 class="en">Demo (no battery)</h2>
+    <p class="page-lead uk">Екран батареї на готових даних — ті самі байти, що шле плата. Можна подивитись усе, коли батарея далеко.</p>
+    <p class="page-lead en">The battery screen on ready-made data — the same bytes the BMS sends. You can look at everything while the battery is far away.</p>
+  </div>
+  <ul class="tiles app-only">
+    <li><a class="tile go" href="app://demo/IDLE"><span class="badge"><svg class="ic"><use href="#i-play"/></svg></span><span><b class="uk">Спокій (як на відео)</b><b class="en">Idle (as in the video)</b><span class="d uk">числа як на відео Aolithium 1.3</span><span class="d en">numbers as in the Aolithium 1.3 video</span></span><span class="chev">›</span></a></li>
+    <li><a class="tile go" href="app://demo/CHARGING"><span class="badge"><svg class="ic"><use href="#i-play"/></svg></span><span><b class="uk">Заряджається, балансування</b><b class="en">Charging, balancing</b><span class="d uk">зелені вати, «до повної»</span><span class="d en">green watts, "until full"</span></span><span class="chev">›</span></a></li>
+    <li><a class="tile go" href="app://demo/DISCHARGING"><span class="badge"><svg class="ic"><use href="#i-play"/></svg></span><span><b class="uk">Світла нема — віддає</b><b class="en">No power — discharging</b><span class="d uk">червоні вати, «вистачить на»</span><span class="d en">red watts, "lasts for"</span></span><span class="chev">›</span></a></li>
+    <li><a class="tile go" href="app://demo/COLD"><span class="badge"><svg class="ic"><use href="#i-play"/></svg></span><span><b class="uk">Захист: холодно для заряду</b><b class="en">Protection: too cold to charge</b><span class="d uk">червона картка «Що спрацювало»</span><span class="d en">red "What triggered" card</span></span><span class="chev">›</span></a></li>
+    <li><a class="tile go" href="app://demo/JK"><span class="badge"><svg class="ic"><use href="#i-play"/></svg></span><span><b class="uk">Logic Power (JK BMS): заряд, балансир</b><b class="en">Logic Power (JK BMS): charging, balancer</b><span class="d uk">плата JK, 305 А·год</span><span class="d en">JK BMS, 305 Ah</span></span><span class="chev">›</span></a></li>
+  </ul>
+  <p class="warn web-only uk"><b>Тут лише опис.</b> Кнопки демо працюють в інструкції всередині застосунку: значок ? на головній → «Демо без батареї».</p>
+  <p class="warn web-only en"><b>Description only here.</b> The demo buttons work in the guide inside the app: the ? icon on the home screen → "Demo (no battery)".</p>
+  <ul class="dots uk">
+    <li>«Назад» з демо повертає сюди, на те саме місце — можна одразу відкрити наступне.</li>
+    <li>Демо нічого не записує й не сповіщає; «Запис у фоні» в ньому не працює.</li>
+  </ul>
+  <ul class="dots en">
+    <li>"Back" from a demo returns here, to the same place — you can open the next one right away.</li>
+    <li>The demo records nothing and sends no notifications; "Background recording" does not work in it.</li>
+  </ul>
+</section>
+
+<!-- ================= 14. МОВА ================= -->
+<section id="language" class="page" hidden>
+  <div class="title-block">
+    <h2><span lang="uk">Мова</span> · Language</h2>
+    <p class="page-lead uk">Основна мова — українська. Англійська вмикається одним дотиком і діє скрізь.</p>
+    <p class="page-lead en">The main language is Ukrainian. English turns on with one tap and works everywhere.</p>
+  </div>
+  <div class="topstrip">
+    <span class="led"></span><span class="nm">Aolithium Live</span>
+    <span class="sq">EN</span><span class="sq"><svg class="ic"><use href="#i-help"/></svg></span>
+  </div>
+  <ul class="dots uk">
+    <li><b>Головна, угорі:</b> кнопка <b>EN</b> — усе англійською; там же <b>UA</b> — назад українською. Поруч ? — ця інструкція.</li>
+    <li><b>Або:</b> батарея → «Ще» → «Мова · Language» → <span class="btn sel">Українська</span> / <span class="btn norm">English</span>.</li>
+    <li>Разом з екранами міняються сповіщення, рядок «Запис у фоні» й віджет; числа — «13,31 В» ↔ «13.31 V».</li>
+    <li>Інструкція відкривається мовою застосунку. Кнопки UA / EN на її головній міняють мову лише інструкції.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Home, at the top:</b> the <b>EN</b> button — everything in English; the same spot shows <b>UA</b> to go back to Ukrainian. Next to it, ? opens this guide.</li>
+    <li><b>Or:</b> battery → "More" → "<span lang="uk">Мова</span> · Language" → <span class="btn norm"><span lang="uk">Українська</span></span> / <span class="btn sel">English</span>.</li>
+    <li>Notifications, the "Background recording" line and the widget switch together with the screens; numbers — "<span lang="uk">13,31 В</span>" ↔ "13.31 V".</li>
+    <li>The guide opens in the app's language. The UA / EN buttons on its home change only the guide's language.</li>
+  </ul>
+</section>
+
+<!-- ================= 15. ЧИСЛА ================= -->
+<section id="numbers" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Що означають числа</h2><h2 class="en">What the numbers mean</h2>
+    <p class="page-lead uk">Коротко про головні показники. Докладно про кожен — «Ще» → «Довідник» або ⓘ біля рядка.</p>
+    <p class="page-lead en">The main values in brief. Details on each — "More" → "Glossary", or ⓘ next to the line.</p>
+  </div>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Показник</th><th>Що це</th></tr>
+      <tr><td class="k"><b>Заряд, %</b></td><td>скільки відсотків вважає плата; під ним — залишок з повної ємності в А·год</td></tr>
+      <tr><td class="k"><b>Струм</b></td><td>плюс — заряджається, мінус — віддає</td></tr>
+      <tr><td class="k"><b>Потужність</b></td><td>напруга × струм, у ватах; червона — віддає, зелена — бере</td></tr>
+      <tr><td class="k"><b>Комірки</b></td><td>4 по ~3,3 В; різниця до 30 мВ — рівно, 30–100 — помірно, понад 100 — варто стежити</td></tr>
+      <tr><td class="k"><b>Вирівнювання</b></td><td>плата підтягує комірки одна до одної наприкінці заряду — це нормально</td></tr>
+      <tr><td class="k"><b>Захист</b></td><td>плата сама вимкнула заряд чи розряд (холод, перегрів, перезаряд…); застосунок каже, що саме і що робити</td></tr>
+      <tr><td class="k"><b>Повна (знає плата)</b></td><td>ємність, яку плата вважає повною; може бути менша за етикетку</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>Value</th><th>What it is</th></tr>
+      <tr><td class="k"><b>Charge, %</b></td><td>the percent the BMS calculates; below it — what is left of full capacity in Ah</td></tr>
+      <tr><td class="k"><b>Current</b></td><td>plus — charging, minus — giving power</td></tr>
+      <tr><td class="k"><b>Power</b></td><td>voltage × current, in watts; red — giving, green — taking</td></tr>
+      <tr><td class="k"><b>Cells</b></td><td>4 of ~3.3 V; a difference up to 30 mV is even, 30–100 moderate, over 100 worth watching</td></tr>
+      <tr><td class="k"><b>Balancing</b></td><td>the BMS brings the cells level at the end of charge — this is normal</td></tr>
+      <tr><td class="k"><b>Protection</b></td><td>the BMS itself turned off charge or discharge (cold, overheating, overcharge…); the app says what exactly and what to do</td></tr>
+      <tr><td class="k"><b>Full (BMS knows)</b></td><td>the capacity the BMS considers full; it can be less than the label</td></tr>
+    </table>
+  </div>
+  <div class="panel stack-s">
+    <h3 class="uk">Як це звалось в Aolithium 1.3</h3><h3 class="en">What Aolithium 1.3 called it</h3>
+    <div class="tbl kv">
+      <table class="uk">
+        <tr class="hd"><th>Aolithium 1.3</th><th>Aolithium Live</th></tr>
+        <tr><td class="k mono">Charge Switch: open</td><td>Заряд: дозволено</td></tr>
+        <tr><td class="k mono">Discharge Switch: open</td><td>Розряд: дозволено</td></tr>
+        <tr><td class="k mono">Balance State: close</td><td>зараз не вирівнює</td></tr>
+        <tr><td class="k mono">Protection State: close</td><td>Захист: усе гаразд</td></tr>
+        <tr><td class="k mono">Residual / Nominal Capacity</td><td>Залишок / Повна (знає плата)</td></tr>
+        <tr><td class="k mono">Average voltage</td><td>середня напруга комірки (тут — ще й кожна окремо)</td></tr>
+      </table>
+      <table class="en">
+        <tr class="hd"><th>Aolithium 1.3</th><th>Aolithium Live</th></tr>
+        <tr><td class="k mono">Charge Switch: open</td><td>Charge: allowed</td></tr>
+        <tr><td class="k mono">Discharge Switch: open</td><td>Discharge: allowed</td></tr>
+        <tr><td class="k mono">Balance State: close</td><td>not balancing now</td></tr>
+        <tr><td class="k mono">Protection State: close</td><td>Protection: all fine</td></tr>
+        <tr><td class="k mono">Residual / Nominal Capacity</td><td>Remaining / Full (BMS knows)</td></tr>
+        <tr><td class="k mono">Average voltage</td><td>average cell voltage (here — also each cell separately)</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 16. ВСТАНОВИТИ ================= -->
+<section id="install" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Встановити й оновити</h2><h2 class="en">Install and update</h2>
+    <p class="page-lead uk">Нова версія ставиться <b>поверх</b> старої: батареї, історія й налаштування лишаються. Видаляти застосунок не треба ніколи.</p>
+    <p class="page-lead en">A new version installs <b>over</b> the old one: batteries, history and settings stay. You never need to remove the app.</p>
+  </div>
+  <div class="panel stack-s">
+    <h3 class="uk">Телефон з Termux (A26, M30s)</h3><h3 class="en">Phone with Termux (A26, M30s)</h3>
+    <ol class="steps uk">
+      <li><span>Меню <b>AOLITHIUM LIVE</b> → <b>2</b> «Встановити нову версію з GitHub».</span></li>
+      <li><span>Android спитає «Оновити застосунок?» — <b>Оновити</b>.</span></li>
+      <li><span>Вікно встановлення сховалось — пункт <b>10</b>.</span></li>
+    </ol>
+    <ol class="steps en">
+      <li><span>Menu <b>AOLITHIUM LIVE</b> → <b>2</b> "Install the new version from GitHub".</span></li>
+      <li><span>Android asks "Update the app?" — <b>Update</b>.</span></li>
+      <li><span>If the install window hid — item <b>10</b>.</span></li>
+    </ol>
+  </div>
+  <div class="panel stack-s">
+    <h3 class="uk">Телефон без Termux (Huawei Mate 10 Lite)</h3><h3 class="en">Phone without Termux (Huawei Mate 10 Lite)</h3>
+    <p class="uk">На A26: меню <b>AOLITHIUM LIVE</b> → <b>4</b> — там покроково, як поставити через браузер (скачати APK з GitHub і дозволити встановлення з браузера).</p>
+    <p class="en">On the A26: menu <b>AOLITHIUM LIVE</b> → <b>4</b> — step by step how to install through the browser (download the APK from GitHub and allow installs from the browser).</p>
+  </div>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.4 · build …». Ця інструкція — для версії 0.4.4.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.4 · build …". This guide is for version 0.4.4.</p>
+</section>
+
+<!-- ================= 17. БЕЗПЕКА ================= -->
+<section id="safety" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Безпека й приватність</h2><h2 class="en">Safety and privacy</h2>
+    <p class="page-lead uk">Застосунок лише дивиться. Батарею захищає сама плата — числа тут довідкові.</p>
+    <p class="page-lead en">The app only looks. The BMS itself protects the battery — the numbers here are for reference.</p>
+  </div>
+  <figure class="diagram">
+    <svg viewBox="0 0 360 140">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="d-arrow"/></marker></defs>
+      <rect class="d-acc" x="10" y="40" width="110" height="60" rx="12"/>
+      <text class="d-t" x="65" y="75" text-anchor="middle">Aolithium Live</text>
+      <rect class="d-ok" x="240" y="40" width="110" height="60" rx="12"/>
+      <text class="d-t uk" x="295" y="75" text-anchor="middle">Плата</text>
+      <text class="d-t en" x="295" y="75" text-anchor="middle">BMS</text>
+      <path d="M122 56H236" class="d-line" marker-end="url(#ar2)"/>
+      <path d="M238 84H124" class="d-line" marker-end="url(#ar2)"/>
+      <text class="d-tok uk" x="180" y="48" text-anchor="middle">лише «дай числа»</text>
+      <text class="d-tok en" x="180" y="48" text-anchor="middle">only "send numbers"</text>
+      <text class="d-s uk" x="180" y="102" text-anchor="middle">числа</text>
+      <text class="d-s en" x="180" y="102" text-anchor="middle">numbers</text>
+      <text class="d-tbad uk" x="180" y="128" text-anchor="middle">запис налаштувань, ключі — заблоковано в коді</text>
+      <text class="d-tbad en" x="180" y="128" text-anchor="middle">writing settings, switches — blocked in code</text>
+    </svg>
+    <figcaption class="uk">У плату йдуть тільки запити читання. Будь-яку іншу команду код відмовляється зібрати, а тест це стереже.</figcaption>
+    <figcaption class="en">Only read requests go to the BMS. The code refuses to build any other command, and a test guards this.</figcaption>
+  </figure>
+  <ul class="dots uk">
+    <li><b>Нічого не змінює в платі:</b> ні налаштувань, ні ключів заряду й розряду. Зміна налаштувань колись можлива лише після резервної копії й окремого «так».</li>
+    <li><b>Без інтернету:</b> у застосунку немає навіть дозволу на інтернет. Історія, батареї й налаштування — лише в телефоні.</li>
+    <li><b>Ділишся лише ти:</b> CSV зберігається туди, куди вибереш; журнал зв'язку йде, лише коли натиснеш «Поділитися».</li>
+    <li><b>Звідки знання:</b> протоколи плат відкриті — бібліотеки aiobmsble, esphome-jbd-bms і esphome-jk-bms (Apache-2.0). Код Aolithium не копіювався й не розбирався.</li>
+  </ul>
+  <ul class="dots en">
+    <li><b>Changes nothing in the BMS:</b> no settings, no charge or discharge switches. Changing settings may come one day, only after a backup and a separate "yes".</li>
+    <li><b>No internet:</b> the app does not even have the internet permission. History, batteries and settings stay on the phone only.</li>
+    <li><b>Only you share:</b> CSV is saved where you choose; the connection log leaves only when you tap "Share".</li>
+    <li><b>Where the knowledge comes from:</b> the BMS protocols are open — the aiobmsble, esphome-jbd-bms and esphome-jk-bms libraries (Apache-2.0). The Aolithium code was not copied or taken apart.</li>
+  </ul>
+</section>
+
+<!-- ================= 18. ЩО ЗМІНИЛОСЬ ================= -->
+<section id="changes" class="page" hidden>
+  <div class="title-block">
+    <h2 class="uk">Що змінилось</h2><h2 class="en">What's new</h2>
+    <p class="page-lead uk">Усі версії, новіші — зверху.</p>
+    <p class="page-lead en">All versions, newest first.</p>
+  </div>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.4</b> · 20.10.2026</td><td>ця інструкція — двома мовами, зі схемами й знімками (замість старої «Довідки»); на головній — «UA» / «EN» і значок ?, кнопки однакові, назва більша</td></tr>
+      <tr><td class="k"><b>0.4.3</b> · 20.10.2026</td><td>головна не стрибає при зміні мови; рівні комірки — обидві з рамкою; ⓘ не падає на новий рядок</td></tr>
+      <tr><td class="k"><b>0.4.2</b> · 20.10.2026</td><td>англійська мова; рядки відключень не ховають відсоток</td></tr>
+      <tr><td class="k"><b>0.4.1</b> · 20.10.2026</td><td>плитки «Відключення світла» в один рядок; своя історія демо Logic Power</td></tr>
+      <tr><td class="k"><b>0.4.0</b> · 20.10.2026</td><td>Logic Power (плата JK BMS): пошук, комірки, балансир зі струмом, опір дротів, ключі, захисти; демо</td></tr>
+      <tr><td class="k"><b>0.3.4</b> · 20.10.2026</td><td>«Назад» з демо повертає в довідку на те саме місце</td></tr>
+      <tr><td class="k"><b>0.3.3</b> · 20.10.2026</td><td>екран не стрибає при підключенні: рядок «Зв'язок» сталої висоти</td></tr>
+      <tr><td class="k"><b>0.3.2</b> · 19.10.2026</td><td>мітка «найнижча» — на справжній найнижчій комірці</td></tr>
+      <tr><td class="k"><b>0.3.1</b> · 19.10.2026</td><td>віджети великий і малий; час читання у верхньому рядку шторки</td></tr>
+      <tr><td class="k"><b>0.3.0</b> · 19.10.2026</td><td>сповіщення (7 видів) і «Перевірити сповіщення»</td></tr>
+      <tr><td class="k"><b>0.2.6</b> · 19.10.2026</td><td>плитки комірок не «пливуть»; рядки спідометра не налазять</td></tr>
+      <tr><td class="k"><b>0.2.5</b> · 19.10.2026</td><td>запис у фоні раз на ~5 хв; «Зберегти CSV»; екран не повертається</td></tr>
+      <tr><td class="k"><b>0.2.4</b> · 19.10.2026</td><td>спідометр зі стрілками, «вистачить на» / «до повної», комірки плитками, відключення світла, найнижчий по днях, хто відстає, зарядний</td></tr>
+      <tr><td class="k"><b>0.2.3</b> · 19.10.2026</td><td>довгі значення не вилазять за край; сигнал словом; графіки не стрибають</td></tr>
+      <tr><td class="k"><b>0.2.2</b> · 18.10.2026</td><td>кнопки на всю ширину, і у вікнах</td></tr>
+      <tr><td class="k"><b>0.2.1</b> · 18.10.2026</td><td>без зв'язку всі вкладки показують останні дані або прочерки</td></tr>
+      <tr><td class="k"><b>0.2.0</b> · 18.10.2026</td><td>5 вкладок, спідометр із зонами, графіки й історія, довідник, здоров'я, порада щодо зарядного</td></tr>
+      <tr><td class="k"><b>0.1.2</b> · 18.10.2026</td><td>список у пошуку не стрибає; підказка «батарея далеко»</td></tr>
+      <tr><td class="k"><b>0.1.1</b> · 18.10.2026</td><td>надійніше підключення (помилка 133 на A26)</td></tr>
+      <tr><td class="k"><b>0.1.0</b> · 16.10.2026</td><td>перша версія: пошук, підключення, кожна комірка, захисти, журнал зв'язку, демо</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.4</b> · 20.10.2026</td><td>this guide — in two languages, with diagrams and screenshots (instead of the old "Help"); home shows "UA" / "EN" and a ? icon, equal buttons, a bigger name</td></tr>
+      <tr><td class="k"><b>0.4.3</b> · 20.10.2026</td><td>home does not jump when the language changes; equal cells both get a frame; ⓘ no longer drops to a new line</td></tr>
+      <tr><td class="k"><b>0.4.2</b> · 20.10.2026</td><td>English language; outage rows no longer hide the percent</td></tr>
+      <tr><td class="k"><b>0.4.1</b> · 20.10.2026</td><td>"Power outages" tiles on one line; own history for the Logic Power demo</td></tr>
+      <tr><td class="k"><b>0.4.0</b> · 20.10.2026</td><td>Logic Power (JK BMS): search, cells, balancer with current, wire resistance, switches, protections; demo</td></tr>
+      <tr><td class="k"><b>0.3.4</b> · 20.10.2026</td><td>"Back" from a demo returns to help at the same place</td></tr>
+      <tr><td class="k"><b>0.3.3</b> · 20.10.2026</td><td>the screen does not jump when connecting: a fixed-height "Connection" line</td></tr>
+      <tr><td class="k"><b>0.3.2</b> · 19.10.2026</td><td>the "lowest" mark is on the truly lowest cell</td></tr>
+      <tr><td class="k"><b>0.3.1</b> · 19.10.2026</td><td>large and small widgets; read time in the top row of the shade</td></tr>
+      <tr><td class="k"><b>0.3.0</b> · 19.10.2026</td><td>notifications (7 kinds) and "Test notifications"</td></tr>
+      <tr><td class="k"><b>0.2.6</b> · 19.10.2026</td><td>cell tiles do not "float"; speedometer lines do not overlap</td></tr>
+      <tr><td class="k"><b>0.2.5</b> · 19.10.2026</td><td>background recording every ~5 min; "Save CSV"; the screen does not rotate</td></tr>
+      <tr><td class="k"><b>0.2.4</b> · 19.10.2026</td><td>speedometer with arrows, "lasts for" / "until full", cell tiles, power outages, lowest by day, lagging cell, charger</td></tr>
+      <tr><td class="k"><b>0.2.3</b> · 19.10.2026</td><td>long values stay inside; signal in words; charts do not jump</td></tr>
+      <tr><td class="k"><b>0.2.2</b> · 18.10.2026</td><td>full-width buttons, in windows too</td></tr>
+      <tr><td class="k"><b>0.2.1</b> · 18.10.2026</td><td>without a connection all tabs show the last data or dashes</td></tr>
+      <tr><td class="k"><b>0.2.0</b> · 18.10.2026</td><td>5 tabs, speedometer with zones, charts and history, glossary, health, charger advice</td></tr>
+      <tr><td class="k"><b>0.1.2</b> · 18.10.2026</td><td>the search list does not jump; "battery far away" hint</td></tr>
+      <tr><td class="k"><b>0.1.1</b> · 18.10.2026</td><td>more reliable connection (error 133 on the A26)</td></tr>
+      <tr><td class="k"><b>0.1.0</b> · 16.10.2026</td><td>first version: search, connection, each cell, protections, connection log, demo</td></tr>
+    </table>
+  </div>
+</section>
+
+<nav id="pager" class="pager" hidden></nav>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var query = {};
+  location.search.replace(/^\?/, '').split('&').forEach(function (kv) {
+    if (!kv) return;
+    var i = kv.indexOf('=');
+    query[decodeURIComponent(i < 0 ? kv : kv.slice(0, i))] = i < 0 ? '' : decodeURIComponent(kv.slice(i + 1));
+  });
+  if (query.app === '1') root.classList.add('in-app');
+
+  // Мова: ?lang= (застосунок передає свою) → вибір на цій сторінці → українська.
+  function stored() { try { return localStorage.getItem('guide-lang'); } catch (e) { return null; } }
+  function setLang(l, save) {
+    root.lang = l === 'en' ? 'en' : 'uk';
+    Array.prototype.forEach.call(document.querySelectorAll('.langs button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-lang') === root.lang ? 'true' : 'false');
+    });
+    document.title = root.lang === 'en' ? 'Aolithium Live guide' : 'Інструкція Aolithium Live';
+    if (save) { try { localStorage.setItem('guide-lang', root.lang); } catch (e) {} }
+  }
+  setLang(query.lang || stored() || 'uk', false);
+  Array.prototype.forEach.call(document.querySelectorAll('.langs button'), function (b) {
+    b.addEventListener('click', function () { setLang(b.getAttribute('data-lang'), true); });
+  });
+
+  var home = document.getElementById('home');
+  var pages = Array.prototype.slice.call(document.querySelectorAll('section.page'));
+  var order = Array.prototype.map.call(document.querySelectorAll('#home a.tile'), function (a) { return a.getAttribute('href').slice(1); });
+  var pager = document.getElementById('pager');
+  var titleOf = {};
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  // Назва розділу для «Назад / Далі»: обидві мови (видно одну), або одна спільна (напр. «Logic Power (JK BMS)»).
+  pages.forEach(function (p) {
+    var hs = p.querySelectorAll('.title-block h2'), html = '';
+    Array.prototype.forEach.call(hs, function (h) {
+      var cls = h.classList.contains('uk') ? 'uk' : h.classList.contains('en') ? 'en' : '';
+      html += cls ? '<span class="' + cls + '">' + esc(h.textContent) + '</span>' : esc(h.textContent);
+    });
+    titleOf[p.id] = html;
+  });
+
+  // Верхня смуга розділу: «← Зміст» і лічильник «03 / 18».
+  pages.forEach(function (p) {
+    var i = order.indexOf(p.id);
+    var bar = document.createElement('div');
+    bar.className = 'topbar';
+    bar.innerHTML = '<a class="back" href="#home"><span class="uk">← Зміст</span><span class="en">← Contents</span></a>' +
+      '<span class="counter"><b>' + two(i + 1) + '</b> / ' + two(order.length) + '</span>';
+    p.insertBefore(bar, p.firstChild);
+  });
+
+  function show() {
+    var id = location.hash.slice(1);
+    var target = id ? document.getElementById(id) : null;
+    var isPage = !!(target && target.classList.contains('page'));
+    home.hidden = isPage;
+    pages.forEach(function (p) { p.hidden = p !== target; });
+    var shown = isPage ? target : home;
+    shown.classList.remove('enter'); void shown.offsetWidth; shown.classList.add('enter');
+    if (isPage) {
+      var i = order.indexOf(id), prev = order[i - 1], next = order[i + 1], html = '';
+      if (prev) html += '<a class="prev" href="#' + prev + '"><span class="uk">← Назад</span><span class="en">← Back</span><b>' + titleOf[prev] + '</b></a>';
+      if (next) html += '<a class="next" href="#' + next + '"><span class="uk">Далі →</span><span class="en">Next →</span><b>' + titleOf[next] + '</b></a>';
+      pager.innerHTML = html;
+      pager.hidden = false;
+    } else {
+      pager.hidden = true;
+    }
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', show);
+  show();
+})();
+</script>
+</body>
+</html>

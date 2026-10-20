@@ -99,9 +99,9 @@ start --es demo JK --es dialog tab:BOARD
 shot p19e-jk-board 4
 scroll_down
 shot p19f-jk-board-scrolled
-start --es page HELP
-scroll_down; scroll_down; scroll_down
-shot p19g-help-demos
+# T7: інструкція (WebView з assets) — розділ «Демо без батареї» з кнопками демо.
+start --es page HELP --es section demo
+shot p19g-guide-demo 5
 # T29: у демо JK — своя історія (305 А·год, розкид комірок як на «Комірках»), а не Aolithium.
 start --es demo JK --es dialog tab:CHARTS:D1
 shot p19h-jk-charts 5
@@ -134,12 +134,20 @@ shot l02-now-two-pane 4
 start --es demo IDLE --es dialog tab:CHARTS:D1
 shot l03-charts-two-pane 5
 start --es page HELP
-shot l04-help-two-pane
+shot l04-guide-two-pane 5
 start --es page HOME
 shot l05-home-two-pane
 rotate 0
 start --es page HELP
-shot p11-help
+shot p11-guide-home 5
+scroll_down
+shot p11b-guide-home-scrolled
+start --es page HELP --es section now
+shot p11c-guide-now 5
+scroll_down
+shot p11d-guide-now-scrolled
+start --es page HELP --es section background
+shot p11e-guide-background 5
 adb shell settings put system font_scale 1.3
 sleep 2
 start --es demo IDLE
@@ -148,6 +156,8 @@ start --es demo IDLE --es dialog tab:CELLS
 shot p12b-cells-font130 4
 start --es page HOME
 shot p13-home-font130
+start --es page HELP --es section connect
+shot p13b-guide-font130 5
 for st in LOST LIVE; do
   start --es demo DISCHARGING --es dialog "status:$st"
   shot "p18-link-$st-font130" 4
@@ -186,9 +196,9 @@ shot e06b-more-en-scrolled
 scroll_down
 shot e06c-more-en-scrolled2
 start --es page HELP
-shot e07-help-en 4
-scroll_down
-shot e07b-help-en-scrolled
+shot e07-guide-en 5
+start --es page HELP --es section alerts
+shot e07b-guide-alerts-en 5
 start --es demo DISCHARGING --es dialog widgets
 shot e08-widget-en 10
 start --es demo DISCHARGING --es dialog status:LOST
@@ -205,6 +215,45 @@ adb shell settings put system font_scale 1.0
 adb shell am force-stop "$PKG"
 start --es lang uk --es page HOME
 shot e11-home-back-uk 5
+# T7: картинки інструкції — той самий набір екранів обома мовами (g-uk-*, g-en-*) → scripts/guide_images.py.
+guide_set() {
+  local L="$1"
+  adb shell am force-stop "$PKG"
+  start --es lang "$L" --es page HOME
+  shot "g-$L-home" 5
+  start --es demo CHARGING
+  shot "g-$L-now-charging" 4
+  scroll_down
+  shot "g-$L-until-full"
+  start --es demo DISCHARGING
+  shot "g-$L-now-discharging" 4
+  start --es demo DISCHARGING --es dialog status:LOST
+  shot "g-$L-link-lost" 4
+  start --es demo CHARGING --es dialog tab:CELLS
+  shot "g-$L-cells" 4
+  start --es demo IDLE --es dialog tab:CHARTS:D1
+  shot "g-$L-outages" 5
+  scroll_down
+  scroll_down
+  shot "g-$L-charts-days"
+  start --es demo IDLE --es dialog tab:BOARD
+  shot "g-$L-board" 4
+  start --es demo IDLE --es dialog info:zones
+  shot "g-$L-info" 4
+  start --es demo IDLE --es dialog tab:MORE
+  scroll_down
+  shot "g-$L-alerts"
+  start --es demo DISCHARGING --es dialog widgets
+  shot "g-$L-widget" 10
+  start --es demo JK --es dialog tab:CELLS
+  shot "g-$L-jk-cells" 4
+}
+guide_set uk
+guide_set en
+adb shell am force-stop "$PKG"
+start --es lang uk --es page HOME
+sleep 3
+
 # T33 (відео faric 20.10 06:21): вужчий екран, як у A26 (щільність 450) — назва «Aolithium Live» в один рядок обома
 # мовами (раніше переносилась і сторінка стрибала), рівні комірки 3,329 / 3,329 — обидві з рамкою «найвища».
 adb shell wm density 450

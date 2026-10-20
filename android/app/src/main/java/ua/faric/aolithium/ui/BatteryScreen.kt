@@ -1374,10 +1374,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
 
         val help = ui.card()
-        help.addView(labelRow(tr("Довідка", "Help"), LineIcon.HELP, null))
-        help.addView(ui.muted(tr("Як підключити, чому не видно батареї, демо без батареї.",
-                "How to connect, why the battery is not visible, demo without a battery."), 13f))
-        help.addView(ui.iconButton(LineIcon.HELP, tr("Відкрити довідку", "Open help"), Ui.Kind.NORMAL) { host.openHelp() }, ui.matchWrap())
+        help.addView(labelRow(tr("Інструкція", "Guide"), LineIcon.HELP, null))
+        help.addView(ui.muted(tr("Зі схемами й знімками: усі вкладки, запис у фоні, сповіщення, віджет, демо без батареї.",
+                "With diagrams and screenshots: all tabs, background recording, notifications, widget, demo without a battery."), 13f))
+        help.addView(ui.iconButton(LineIcon.HELP, tr("Відкрити інструкцію", "Open the guide"), Ui.Kind.NORMAL) { host.openHelp("home") },
+                ui.matchWrap())
 
         columns(listOf(backgroundCard(), alertsCard(), langCard(), actions, hist, help), listOf(dict))
     }
