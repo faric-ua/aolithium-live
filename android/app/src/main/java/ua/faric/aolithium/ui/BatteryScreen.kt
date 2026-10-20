@@ -605,9 +605,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             columns(listOf(gaugeCard), listOf(now, state))
             return
         }
-        row.addView(pillInfo(if (s.chargeOn) tr("Заряд: дозволено", "Charge: allowed") else tr("Заряд: вимкнено", "Charge: off"),
+        row.addView(pillInfo(if (s.chargeOn) tr("Заряд: дозволено", "Charge: allowed") else tr("Заряд: заборонено", "Charge: off"),
                 if (s.chargeOn) Ui.Tone.GOOD else Ui.Tone.BAD, "chargeSw"))
-        row.addView(pillInfo(if (s.dischargeOn) tr("Розряд: дозволено", "Discharge: allowed") else tr("Розряд: вимкнено", "Discharge: off"),
+        row.addView(pillInfo(if (s.dischargeOn) tr("Розряд: дозволено", "Discharge: allowed") else tr("Розряд: заборонено", "Discharge: off"),
                 if (s.dischargeOn) Ui.Tone.GOOD else Ui.Tone.BAD, "dischargeSw"))
         row.addView(
             if (s.balancingCells.isEmpty()) pillInfo(tr("Балансування: ні", "Balancing: no"), Ui.Tone.NEUTRAL, "balance")
@@ -1211,7 +1211,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         // ---- зарядний ----
         ChargerCheck.of(pts)?.let { c ->
             val cc = ui.card(8)
-            cc.addView(labelRow(tr("Зарядний", "Charger"), LineIcon.BOLT, "charger"))
+            cc.addView(labelRow(tr("Зарядний пристрій", "Charger"), LineIcon.BOLT, "charger"))
             val n = pts.lastOrNull()?.cellsMv?.size?.takeIf { it > 0 } ?: 4
             val perCell = Fmt.volts(c.maxV / n, 2)
             val color = if (c.verdict == ChargerCheck.Verdict.OK) Palette.success else Palette.warning
@@ -1290,7 +1290,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             j.hw?.let { board.addView(fact(tr("Версія заліза", "Hardware version"), it, "jkboard")) }
             board.addView(fact(tr("Формат даних", "Data format"), j.layout, "jkboard"))
             if (j.runtimeSec > 0) board.addView(fact(tr("Час роботи плати", "BMS uptime"), Fmt.runtime(j.runtimeSec), "runtime"))
-            board.addView(fact(tr("Зарядний", "Charger"),
+            board.addView(fact(tr("Зарядний пристрій", "Charger"),
                 if (j.chargerPlugged) tr("підключено", "connected") else tr("не підключено", "not connected"), "jkboard"))
         }
         board.addView(fact(tr("Комірок", "Cells"), s.cellCount.toString(), "cells"))

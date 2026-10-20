@@ -55,9 +55,9 @@ object LinkLine {
             State.NO_ANSWER, State.FAILED -> if (rssi != null && Signal.tooFar(rssi)) {
                 tr("батарея далеко · $signal", "battery far away · $signal")
             } else {
-                firstSentence(message).removePrefix(pillOf(state)).trim().ifEmpty { tr("торкни — що робити", "tap — what to do") }
+                firstSentence(message).removePrefix(pillOf(state)).trim().ifEmpty { tr("торкнись — що робити", "tap — what to do") }
             }
-            State.IDLE -> join(tr("торкни «Ще раз»", "tap \"Retry\""), null)
+            State.IDLE -> join(tr("торкнись «Ще раз»", "tap \"Retry\""), null)
         }
         val (at, stamp) = if (liveAt > 0L) liveAt to liveStamp else savedAt to savedStamp
         val second = when {

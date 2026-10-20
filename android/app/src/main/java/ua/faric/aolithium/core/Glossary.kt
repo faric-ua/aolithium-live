@@ -242,14 +242,14 @@ object Glossary {
                     "the BMS turns off the switches."))
 
         // ---------- плата ----------
-        e("chargeSw", Group.BOARD, tr("Заряд: дозволено / вимкнено", "Charge: allowed / off"), "Charge Switch: open",
+        e("chargeSw", Group.BOARD, tr("Заряд: дозволено / заборонено", "Charge: allowed / off"), "Charge Switch: open",
             tr("Ключ (транзистор) заряду на платі. «Дозволено» — батарею можна заряджати. Плата вимикає його сама, коли спрацював захист.",
                 "The charge switch (transistor) on the BMS. \"Allowed\" — the battery can be charged. " +
                     "The BMS turns it off by itself when a protection trips."),
             tr("«Дозволено».", "\"Allowed\"."),
             tr("«Вимкнено» — дивись «Що спрацювало» на вкладці «Зараз».",
                 "\"Off\" — see \"What tripped\" on the \"Now\" tab."))
-        e("dischargeSw", Group.BOARD, tr("Розряд: дозволено / вимкнено", "Discharge: allowed / off"), "Discharge Switch: open",
+        e("dischargeSw", Group.BOARD, tr("Розряд: дозволено / заборонено", "Discharge: allowed / off"), "Discharge Switch: open",
             tr("Ключ розряду. «Дозволено» — батарея може живити навантаження.",
                 "The discharge switch. \"Allowed\" — the battery can power the load."),
             tr("«Дозволено».", "\"Allowed\"."),
