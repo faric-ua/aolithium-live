@@ -12,7 +12,7 @@
 ## Власник
 
 - **faric** (`faric-ua`). Працює **лише з телефона** (Samsung Galaxy A26 5G) через Termux-меню. Не програміст.
-- Відповідати українською, коротко, простими словами. Дії на телефоні — **тільки пунктами меню** (`AOLITHIUM LIVE: 2`), без команд.
+- Відповідати **лише українською** — кожне повідомлення, зокрема підсумки й короткі службові (faric 20.10: «faric-ua — україномовний проєкт»). Коротко, простими словами. Дії на телефоні — **тільки пунктами меню** (`AOLITHIUM LIVE: 2`), без команд.
 - Кожна робоча відповідь закінчується блоком **«Від тебе зараз:»**. **Повний формат відповіді — `docs/RESPONSE_ALGORITHM.md`**
   (однаковий у всіх репо faric-ua; різні лише меню).
 - Усе, що faric має скопіювати, — **окремим блоком коду**; перед блоком — куди вставити.
@@ -77,11 +77,13 @@
 | Сповіщення (v0.3): правила — без Android, показ — канали Android, перемикачі — «Ще» | `core/Alerts.kt` (+ `AlertsTest`), `bg/Notifier.kt`, `data/AlertSettings.kt` |
 | Віджет (v0.3.1): що писати — без Android, малюнок — Canvas, оновлення | `core/WidgetModel.kt` (+ тест), `widget/WidgetArt.kt`, `widget/Widgets.kt`, `res/xml/widget_*.xml` |
 | «Мої батареї» (пам'ять телефона) | `…/data/Batteries.kt` |
+| Оновлення з Google Диска (T37, з Track Catcher): правила без Android, мережа (єдине місце з інтернетом — контракт `test_internet_only_for_drive_update`), свій провайдер APK замість androidx, картка внизу головної, автопублікація автора. **Сховати все — `UpdateFeature.VISIBLE = false`** (код лишається). Вбудоване посилання — `DriveUpdate.BUILT_IN_MANIFEST_ID` (поки порожнє) | `core/DriveUpdate.kt` (+ `DriveUpdateTest`), `core/UpdateFeature.kt`, `update/DriveHttp.kt`, `update/UpdateApkProvider.kt`, `ui/UpdateUi.kt`; інструкція — розділ `update` |
 | Екрани | `…/ui/` (`Palette.kt` — кольори, `Ui.kt` — кнопки/картки; `Overlay`, `LineIcon`, `FlowLayout` — з Track Catcher) |
 | Інструкція (T7): одне джерело обома мовами → сторінка в застосунку (значок ? на головній) | `docs/guide/guide.html` → `scripts/build_guide.py` → `assets/guide/index.html`; картинки — `scripts/guide_images.py`; показ — `ui/GuideScreen.kt`; тест — `tests/test_guide.py` |
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |
 | CI | `.github/workflows/android.yml` (тести, лінтер, збірка, реліз), `checks.yml`, `ui-screens.yml` |
 | Мова інтерфейсу (T12): `tr()`, вибір, перемикачі | `core/Lang.kt`, `data/LangSettings.kt`, `AolithiumApp.kt`, `docs/LANG_EN.md` |
+| Огляд схожих застосунків (для нас, не для користувача) | `docs/COMPETITORS.md` |
 | Аудити, контракти | `scripts/audit_*.py`, `tests/` |
 | Перевірки для Claude без Gradle | `tools/dev/run_core_tests.sh`, `tools/dev/compile_android.sh` |
 
@@ -96,6 +98,7 @@
   https://github.com/Reginer/aosp-android-jar aosp && git -C aosp sparse-checkout set android-36` (20.10).
 - **Мова (T12):** кожен текст для людини — `tr("укр", "англ")`; одиниці — `Fmt.V/A/W/AH…`; словник і пастки —
   `docs/LANG_EN.md`; сторож — `scripts/audit_lang.py` (CI).
+- **Правопис (T38):** українські терміни й граматика — `docs/SPELLING.md` (правильно / не так, спірне — спитати faric).
 - Python: `python3 -m unittest discover -s tests`, `python3 scripts/audit_ui.py`, `python3 scripts/audit_repo.py`.
 - Логи Actions недоступні — усе важливе CI виводить анотаціями: `gh api repos/faric-ua/aolithium-live/check-runs/<id>/annotations`.
 - Знімки екранів без телефона: пуш у `diag/ui-screens` → емулятор (демо-режим) → PNG у гілці `diag/ui-screens-out`.

@@ -137,7 +137,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private val steady = SteadyCurrent()
     /** Живі виміри комірок за ~3 хв — для «за 1 хв». */
     private val cellSamples = ArrayDeque<Pair<Long, List<Int>>>()
-    /** Історія за [INSIGHT_DAYS] днів — відключення, найнижчий по днях, хто відстає, зарядний. */
+    /** Історія за [INSIGHT_DAYS] днів — відключення, найнижчий за днями, хто відстає, зарядний. */
     private var insightPts: List<HistoryPoint>? = null
     private var insightLoadedAt = 0L
     /** Розмір підписів у плитках комірок, якщо довелось зменшити (шрифт 1.3); 0 — звичайний. */
@@ -605,9 +605,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             columns(listOf(gaugeCard), listOf(now, state))
             return
         }
-        row.addView(pillInfo(if (s.chargeOn) tr("Заряд: дозволено", "Charge: allowed") else tr("Заряд: вимкнено", "Charge: off"),
+        row.addView(pillInfo(if (s.chargeOn) tr("Заряд: дозволено", "Charge: allowed") else tr("Заряд: заборонено", "Charge: off"),
                 if (s.chargeOn) Ui.Tone.GOOD else Ui.Tone.BAD, "chargeSw"))
-        row.addView(pillInfo(if (s.dischargeOn) tr("Розряд: дозволено", "Discharge: allowed") else tr("Розряд: вимкнено", "Discharge: off"),
+        row.addView(pillInfo(if (s.dischargeOn) tr("Розряд: дозволено", "Discharge: allowed") else tr("Розряд: заборонено", "Discharge: off"),
                 if (s.dischargeOn) Ui.Tone.GOOD else Ui.Tone.BAD, "dischargeSw"))
         row.addView(
             if (s.balancingCells.isEmpty()) pillInfo(tr("Балансування: ні", "Balancing: no"), Ui.Tone.NEUTRAL, "balance")
@@ -655,7 +655,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 step(tr("до $p %", "to $p %"), h?.let { Fmt.duration(it) } ?: tr("уже нижче", "already below"), note, fill, color)
             }
             card.addView(ui.grid(steps, perRow = 3, gapDp = 6), ui.matchWrap())
-            card.addView(ui.muted(tr("Рахую з залишку (${Fmt.ampHours(s.remainAh)}) і середнього струму ${Fmt.amps(-amps)} за 2 хв. " +
+            card.addView(ui.muted(tr("Рахую із залишку (${Fmt.ampHours(s.remainAh)}) і середнього струму ${Fmt.amps(-amps)} за 2 хв. " +
                 "Число перераховується, лише коли струм стабільно змінився більше ніж на 10 %.",
                 "Based on remaining (${Fmt.ampHours(s.remainAh)}) and average current ${Fmt.amps(-amps)} over 2 min. " +
                 "The number updates only when the current changes steadily by more than 10 %."), 12.5f))
@@ -1022,7 +1022,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             else tr("За ${shown.label}", "Last ${shown.label}"), LineIcon.LIST, "energy"))
         if (pts.isEmpty()) {
             sum.addView(ui.muted(tr("Ще немає записів. Історія пишеться раз на 10 с, поки застосунок відкритий і на зв'язку, " +
-                "а з увімкненим «Запис у фоні» («Ще») — раз на ~5 хв і коли закритий.",
+                "а з увімкненим «Записом у фоні» («Ще») — раз на ~5 хв і коли закритий.",
                 "No records yet. History is saved every 10 s while the app is open and connected; " +
                 "with \"Background recording\" (\"More\") on — every ~5 min, even when closed."), 14f))
         } else {
@@ -1103,7 +1103,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     /**
      * Картки за останні [INSIGHT_DAYS] днів (не залежать від вибраного періоду): відключення світла,
-     * найнижчий заряд по днях, хто відстає наприкінці заряду, зарядний. Аналіз скрінів Logic Power faric 19.10.
+     * найнижчий заряд за днями, хто відстає наприкінці заряду, зарядний. Аналіз скрінів Logic Power faric 19.10.
      */
     private fun insightCards(): List<View> {
         val pts = insightPts
@@ -1169,10 +1169,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         out += oc
 
-        // ---- найнижчий заряд по днях ----
+        // ---- найнижчий заряд за днями ----
         val days = DailyMin.of(pts, java.util.TimeZone.getDefault().getOffset(now).toLong()).takeLast(10)
         val dc = ui.card(8)
-        dc.addView(labelRow(tr("Найнижчий заряд по днях", "Lowest charge by day"), LineIcon.CHART, "dailyMin"))
+        dc.addView(labelRow(tr("Найнижчий заряд за днями", "Lowest charge by day"), LineIcon.CHART, "dailyMin"))
         if (days.isEmpty()) {
             dc.addView(ui.muted(tr("Ще немає записаних днів.", "No recorded days yet."), 13f))
         } else {
@@ -1211,7 +1211,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         // ---- зарядний ----
         ChargerCheck.of(pts)?.let { c ->
             val cc = ui.card(8)
-            cc.addView(labelRow(tr("Зарядний", "Charger"), LineIcon.BOLT, "charger"))
+            cc.addView(labelRow(tr("Зарядний пристрій", "Charger"), LineIcon.BOLT, "charger"))
             val n = pts.lastOrNull()?.cellsMv?.size?.takeIf { it > 0 } ?: 4
             val perCell = Fmt.volts(c.maxV / n, 2)
             val color = if (c.verdict == ChargerCheck.Verdict.OK) Palette.success else Palette.warning
@@ -1290,7 +1290,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             j.hw?.let { board.addView(fact(tr("Версія заліза", "Hardware version"), it, "jkboard")) }
             board.addView(fact(tr("Формат даних", "Data format"), j.layout, "jkboard"))
             if (j.runtimeSec > 0) board.addView(fact(tr("Час роботи плати", "BMS uptime"), Fmt.runtime(j.runtimeSec), "runtime"))
-            board.addView(fact(tr("Зарядний", "Charger"),
+            board.addView(fact(tr("Зарядний пристрій", "Charger"),
                 if (j.chargerPlugged) tr("підключено", "connected") else tr("не підключено", "not connected"), "jkboard"))
         }
         board.addView(fact(tr("Комірок", "Cells"), s.cellCount.toString(), "cells"))

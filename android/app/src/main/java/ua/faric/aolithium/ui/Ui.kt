@@ -169,6 +169,12 @@ class Ui(val ctx: Context) {
         setPadding(dp(2), dp(8), dp(2), dp(8))
     }
 
+    /** Вибрана квадратна кнопка (T35: мова інструкції) — як вибраний [choice]: зелена рамка, без галочки. */
+    fun markSelected(b: TextView) {
+        b.setTextColor(Palette.text)
+        b.background = pressable(rounded(Palette.selectedFill, Palette.success, radiusDp = 12, strokeDp = 2), 12)
+    }
+
     fun styleButton(b: TextView, kind: Kind) {
         val (fill, stroke, color) = when (kind) {
             Kind.PRIMARY -> Triple(Palette.accentFill, Palette.accent, Palette.accent)

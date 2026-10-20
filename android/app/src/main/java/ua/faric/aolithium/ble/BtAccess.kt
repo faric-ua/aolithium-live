@@ -17,7 +17,7 @@ import ua.faric.aolithium.core.tr
  *   і `BLUETOOTH_CONNECT`). Геолокація не потрібна.
  * - Android 8–11 (Huawei Mate 10 Lite, Redmi 9T…): пошук Bluetooth LE Android видає лише з дозволом
  *   на **місцезнаходження** і з **увімкненою геолокацією** — інакше пошук мовчки нічого не знаходить.
- *   Місцезнаходження застосунок нікуди не передає: інтернету в нього немає взагалі.
+ *   Місцезнаходження застосунок нікуди не передає: інтернет він використовує лише для оновлення з Google Диска автора (T37).
  */
 object BtAccess {
     val modernBluetooth: Boolean get() = Build.VERSION.SDK_INT >= 31
@@ -94,9 +94,9 @@ object BtAccess {
                 )
                 LOCATION_OFF -> tr(
                     "На Android 11 і старіших без геолокації пошук Bluetooth нічого не знаходить. " +
-                        "Місцезнаходження застосунок нікуди не передає — інтернету в нього немає.",
+                        "Місцезнаходження застосунок нікуди не передає — інтернет він використовує лише для оновлень застосунку.",
                     "On Android 11 and older, Bluetooth search finds nothing without location. " +
-                        "The app does not send your location anywhere. It has no internet access.",
+                        "The app does not send your location anywhere. It uses the internet only for app updates.",
                 )
             }
     }

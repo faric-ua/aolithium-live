@@ -24,26 +24,33 @@ import java.io.IOException
  * Як влаштовано (без бібліотек, як і весь застосунок):
  * - сторінку віддаємо самі з assets за адресою https://appassets.androidplatform.net/assets/… — з file:// у Track
  *   Catcher WebView не показував картинки; androidx WebViewAssetLoader тут нема, тож [serve] — свій, на 20 рядків;
- * - мова — `?lang=uk|en` (мова застосунку), `&app=1` — показати кнопки демо;
+ * - мова — `?lang=uk|en` (мова застосунку) при новому відкритті (`&fresh=1`); далі її міняє «UA / EN» у верхньому рядку
+ *   застосунку (T35, [setGuideLang]), а сторінка пам'ятає вибір; `&app=1` — кнопки демо, сховати «UA / EN» на сторінці;
+ * - місце на сторінці (T36) пам'ятає сама сторінка: кожен розділ і зміст — своє (localStorage), тож після демо чи
+ *   «Назад» інструкція там, де була; `fresh=1` — забути місця;
  * - кнопки демо — посилання `app://demo/IDLE` → [MainActivity.openBattery] («Назад» з демо → сюди ж, T26);
  * - «Назад»: спершу історія сторінки (розділ → зміст), далі — вихід (`MainActivity.handleBack`);
- * - стан (історія сторінки й прокрутка) — у Bundle, тож після демо інструкція там, де була.
+ * - історія сторінки — у Bundle (`WebView.saveState`), тож «Назад» усередині працює й після демо.
  * Нема WebView на телефоні (рідко, Android System WebView вимкнено) — [fallback]: коротко й кнопки демо.
  * Альбомна (планшети, ui.twoPane) — сама сторінка верстається у дві колонки (CSS), запасний вигляд — кнопки по дві.
  */
 class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen(host) {
     override val view: View
     private var web: WebView? = null
-    private var restoreY = 0
+    /** Мова сторінки (T35): спершу — мова застосунку; «UA / EN» угорі міняє лише інструкцію. */
+    var guideLang: Lang.Code = Lang.of(state?.getString(KEY_GUIDE_LANG)).takeIf { state?.getString(KEY_GUIDE_LANG) != null } ?: Lang.current
+        private set
 
     init {
         val w = runCatching { WebView(host) }.getOrNull()
         web = w
         view = if (w == null) fallback() else {
             setUp(w)
-            val saved = state?.getBundle(KEY_WEB)?.takeIf { state.getString(KEY_LANG) == Lang.current.tag }
-            restoreY = state?.getInt(KEY_SCROLL, 0) ?: 0
-            if (saved == null || w.restoreState(saved) == null) w.loadUrl(startUrl(section))
+            val saved = state?.getBundle(KEY_WEB)
+            if (saved == null || w.restoreState(saved) == null) {
+                guideLang = Lang.current
+                w.loadUrl(startUrl(section))
+            }
             w
         }
     }
@@ -72,21 +79,13 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
                     if (scene != null) host.openBattery("demo:" + scene.name)
                     return true
                 }
-                // Зовнішні посилання (GitHub) — у браузері; самому застосунку інтернет не потрібен.
+                // Зовнішні посилання (GitHub) — у браузері; сам застосунок ходить в інтернет лише по оновлення (T37).
                 try {
                     host.startActivity(Intent(Intent.ACTION_VIEW, url))
                 } catch (e: ActivityNotFoundException) {
                     host.toast(url.toString())
                 }
                 return true
-            }
-
-            override fun onPageFinished(view: WebView, url: String) {
-                val y = restoreY
-                if (y > 0) {
-                    restoreY = 0
-                    view.postDelayed({ view.scrollTo(0, y) }, 120)
-                }
             }
         }
     }
@@ -112,8 +111,14 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
     }
 
     private fun startUrl(section: String?): String {
-        val base = "https://$HOST/assets/guide/index.html?lang=${Lang.current.tag}&app=1"
+        val base = "https://$HOST/assets/guide/index.html?lang=${Lang.current.tag}&app=1&fresh=1"
         return if (section.isNullOrBlank()) base else "$base#$section"
+    }
+
+    /** T35: мова інструкції з верхнього рядка застосунку (мова самого застосунку не міняється). */
+    fun setGuideLang(code: Lang.Code) {
+        guideLang = code
+        web?.evaluateJavascript("window.guideSetLang && window.guideSetLang('${code.tag}')", null)
     }
 
     /** «Назад»: у сторінці є куди повертатись (розділ → зміст) — туди; інакше виходимо з інструкції. */
@@ -129,8 +134,7 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         val b = Bundle()
         w.saveState(b)
         out.putBundle(KEY_WEB, b)
-        out.putString(KEY_LANG, Lang.current.tag)
-        out.putInt(KEY_SCROLL, w.scrollY)
+        out.putString(KEY_GUIDE_LANG, guideLang.tag)
     }
 
     override fun onStop() {
@@ -165,7 +169,6 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         /** Адреса, яку Android відвів саме для сторінок з assets застосунку (у мережу запит не йде). */
         const val HOST = "appassets.androidplatform.net"
         const val KEY_WEB = "web"
-        const val KEY_LANG = "lang"
-        const val KEY_SCROLL = "scrollY"
+        const val KEY_GUIDE_LANG = "guideLang"
     }
 }

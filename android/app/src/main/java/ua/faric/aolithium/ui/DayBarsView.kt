@@ -11,7 +11,7 @@ import ua.faric.aolithium.core.Zones
 import ua.faric.aolithium.core.tr
 
 /**
- * Найнижчий заряд по днях — стовпчики (faric 19.10 03:31: «хвилями… до порогу, потім генератор»).
+ * Найнижчий заряд за днями — стовпчики (faric 19.10 03:31: «хвилями… до порогу, потім генератор»).
  * Над стовпчиком — відсоток, під ним — число місяця; день з генератором — помаранчева рамка й «Г».
  * Торкнувся стовпчика — [onDay] (позначити / зняти «генератор»).
  */
@@ -35,7 +35,7 @@ class DayBarsView(context: Context) : View(context) {
 
     fun set(list: List<Bar>) {
         bars = list
-        contentDescription = tr("Найнижчий заряд по днях: ", "Lowest charge by day: ") + list.joinToString("; ") {
+        contentDescription = tr("Найнижчий заряд за днями: ", "Lowest charge by day: ") + list.joinToString("; ") {
             "${it.dayLabel} — ${it.minSoc} %" + if (it.generator) tr(", генератор", ", generator") else ""
         }
         invalidate()

@@ -60,7 +60,7 @@ class LinkLineTest {
         val m = LinkLine.build(State.FAILED, message = "Bluetooth вимкнено. Увімкни його й натисни «Підключити ще раз».", now = now)
         assertEquals("Bluetooth вимкнено", m.detail)
         assertEquals(LinkLine.Tone.BAD, m.tone)
-        assertEquals("торкни — що робити", LinkLine.build(State.NO_ANSWER, now = now).detail)
+        assertEquals("торкнись — що робити", LinkLine.build(State.NO_ANSWER, now = now).detail)
     }
 
     @Test fun failed_far_away_says_so() {

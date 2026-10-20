@@ -27,7 +27,7 @@ version="$(al_version)"
 if [ -n "$offline" ]; then
   echo "Збираю Aolithium Live v$version на телефоні без інтернету…"
 else
-  echo "Збираю Aolithium Live v$version на телефоні… (перший раз — 5–10 хв, качає бібліотеки)"
+  echo "Збираю Aolithium Live v$version на телефоні… (перший раз — 5–10 хв, завантажує бібліотеки)"
 fi
 echo "Код — з цієї папки (останнє оновлення: пункт 1)."
 # Збірка у фоні, а на екрані — час і що зараз робиться (щоб не здавалось, що зависло).
@@ -66,6 +66,6 @@ else
   fi
   fail "Збірка не вдалась. Коротко:"
   sed -n '/What went wrong/,/^\* Try/p' "$log" | grep -v '^\* Try' | head -n 30
-  info "Повний лог: Documents/Aolithium Live/logs/$(basename "$log")"
+  info "Повний журнал: Documents/Aolithium Live/logs/$(basename "$log")"
   exit 1
 fi

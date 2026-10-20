@@ -9,12 +9,14 @@ import ua.faric.aolithium.ble.BleScanner
 import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Signal
+import ua.faric.aolithium.core.UpdateFeature
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
 
 /**
- * Головна: що дозволити (якщо чогось бракує), «Мої батареї», «Шукати поруч».
- * Альбомна (≥ 600 dp) — дві колонки: ліворуч мої батареї, праворуч пошук.
+ * Головна: що дозволити (якщо чогось бракує), «Мої батареї», «Шукати поруч», унизу — «Оновлення застосунку»
+ * (T37; не для батареї, а для застосунку; ховається перемикачем [UpdateFeature.VISIBLE]).
+ * Альбомна (≥ 600 dp) — дві колонки: ліворуч мої батареї, праворуч пошук і оновлення.
  */
 class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.Listener {
     private val batteries = Batteries(host)
@@ -26,6 +28,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
     private val accessBox = ui.column(12)
     private val savedBox = ui.column(10)
     private val scanBox = ui.column(10)
+    private val updateBox = ui.column(10)
     override val view: View
 
     init {
@@ -33,6 +36,7 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         left.addView(accessBox, ui.matchWrap())
         left.addView(savedBox, ui.matchWrap())
         val right = ui.column(14).apply { addView(scanBox, ui.matchWrap()) }
+        if (UpdateFeature.VISIBLE) right.addView(updateBox, ui.matchWrap())
         val body: View = if (ui.twoPane) {
             ui.row(16).apply {
                 gravity = Gravity.TOP
@@ -67,6 +71,15 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
         renderAccess()
         renderSaved()
         renderScan()
+        renderUpdate()
+    }
+
+    // ---------- оновлення застосунку (T37) ----------
+
+    fun renderUpdate() {
+        updateBox.removeAllViews()
+        if (!UpdateFeature.VISIBLE) return
+        updateBox.addView(UpdateUi(host).card(), ui.matchWrap())
     }
 
     // ---------- що дозволити ----------
