@@ -186,15 +186,20 @@ class UpdateUi(private val host: MainActivity) {
 
     // ---------- автор: публікація ----------
 
-    private fun setupReady(): Boolean = listOf(KEY_APK_URI, KEY_JSON_URI, KEY_APK_ID, KEY_JSON_ID)
-        .all { !prefs.getString(it, "").isNullOrBlank() }
+    /** ID файлів на Диску: вставлені автором або вбудовані (0.4.6 — файли створено заздалегідь). */
+    private fun apkIdNow(): String = prefs.getString(KEY_APK_ID, "").orEmpty().ifBlank { DriveUpdate.BUILT_IN_APK_ID }
+    private fun jsonIdNow(): String = prefs.getString(KEY_JSON_ID, "").orEmpty().ifBlank { DriveUpdate.BUILT_IN_MANIFEST_ID }
+
+    private fun setupReady(): Boolean = listOf(KEY_APK_URI, KEY_JSON_URI).all { !prefs.getString(it, "").isNullOrBlank() } &&
+        apkIdNow().isNotBlank() && jsonIdNow().isNotBlank()
 
     fun showPublishSheet(keepScroll: Boolean = false) {
         if (!UpdateFeature.VISIBLE) return
         val apkUri = prefs.getString(KEY_APK_URI, "").orEmpty()
         val jsonUri = prefs.getString(KEY_JSON_URI, "").orEmpty()
-        val apkId = prefs.getString(KEY_APK_ID, "").orEmpty()
-        val jsonId = prefs.getString(KEY_JSON_ID, "").orEmpty()
+        val apkId = apkIdNow()
+        val jsonId = jsonIdNow()
+        val pick = DriveUpdate.filesBuiltIn
         val apkReady = apkUri.isNotBlank()
         val jsonReady = jsonUri.isNotBlank()
         val apkLink = apkId.isNotBlank()
@@ -203,12 +208,17 @@ class UpdateUi(private val host: MainActivity) {
         val box = ui.column(10)
         box.addView(ui.title(tr("Публікація версії на Диск", "Publishing a version to Drive"), 19f))
         box.addView(ui.muted(
-            tr("Ця версія: ", "This version: ") + versionText + "\n" + tr(
+            tr("Ця версія: ", "This version: ") + versionText + "\n" + (if (pick) tr(
+                "Один раз: вибрати два готові файли на Диску (кроки 1–2), посилання вже вбудовані. " +
+                    "Далі після кожної нової версії — лише «Опублікувати зараз» (або «Публікувати автоматично»).",
+                "Once: pick the two ready files on Drive (steps 1–2); the links are already built in. " +
+                    "After that, for each new version — only \"Publish now\" (or \"Publish automatically\").",
+            ) else tr(
                 "Один раз: два файли на Диску (кроки 1–2) і посилання на них (кроки 3–4). " +
                     "Далі після кожної нової версії — лише «Опублікувати зараз» (або «Публікувати автоматично»).",
                 "Once: two files on Drive (steps 1–2) and links to them (steps 3–4). " +
                     "After that, for each new version — only \"Publish now\" (or \"Publish automatically\").",
-            ),
+            )),
             14f,
         ))
         fun step(label: String, kind: Ui.Kind, enabled: Boolean, action: () -> Unit) {
@@ -219,22 +229,31 @@ class UpdateUi(private val host: MainActivity) {
         val apkName = prefs.getString(KEY_APK_NAME, "").orEmpty()
         val jsonName = prefs.getString(KEY_JSON_NAME, "").orEmpty()
         step(
-            if (apkReady) tr("1. Файл APK — готово: $apkName", "1. APK file — done: $apkName") else tr("1. Створити файл APK на Диску", "1. Create the APK file on Drive"),
+            if (apkReady) tr("1. Файл APK — готово: $apkName", "1. APK file — done: $apkName")
+            else if (pick) tr("1. Вибрати на Диску «${DriveUpdate.APK_FILE_NAME}»", "1. Pick \"${DriveUpdate.APK_FILE_NAME}\" on Drive")
+            else tr("1. Створити файл APK на Диску", "1. Create the APK file on Drive"),
             if (apkReady) Ui.Kind.QUIET else Ui.Kind.PRIMARY, !apkReady,
-        ) { createFile(REQ_APK, UpdateApkProvider.MIME, DriveUpdate.APK_FILE_NAME) }
+        ) { if (pick) pickFile(REQ_APK) else createFile(REQ_APK, UpdateApkProvider.MIME, DriveUpdate.APK_FILE_NAME) }
         step(
-            if (jsonReady) tr("2. Файл версії — готово: $jsonName", "2. Version file — done: $jsonName") else tr("2. Створити файл версії на Диску", "2. Create the version file on Drive"),
+            if (jsonReady) tr("2. Файл версії — готово: $jsonName", "2. Version file — done: $jsonName")
+            else if (pick) tr("2. Вибрати на Диску «${DriveUpdate.VERSION_FILE_NAME}»", "2. Pick \"${DriveUpdate.VERSION_FILE_NAME}\" on Drive")
+            else tr("2. Створити файл версії на Диску", "2. Create the version file on Drive"),
             if (jsonReady) Ui.Kind.QUIET else Ui.Kind.PRIMARY, apkReady && !jsonReady,
-        ) { createFile(REQ_JSON, "application/json", DriveUpdate.VERSION_FILE_NAME) }
-        step(
+        ) { if (pick) pickFile(REQ_JSON) else createFile(REQ_JSON, "application/json", DriveUpdate.VERSION_FILE_NAME) }
+        if (!pick) step(
             if (apkLink) tr("3. Посилання на APK — вставлено", "3. APK link — pasted") else tr("3. Вставити посилання на APK", "3. Paste the APK link"),
             if (apkLink) Ui.Kind.QUIET else Ui.Kind.PRIMARY, apkReady && jsonReady && !apkLink,
         ) { if (pasteLink(KEY_APK_ID)) showPublishSheet(keepScroll = true) }
-        step(
+        if (!pick) step(
             if (jsonLink) tr("4. Посилання на файл версії — вставлено", "4. Version file link — pasted") else tr("4. Вставити посилання на файл версії", "4. Paste the version file link"),
             if (jsonLink) Ui.Kind.QUIET else Ui.Kind.PRIMARY, apkReady && jsonReady && apkLink && !jsonLink,
         ) { if (pasteLink(KEY_JSON_ID)) showPublishSheet(keepScroll = true) }
-        if (!(apkReady && jsonReady && apkLink && jsonLink)) {
+        if (pick && !(apkReady && jsonReady)) {
+            box.addView(ui.muted(tr(
+                "Кроки 1–2: у вікні вибору натисни ☰ ліворуч → «Google Диск» → папки ${DriveUpdate.BUILT_IN_FOLDER} → торкнись файлу.",
+                "Steps 1–2: in the picker tap ☰ on the left → \"Google Drive\" → folders ${DriveUpdate.BUILT_IN_FOLDER} → tap the file.",
+            ), 13f))
+        } else if (!pick && !(apkReady && jsonReady && apkLink && jsonLink)) {
             box.addView(ui.muted(tr(
                 "Кроки 1–2: у вікні вибору натисни ☰ ліворуч → «Google Диск» → потрібна папка → «Зберегти».\n" +
                     "Кроки 3–4: відкрий Google Диск → ⋮ біля файлу → «Надати доступ» → «Усі, хто має посилання» → " +
@@ -304,6 +323,24 @@ class UpdateUi(private val host: MainActivity) {
         host.updateChanged()
     }
 
+    /**
+     * 0.4.6: файли на Диску створено заздалегідь (посилання вбудовані) — автор лише вибирає їх, з правом запису.
+     * Новий файл не створюємо: інакше вийшов би дублікат «(1)», а вбудоване посилання дивилось би на старий.
+     */
+    private fun pickFile(request: Int) {
+        val mime = if (request == REQ_APK) "*/*" else "application/json"
+        val i = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        host.overlay.dismiss()
+        host.toast(tr("☰ ліворуч → «Google Диск» → ${DriveUpdate.BUILT_IN_FOLDER}", "☰ on the left → \"Google Drive\" → ${DriveUpdate.BUILT_IN_FOLDER}"))
+        try {
+            @Suppress("DEPRECATION")
+            host.startActivityForResult(i, request)
+        } catch (e: ActivityNotFoundException) {
+            host.toast(tr("На цьому телефоні немає вікна вибору файлу", "This phone has no file picker"))
+        }
+    }
+
     private fun createFile(request: Int, mime: String, name: String) {
         val i = Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime)
             .putExtra(Intent.EXTRA_TITLE, name)
@@ -340,6 +377,7 @@ class UpdateUi(private val host: MainActivity) {
             return
         }
         val apk = request == REQ_APK
+        val picked = DriveUpdate.filesBuiltIn
         var name = if (apk) DriveUpdate.APK_FILE_NAME else DriveUpdate.VERSION_FILE_NAME
         runCatching {
             host.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
@@ -350,7 +388,17 @@ class UpdateUi(private val host: MainActivity) {
             .putString(if (apk) KEY_APK_URI else KEY_JSON_URI, uri.toString())
             .putString(if (apk) KEY_APK_NAME else KEY_JSON_NAME, name)
             .apply()
-        if (!apk) {
+        val expected = if (apk) DriveUpdate.APK_FILE_NAME else DriveUpdate.VERSION_FILE_NAME
+        if (picked && name != expected) {
+            // 0.4.6: вибрали не той файл — не запам'ятовуємо, інакше публікація пішла б у чужий файл.
+            prefs.edit().remove(if (apk) KEY_APK_URI else KEY_JSON_URI).remove(if (apk) KEY_APK_NAME else KEY_JSON_NAME).apply()
+            showProblem(tr(
+                "Вибрано «$name», а потрібен «$expected» з папки ${DriveUpdate.BUILT_IN_FOLDER}. Натисни крок ще раз і вибери саме його.",
+                "You picked \"$name\", but \"$expected\" from the folder ${DriveUpdate.BUILT_IN_FOLDER} is needed. Tap the step again and pick exactly that file.",
+            ), offerLink = false)
+            return
+        }
+        if (!apk && !picked) {
             // Файл версії має мати вміст, щоб у Диску можна було скопіювати посилання.
             val resolver = host.contentResolver
             Thread({ runCatching { writeText(resolver, uri, DriveUpdate.PLACEHOLDER) } }, "update-json-placeholder").start()
@@ -481,7 +529,7 @@ class UpdateUi(private val host: MainActivity) {
         }
         val apkUri = prefs.getString(KEY_APK_URI, "").orEmpty()
         val jsonUri = prefs.getString(KEY_JSON_URI, "").orEmpty()
-        val apkId = prefs.getString(KEY_APK_ID, "").orEmpty()
+        val apkId = apkIdNow()
         if (apkUri.isBlank() || jsonUri.isBlank() || apkId.isBlank()) {
             if (!quiet) showPublishSheet()
             return false
@@ -499,7 +547,7 @@ class UpdateUi(private val host: MainActivity) {
         val pkg = host.packageName
         val code = installedCode
         val name = BuildConfig.VERSION_NAME
-        val manifestIdNow = prefs.getString(KEY_JSON_ID, "").orEmpty().ifBlank { manifestId().orEmpty() }
+        val manifestIdNow = jsonIdNow().ifBlank { manifestId().orEmpty() }
         val store = prefs
         if (quiet) {
             Updater.busy = true
