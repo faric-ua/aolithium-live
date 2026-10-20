@@ -83,6 +83,7 @@
 | Меню телефона | `menu.sh`, `tools/termux/al-*.sh` |
 | CI | `.github/workflows/android.yml` (тести, лінтер, збірка, реліз), `checks.yml`, `ui-screens.yml` |
 | Мова інтерфейсу (T12): `tr()`, вибір, перемикачі | `core/Lang.kt`, `data/LangSettings.kt`, `AolithiumApp.kt`, `docs/LANG_EN.md` |
+| Огляд схожих застосунків (для нас, не для користувача) | `docs/COMPETITORS.md` |
 | Аудити, контракти | `scripts/audit_*.py`, `tests/` |
 | Перевірки для Claude без Gradle | `tools/dev/run_core_tests.sh`, `tools/dev/compile_android.sh` |
 
