@@ -1082,26 +1082,26 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <p class="en">The author says a newer one is out, but here it says "You have the latest version"? Copy the link from the author → <span class="btn norm">Another link</span> in the same window or in the card. The link is to the <span class="mono">aolithium-live-onovlennia.json</span> file, not to the APK.</p>
     </div>
   </div>
-  <p class="note uk">Перший раз посилання вставляється вручну — автор надсилає його («Поділитися посиланням на оновлення»). Коли автор налаштує файли, посилання вбудують у наступну версію, і далі вставляти нічого не треба. Застосунок пробує і збережене, і вбудоване посилання та бере найновішу версію.</p>
-  <p class="note en">The first time the link is pasted by hand — the author sends it ("Share the update link"). Once the author sets up the files, the link is built into the next version, and after that nothing needs pasting. The app tries both the saved and the built-in link and takes the newest version.</p>
+  <p class="note uk">З версії 0.4.6 посилання вбудоване — вставляти нічого не треба. Застосунок пробує і збережене, і вбудоване посилання та бере найновішу версію.</p>
+  <p class="note en">Since version 0.4.6 the link is built in — nothing needs pasting. The app tries both the saved and the built-in link and takes the newest version.</p>
 
   <h3 class="uk">Для автора: опублікувати версію</h3><h3 class="en">For the author: publish a version</h3>
   <ol class="steps uk">
     <li><span>У тій самій картці — <span class="btn norm">Опублікувати цю версію на Диск (автор)</span>.</span></li>
-    <li><span>Один раз: кроки 1–2 — створити два файли на Диску (у вікні вибору ☰ → «Google Диск» → папка → «Зберегти»); кроки 3–4 — у застосунку Диск ⋮ біля файлу → «Надати доступ» → «Усі, хто має посилання» → «Копіювати посилання» → назад і натиснути крок.</span></li>
+    <li><span>Один раз: кроки 1–2 — вибрати два готові файли на Диску (у вікні вибору ☰ → «Google Диск» → AppsAndroidSync → AolithiumLive → App → торкнутись файлу). Посилання на них уже вбудовані, кроків 3–4 немає. Треба інші файли — <span class="btn quiet">Змінити посилання на файли (автор)</span>.</span></li>
     <li><span>Далі після кожної нової версії — лише <span class="btn prim">Опублікувати зараз</span>. Застосунок кладе свій встановлений APK у ті самі файли — посилання не змінюється. Google Диск вивантажує їх у фоні, тож застосунок ще кілька хвилин сам перевіряє через інтернет, що інші телефони бачать саме цю версію: «Опубліковано й перевірено» — дійшло; «НЕ ДІЙШЛО до Диска» — відкрий Google Диск, перевір інтернет і натисни ще раз.</span></li>
     <li><span><b>Публікувати автоматично</b> → <span class="btn sel">Так</span> (спершу — «Ні») — тоді й натискати нічого не треба: відкрив застосунок новою версією — телефон сам кладе її на Диск і перевіряє. Тихо, без вікон; результат — рядком у картці «Оновлення застосунку».</span></li>
-    <li><span><span class="btn norm">Поділитися посиланням на оновлення</span> — надіслати посилання в чат (щоб його вбудували) або комусь вручну.</span></li>
+    <li><span><span class="btn norm">Поділитися посиланням на оновлення</span> — надіслати посилання комусь вручну.</span></li>
   </ol>
   <ol class="steps en">
     <li><span>In the same card — <span class="btn norm">Publish this version to Drive (author)</span>.</span></li>
-    <li><span>Once: steps 1–2 — create two files on Drive (in the picker ☰ → "Google Drive" → folder → "Save"); steps 3–4 — in the Drive app ⋮ next to the file → "Share" → "Anyone with the link" → "Copy link" → back, and tap the step.</span></li>
+    <li><span>Once: steps 1–2 — pick the two ready files on Drive (in the picker ☰ → "Google Drive" → AppsAndroidSync → AolithiumLive → App → tap the file). Their links are already built in; there are no steps 3–4. Need other files — <span class="btn quiet">Change the file links (author)</span>.</span></li>
     <li><span>After each new version — only <span class="btn prim">Publish now</span>. The app puts its installed APK into the same files, so the link does not change. Google Drive uploads them in the background, so for a few more minutes the app checks over the internet that other phones see exactly this version: "Published and checked" — it arrived; "DID NOT REACH Drive" — open Google Drive, check the internet and tap again.</span></li>
     <li><span><b>Publish automatically</b> → <span class="btn sel">Yes</span> (at first — "No") — then there is nothing to tap: open the app with a new version and the phone puts it on Drive and checks it by itself. Quietly, without windows; the result is a line in the "App update" card.</span></li>
-    <li><span><span class="btn norm">Share the update link</span> — send the link to the chat (to have it built in) or to someone by hand.</span></li>
+    <li><span><span class="btn norm">Share the update link</span> — send the link to someone by hand.</span></li>
   </ol>
-  <p class="warn uk"><b>Жовте попередження у вікні публікації?</b> Файл версії на Диску не той, що вбудований у застосунок. Інші телефони його не побачать — напиши в чат, перш ніж створювати файли заново.</p>
-  <p class="warn en"><b>A yellow warning in the publish window?</b> The version file on Drive is not the one built into the app. Other phones will not see it. Write to the chat before creating the files again.</p>
+  <p class="warn uk"><b>Жовте попередження у вікні публікації?</b> Файл версії на Диску не той, що вбудований у застосунок. Інші телефони його не побачать — напиши в чат, перш ніж вибирати чи створювати файли заново.</p>
+  <p class="warn en"><b>A yellow warning in the publish window?</b> The version file on Drive is not the one built into the app. Other phones will not see it. Write to the chat before picking or creating the files again.</p>
 </section>
 
 <!-- ================= 17. БЕЗПЕКА ================= -->
@@ -1155,6 +1155,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.6</b> · 20.10.2026</td><td>посилання на оновлення з Google Диска вбудовані; автор лише вибирає два готові файли</td></tr>
       <tr><td class="k"><b>0.4.5</b> · 20.10.2026</td><td>інструкція пам'ятає місце в кожному розділі (і після демо); її «UA / EN» — у рядку з «← Батареї»; оновлення з Google Диска</td></tr>
       <tr><td class="k"><b>0.4.4</b> · 20.10.2026</td><td>ця інструкція — двома мовами, зі схемами й знімками (замість старої «Довідки»); на головній — «UA» / «EN» і значок ?, кнопки однакові, назва більша</td></tr>
       <tr><td class="k"><b>0.4.3</b> · 20.10.2026</td><td>головна не стрибає при зміні мови; рівні комірки — обидві з рамкою; ⓘ не падає на новий рядок</td></tr>
@@ -1179,6 +1180,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.6</b> · 20.10.2026</td><td>the Google Drive update links are built in; the author only picks two ready files</td></tr>
       <tr><td class="k"><b>0.4.5</b> · 20.10.2026</td><td>the guide remembers your place in every section (also after a demo); its "UA / EN" is in the row with "← Batteries"; update from Google Drive</td></tr>
       <tr><td class="k"><b>0.4.4</b> · 20.10.2026</td><td>this guide — in two languages, with diagrams and screenshots (instead of the old "Help"); home shows "UA" / "EN" and a ? icon, equal buttons, a bigger name</td></tr>
       <tr><td class="k"><b>0.4.3</b> · 20.10.2026</td><td>home does not jump when the language changes; equal cells both get a frame; ⓘ no longer drops to a new line</td></tr>

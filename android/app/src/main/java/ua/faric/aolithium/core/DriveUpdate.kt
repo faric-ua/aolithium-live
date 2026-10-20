@@ -24,15 +24,26 @@ object DriveUpdate {
     const val VERSION_FILE_NAME = "aolithium-live-onovlennia.json"
 
     /**
-     * Вбудоване посилання на файл версії на Диску автора (ID файлу `aolithium-live-onovlennia.json`) — щоб інші
-     * телефони перевіряли без вставляння. **Поки порожнє:** faric ще не створив файли. Коли створить і пройде кроки
-     * 1–4 — ID вписується сюди в наступній збірці (як Track Catcher 0.1.16 / 0.1.17). Доти телефон бере збережене
-     * посилання (вставлене кнопкою «Вставити посилання»).
+     * Вбудоване посилання на файл версії на Диску автора (ID файлу `aolithium-live-onovlennia.json`) — інші телефони
+     * перевіряють без вставляння. Файли створив Claude 20.10.2026 (faric: «створи файли на Диску, як у інших додатків»)
+     * у тій самій структурі, що в Track Catcher / Audio Converter / Renault Docs: **AppsAndroidSync › AolithiumLive › App**.
      *
      * Урок Track Catcher T47 / T54: вбудоване посилання — обіцянка старим версіям. Файл, на який воно вказує, не можна
-     * кидати чи створювати заново; якщо автор створить файл версії вдруге — вікно публікації жовто попередить.
+     * кидати чи створювати заново; якщо автор вибере інший файл версії — вікно публікації жовто попередить.
      */
-    const val BUILT_IN_MANIFEST_ID = ""
+    const val BUILT_IN_MANIFEST_ID = "1s6SVbZuXEszmYC71S9avvTW9ilhsaOGB"
+
+    /**
+     * Вбудоване посилання на `Aolithium Live.apk` у тій самій папці — кроки 3–4 автора більше не потрібні (0.4.6).
+     * Заглушку Claude faric замінив справжнім файлом, публікуючи 0.4.5 (20.10 16:39) — тут ID саме того файлу.
+     */
+    const val BUILT_IN_APK_ID = "1IYhxxrMWtVPeRoVzqKIA--qJWRu6ECzm"
+
+    /** Де лежать ці файли — для підказки автору на кроках 1–2. */
+    const val BUILT_IN_FOLDER = "AppsAndroidSync › AolithiumLive › App"
+
+    /** Файли вже є на Диску: автор їх лише вибирає (кроки 1–2), посилання вставляти не треба. */
+    val filesBuiltIn: Boolean get() = BUILT_IN_MANIFEST_ID.isNotBlank() && BUILT_IN_APK_ID.isNotBlank()
 
     /**
      * Посилання вставили не на файл версії (Track Catcher T46: faric вставив посилання на сам APK —

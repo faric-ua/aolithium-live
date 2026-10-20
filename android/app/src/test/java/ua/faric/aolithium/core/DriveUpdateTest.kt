@@ -30,12 +30,15 @@ class DriveUpdateTest {
         assertEquals("aolithium-live-update/1", DriveUpdate.FORMAT)
     }
 
-    /** Поки faric не створив файли — вбудованого нема, і перевірка бере лише збережене (як Track Catcher до 0.1.16). */
+    /** 0.4.6: файли створено заздалегідь — вбудовані обидва посилання; без вбудованого перевірка бере лише збережене. */
     @Test
-    fun builtInLinkIsEmptyUntilSetUp() {
-        assertEquals("", DriveUpdate.BUILT_IN_MANIFEST_ID)
-        assertEquals(emptyList<String>(), DriveUpdate.manifestCandidates(null, null, DriveUpdate.BUILT_IN_MANIFEST_ID))
-        assertEquals(listOf(id), DriveUpdate.manifestCandidates(null, id, DriveUpdate.BUILT_IN_MANIFEST_ID))
+    fun builtInLinksPointToCreatedFiles() {
+        // 0.4.6: посилання вбудовані (файли створено в AppsAndroidSync › AolithiumLive › App).
+        assertEquals("1s6SVbZuXEszmYC71S9avvTW9ilhsaOGB", DriveUpdate.BUILT_IN_MANIFEST_ID)
+        assertEquals("1IYhxxrMWtVPeRoVzqKIA--qJWRu6ECzm", DriveUpdate.BUILT_IN_APK_ID)
+        assertTrue(DriveUpdate.filesBuiltIn)
+        assertEquals(emptyList<String>(), DriveUpdate.manifestCandidates(null, null, ""))
+        assertEquals(listOf(id), DriveUpdate.manifestCandidates(null, id, ""))
     }
 
     @Test
