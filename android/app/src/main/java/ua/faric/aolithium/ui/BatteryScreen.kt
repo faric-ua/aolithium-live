@@ -229,6 +229,11 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         when {
             key == DLG_RENAME -> showRename()
             key == DLG_LOG -> showLog()
+            // CI, лише демо (T47): довгий журнал — перевірити, що шапка й кнопки стоять, а прокручується лише журнал.
+            key == "log:long" && demo != null -> {
+                for (n in 1..80) LinkLog.add(tr("демо: рядок журналу №$n", "demo: log line No. $n"))
+                showLog()
+            }
             key == DLG_LINK -> showLinkInfo()
             key == DLG_FORGET -> showForget()
             key == DLG_CLEAR -> showClearHistory()
@@ -1705,15 +1710,16 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private fun showLog() {
-        val text = LinkLog.text().ifBlank { tr("Журнал порожній.", "The log is empty.") }
-        val body = ui.text(text.takeLast(LOG_SHOW_CHARS), 12f, Palette.muted).apply {
+        // T47: свіжіші — зверху; якщо журнал довгий, у вікні — лише найсвіжіша частина (повний — у «Поділитися»).
+        val text = LinkLog.newestFirst().ifBlank { tr("Журнал порожній.", "The log is empty.") }
+        val body = ui.text(text.take(LOG_SHOW_CHARS), 12f, Palette.muted).apply {
             typeface = android.graphics.Typeface.MONOSPACE
             setTextIsSelectable(true)
         }
         val box = host.overlay.dialog(
             tr("Журнал зв'язку", "Connection log"),
-            tr("Що відправили (→) і що прийшло (←). Можна переслати Claude, якщо щось не так.",
-                    "What was sent (→) and what came back (←). You can send it to Claude if something is wrong."),
+            tr("Свіжіші записи — зверху. Що відправили (→) і що прийшло (←). Можна переслати Claude, якщо щось не так.",
+                    "Newest entries on top. What was sent (→) and what came back (←). You can send it to Claude if something is wrong."),
             actions = listOf(tr("Поділитися", "Share") to Ui.Kind.PRIMARY, tr("Закрити", "Close") to Ui.Kind.QUIET),
             onAction = { i ->
                 if (i == 0) host.shareText(tr("Aolithium Live — журнал зв'язку", "Aolithium Live — connection log"),

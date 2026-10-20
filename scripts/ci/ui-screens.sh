@@ -162,6 +162,20 @@ for st in LOST LIVE; do
   start --es demo DISCHARGING --es dialog "status:$st"
   shot "p18-link-$st-font130" 4
 done
+# T47 (faric 20.10 22:53): у вікні заголовок згори й кнопки знизу — завжди видно, прокручується середина.
+# Великий шрифт — щоб вміст точно не влазив: шапка й кнопки мають стояти на місці, і після прокрутки теж.
+start --es demo DISCHARGING --es dialog link
+shot w01-link-font130 4
+scroll_down
+shot w02-link-font130-scrolled
+start --es demo IDLE --es dialog log:long
+shot w03-log-font130 4
+scroll_down
+shot w03b-log-font130-scrolled
+start --es demo IDLE --es dialog info:zones
+shot w04-info-font130 4
+scroll_down
+shot w05-info-font130-scrolled
 # T30 (скрін faric 20.10 03:27): плитки «Відключення світла» — значення в один рядок і зі шрифтом 1.3.
 start --es demo IDLE --es dialog tab:CHARTS:D1
 shot p20-charts-font130 5

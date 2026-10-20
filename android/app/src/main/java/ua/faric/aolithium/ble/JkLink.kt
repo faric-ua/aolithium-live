@@ -14,6 +14,7 @@ import android.os.Looper
 import java.util.UUID
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.ConnectPlan
 import ua.faric.aolithium.core.Jk
 import ua.faric.aolithium.core.JkAssembler
 import ua.faric.aolithium.core.JkDevice
@@ -111,39 +112,50 @@ class JkLink(context: Context, override val address: String, private val quick: 
         resetSession()
         status(LinkStatus.Phase.CONNECTING, attempt = reconnects)
         val token = ++attempt
-        val known = BleScanner.seen[address]
-        if (known != null) {
+        // T46: як у `JbdLink` — старий «пристрій з пошуку» лише якщо свіжий і це перша спроба, інакше свіжий пошук.
+        val cached = BleScanner.seen[address]
+        val ago = BleScanner.seenAgoMs(address)
+        if (cached != null && ConnectPlan.first(ago, retry = reconnects > 0) == ConnectPlan.First.CACHED) {
             LinkLog.add(tr("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}",
                 "$short: connecting (device from search), attempt ${reconnects + 1}") +
                 (BleScanner.lastRssi[address]?.let { tr(", сигнал ", ", signal ") + Signal.describe(it) } ?: ""))
-            h.postDelayed({ connectTo(known, token) }, JbdLink.AFTER_SCAN_MS)
+            h.postDelayed({ connectTo(cached, token) }, JbdLink.AFTER_SCAN_MS)
             return
         }
-        LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням…", "$short: looking for the battery on air before connecting…"))
+        LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням, спроба ${reconnects + 1}…",
+            "$short: looking for the battery on air before connecting, attempt ${reconnects + 1}…"))
         main.post {
             BleScanner.findOne(app, address, JbdLink.FIND_MS) { found ->
                 h.post {
                     if (!running || token != attempt) return@post
-                    val direct = if (found == null && quick) {
-                        try {
-                            adapter.getRemoteDevice(address.uppercase())
-                        } catch (e: IllegalArgumentException) {
-                            null
+                    when (ConnectPlan.afterScan(found = found != null, hasCached = cached != null, quick = quick)) {
+                        ConnectPlan.AfterScan.FOUND -> {
+                            LinkLog.add(tr("$short: знайшлась", "$short: found") +
+                                (BleScanner.lastRssi[address]?.let { tr(", сигнал ", ", signal ") + Signal.describe(it) } ?: "") +
+                                tr(", підключаюсь", ", connecting"))
+                            h.postDelayed({ connectTo(found!!, token) }, JbdLink.AFTER_SCAN_MS)
                         }
-                    } else {
-                        null
-                    }
-                    when {
-                        found != null -> {
-                            LinkLog.add(tr("$short: знайшлась, підключаюсь", "$short: found, connecting"))
-                            h.postDelayed({ connectTo(found, token) }, JbdLink.AFTER_SCAN_MS)
+                        ConnectPlan.AfterScan.CACHED -> {
+                            LinkLog.add(tr("$short: у пошуку не видно — пробую пристрій з минулого пошуку",
+                                "$short: not seen in search, trying the device from an earlier search"))
+                            h.postDelayed({ connectTo(cached!!, token) }, JbdLink.AFTER_SCAN_MS)
                         }
-                        direct != null -> {
-                            LinkLog.add(tr("$short: у пошуку не видно — пробую напряму за адресою",
-                                "$short: not seen in search, trying directly by address"))
-                            h.postDelayed({ connectTo(direct, token) }, JbdLink.AFTER_SCAN_MS)
+                        ConnectPlan.AfterScan.DIRECT -> {
+                            val direct = try {
+                                adapter.getRemoteDevice(address.uppercase())
+                            } catch (e: IllegalArgumentException) {
+                                null
+                            }
+                            if (direct != null) {
+                                LinkLog.add(tr("$short: у пошуку не видно — пробую напряму за адресою",
+                                    "$short: not seen in search, trying directly by address"))
+                                h.postDelayed({ connectTo(direct, token) }, JbdLink.AFTER_SCAN_MS)
+                            } else {
+                                running = false
+                                status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
+                            }
                         }
-                        else -> {
+                        ConnectPlan.AfterScan.FAIL -> {
                             LinkLog.add(tr("$short: за ${JbdLink.FIND_MS / 1000} с у пошуку не з'явилась",
                                 "$short: did not appear in search in ${JbdLink.FIND_MS / 1000} s"))
                             running = false

@@ -353,7 +353,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.9 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.10 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -484,8 +484,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="en"><b>Tap the line</b> — a window with the full explanation and the <span class="btn norm">Reconnect</span> and <span class="btn norm">Connection log</span> buttons.</p>
   </div>
   <div class="ok-box">
-    <p class="uk"><b>Не допомогло?</b> «Журнал зв'язку» (торкнись рядка «Зв'язок» або «Ще») → «Поділитися» → надішли Claude. У журналі — що і коли відповіла плата, без особистих даних.</p>
-    <p class="en"><b>Still no luck?</b> "Connection log" (tap the "Connection" line, or "More") → "Share" → send it to Claude. The log shows what the BMS answered and when, with no personal data.</p>
+    <p class="uk"><b>Не допомогло?</b> «Журнал зв'язку» (торкнись рядка «Зв'язок» або «Ще») → «Поділитися» → надішли Claude. У журналі — що і коли відповіла плата, без особистих даних; свіжіші записи — зверху.</p>
+    <p class="en"><b>Still no luck?</b> "Connection log" (tap the "Connection" line, or "More") → "Share" → send it to Claude. The log shows what the BMS answered and when, with no personal data; newest entries are on top.</p>
   </div>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/link-lost.webp" alt="Рядок Зв'язок втрачено з кнопкою Ще раз"><figcaption>«Зв'язок втрачено»: рядок той самий, з'явилась кнопка «Ще раз», нижче — останні дані.</figcaption></figure>
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/link-lost.webp" alt="Connection lost line with Retry button"><figcaption>"Connection lost": the same line, a "Retry" button, the last data below.</figcaption></figure>
@@ -1027,8 +1027,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.9 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.9.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.9 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.9.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.10 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.10.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.10 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.10.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
@@ -1174,6 +1174,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>запис у фоні спершу шукає батарею в ефірі й пробує тричі — менше «нема зв'язку» поруч з батареєю; у кожному вікні заголовок згори й кнопки знизу завжди видно, прокручується середина; журнал зв'язку — свіжіші зверху</td></tr>
       <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>сповіщення «Заряджається» зі смужкою й часом до повної; віджет оновлюється, щойно розблокуєш телефон; одна порада «раз на 1–2 тижні до 100 %»</td></tr>
       <tr><td class="k"><b>0.4.8</b> · 20.10.2026</td><td>довідник: чому повна ємність менша за етикетку, чи варто розряджати до нуля, як берегти батарею</td></tr>
       <tr><td class="k"><b>0.4.7</b> · 20.10.2026</td><td>одна мова скрізь: «UA / EN» в інструкції перемикають увесь застосунок, демо відкриваються тією ж мовою</td></tr>
@@ -1202,6 +1203,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>background recording first looks for the battery on air and tries three times — fewer "no connection" near the battery; in every window the title on top and the buttons at the bottom are always visible, the middle scrolls; connection log — newest on top</td></tr>
       <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>"Charging" notification with a progress bar and time to full; the widget updates as soon as you unlock the phone; one tip "every 1–2 weeks to 100%"</td></tr>
       <tr><td class="k"><b>0.4.8</b> · 20.10.2026</td><td>glossary: why full capacity is below the label, whether to drain to zero, how to look after the battery</td></tr>
       <tr><td class="k"><b>0.4.7</b> · 20.10.2026</td><td>one language everywhere: "UA / EN" in the guide switch the whole app, demos open in the same language</td></tr>

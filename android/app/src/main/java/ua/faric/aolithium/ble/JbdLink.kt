@@ -14,6 +14,7 @@ import android.os.Looper
 import java.util.UUID
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.ConnectPlan
 import ua.faric.aolithium.core.Jbd
 import ua.faric.aolithium.core.JbdAssembler
 import ua.faric.aolithium.core.JbdBasic
@@ -32,7 +33,7 @@ import ua.faric.aolithium.core.tr
  * Уся робота з Bluetooth — в одному своєму потоці (Android не любить паралельних операцій GATT);
  * колбеки Android лише перекладають подію в цей потік.
  *
- * [quick] — для запису у фоні (v0.2.5, `bg/RecordService`): одна повторна спроба замість трьох, без довгого
+ * [quick] — для запису у фоні (v0.2.5, `bg/RecordService`): дві повторні спроби замість трьох (T46), без довгого
  * «чекати батарею» (autoConnect), а якщо в пошуку батареї не видно — підключення напряму за адресою
  * (Android 10–11 з фонової служби може не віддавати результати пошуку без дозволу на місцезнаходження у фоні).
  * Служба сама зупиняє зв'язок після першого знімка.
@@ -125,40 +126,55 @@ class JbdLink(context: Context, override val address: String, private val quick:
         resetSession()
         status(LinkStatus.Phase.CONNECTING, attempt = reconnects)
         val token = ++attempt
-        val known = BleScanner.seen[address]
-        if (known != null) {
+        // T46 (журнал 20.10 22:21–22:51): старий «пристрій з пошуку» на Samsung дає 133 — спершу свіжий пошук.
+        val cached = BleScanner.seen[address]
+        val ago = BleScanner.seenAgoMs(address)
+        if (cached != null && ConnectPlan.first(ago, retry = reconnects > 0) == ConnectPlan.First.CACHED) {
             LinkLog.add(tr("$short: підключаюсь (пристрій з пошуку), спроба ${reconnects + 1}",
                 "$short: connecting (device from search), attempt ${reconnects + 1}") +
                 (BleScanner.lastRssi[address]?.let { tr(", сигнал ", ", signal ") + Signal.describe(it) } ?: ""))
-            h.postDelayed({ connectTo(known, token) }, AFTER_SCAN_MS)
+            h.postDelayed({ connectTo(cached, token) }, AFTER_SCAN_MS)
             return
         }
-        LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням…", "$short: looking for the battery on air before connecting…"))
+        LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням, спроба ${reconnects + 1}…",
+            "$short: looking for the battery on air before connecting, attempt ${reconnects + 1}…"))
         main.post {
             BleScanner.findOne(app, address, FIND_MS) { device ->
                 h.post {
                     if (!running || token != attempt) return@post
-                    val direct = if (device == null && quick) {
-                        try {
-                            adapter.getRemoteDevice(address.uppercase())
-                        } catch (e: IllegalArgumentException) {
-                            null
+                    when (ConnectPlan.afterScan(found = device != null, hasCached = cached != null, quick = quick)) {
+                        ConnectPlan.AfterScan.FOUND -> {
+                            LinkLog.add(tr("$short: знайшлась", "$short: found") +
+                                (BleScanner.lastRssi[address]?.let { tr(", сигнал ", ", signal ") + Signal.describe(it) } ?: "") +
+                                tr(", підключаюсь", ", connecting"))
+                            h.postDelayed({ connectTo(device!!, token) }, AFTER_SCAN_MS)
                         }
-                    } else {
-                        null
-                    }
-                    if (device == null && direct != null) {
-                        LinkLog.add(tr("$short: у пошуку не видно — пробую напряму за адресою",
-                            "$short: not seen in search, trying directly by address"))
-                        h.postDelayed({ connectTo(direct, token) }, AFTER_SCAN_MS)
-                    } else if (device == null) {
-                        LinkLog.add(tr("$short: за ${FIND_MS / 1000} с у пошуку не з'явилась",
-                            "$short: did not appear in search in ${FIND_MS / 1000} s"))
-                        running = false
-                        status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
-                    } else {
-                        LinkLog.add(tr("$short: знайшлась, підключаюсь", "$short: found, connecting"))
-                        h.postDelayed({ connectTo(device, token) }, AFTER_SCAN_MS)
+                        ConnectPlan.AfterScan.CACHED -> {
+                            LinkLog.add(tr("$short: у пошуку не видно — пробую пристрій з минулого пошуку",
+                                "$short: not seen in search, trying the device from an earlier search"))
+                            h.postDelayed({ connectTo(cached!!, token) }, AFTER_SCAN_MS)
+                        }
+                        ConnectPlan.AfterScan.DIRECT -> {
+                            val direct = try {
+                                adapter.getRemoteDevice(address.uppercase())
+                            } catch (e: IllegalArgumentException) {
+                                null
+                            }
+                            if (direct != null) {
+                                LinkLog.add(tr("$short: у пошуку не видно — пробую напряму за адресою",
+                                    "$short: not seen in search, trying directly by address"))
+                                h.postDelayed({ connectTo(direct, token) }, AFTER_SCAN_MS)
+                            } else {
+                                running = false
+                                status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
+                            }
+                        }
+                        ConnectPlan.AfterScan.FAIL -> {
+                            LinkLog.add(tr("$short: за ${FIND_MS / 1000} с у пошуку не з'явилась",
+                                "$short: did not appear in search in ${FIND_MS / 1000} s"))
+                            running = false
+                            status(LinkStatus.Phase.FAILED, NOT_ADVERTISING_HINT)
+                        }
                     }
                 }
             }
@@ -497,7 +513,8 @@ class JbdLink(context: Context, override val address: String, private val quick:
         const val CONNECT_TIMEOUT_MS = 15_000L
         const val RECONNECT_DELAY_MS = 3_000L
         const val MAX_RECONNECTS = 3
-        const val QUICK_RECONNECTS = 1
+        /** T46: у фоні — 3 спроби (кожна повторна — зі свіжим пошуком), не 2. */
+        const val QUICK_RECONNECTS = 2
         const val AFTER_SCAN_MS = 600L
         const val FIND_MS = 10_000L
         const val WAIT_CONNECT_MS = 30_000L

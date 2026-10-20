@@ -25,6 +25,10 @@ object LinkLog {
     @Synchronized
     fun text(): String = lines.joinToString("\n")
 
+    /** T47 (faric 20.10 22:53): у вікні й у «Поділитися» — найсвіжіші рядки зверху. */
+    @Synchronized
+    fun newestFirst(): String = lines.reversed().joinToString("\n")
+
     @Synchronized
     fun clear() = lines.clear()
 
