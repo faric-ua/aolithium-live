@@ -24,8 +24,10 @@ import java.io.IOException
  * Як влаштовано (без бібліотек, як і весь застосунок):
  * - сторінку віддаємо самі з assets за адресою https://appassets.androidplatform.net/assets/… — з file:// у Track
  *   Catcher WebView не показував картинки; androidx WebViewAssetLoader тут нема, тож [serve] — свій, на 20 рядків;
- * - мова — `?lang=uk|en` (мова застосунку) при новому відкритті (`&fresh=1`); далі її міняє «UA / EN» у верхньому рядку
- *   застосунку (T35, [setGuideLang]), а сторінка пам'ятає вибір; `&app=1` — кнопки демо, сховати «UA / EN» на сторінці;
+ * - мова — **завжди мова застосунку** (T42, faric 20.10 17:02: «локалізація пливе» — інструкція англійською, а демо
+ *   українською): `?lang=` при відкритті й `guideSetLang` після кожного завантаження сторінки (і після «Назад» з демо).
+ *   «UA / EN» у верхньому рядку перемикають мову всього застосунку (`MainActivity.setLanguage`); `&app=1` — кнопки демо,
+ *   сховати «UA / EN» на сторінці;
  * - місце на сторінці (T36) пам'ятає сама сторінка: кожен розділ і зміст — своє (localStorage), тож після демо чи
  *   «Назад» інструкція там, де була; `fresh=1` — забути місця;
  * - кнопки демо — посилання `app://demo/IDLE` → [MainActivity.openBattery] («Назад» з демо → сюди ж, T26);
@@ -37,9 +39,6 @@ import java.io.IOException
 class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen(host) {
     override val view: View
     private var web: WebView? = null
-    /** Мова сторінки (T35): спершу — мова застосунку; «UA / EN» угорі міняє лише інструкцію. */
-    var guideLang: Lang.Code = Lang.of(state?.getString(KEY_GUIDE_LANG)).takeIf { state?.getString(KEY_GUIDE_LANG) != null } ?: Lang.current
-        private set
 
     init {
         val w = runCatching { WebView(host) }.getOrNull()
@@ -47,10 +46,7 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         view = if (w == null) fallback() else {
             setUp(w)
             val saved = state?.getBundle(KEY_WEB)
-            if (saved == null || w.restoreState(saved) == null) {
-                guideLang = Lang.current
-                w.loadUrl(startUrl(section))
-            }
+            if (saved == null || w.restoreState(saved) == null) w.loadUrl(startUrl(section))
             w
         }
     }
@@ -70,6 +66,11 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         w.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                 serve(request.url)
+
+            // T42: сторінка могла запам'ятати іншу мову (вибір на сторінці, стара версія) — завжди мова застосунку.
+            override fun onPageFinished(view: WebView, url: String) {
+                view.evaluateJavascript("window.guideSetLang && window.guideSetLang('${Lang.current.tag}')", null)
+            }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url
@@ -115,11 +116,6 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         return if (section.isNullOrBlank()) base else "$base#$section"
     }
 
-    /** T35: мова інструкції з верхнього рядка застосунку (мова самого застосунку не міняється). */
-    fun setGuideLang(code: Lang.Code) {
-        guideLang = code
-        web?.evaluateJavascript("window.guideSetLang && window.guideSetLang('${code.tag}')", null)
-    }
 
     /** «Назад»: у сторінці є куди повертатись (розділ → зміст) — туди; інакше виходимо з інструкції. */
     override fun onBack(): Boolean {
@@ -134,7 +130,6 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         val b = Bundle()
         w.saveState(b)
         out.putBundle(KEY_WEB, b)
-        out.putString(KEY_GUIDE_LANG, guideLang.tag)
     }
 
     override fun onStop() {
@@ -169,6 +164,5 @@ class GuideScreen(host: MainActivity, state: Bundle?, section: String?) : Screen
         /** Адреса, яку Android відвів саме для сторінок з assets застосунку (у мережу запит не йде). */
         const val HOST = "appassets.androidplatform.net"
         const val KEY_WEB = "web"
-        const val KEY_GUIDE_LANG = "guideLang"
     }
 }
