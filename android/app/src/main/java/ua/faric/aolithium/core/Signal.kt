@@ -19,10 +19,16 @@ object Signal {
     const val TOO_FAR = -88
 
     /** Три слова (faric 19.10: «дуже слабкий» не влазило в рядок — лишаємо просто «слабкий»). */
-    enum class Level(val title: String) {
-        STRONG("сильний"),
-        MEDIUM("середній"),
-        WEAK("слабкий"),
+    enum class Level {
+        STRONG, MEDIUM, WEAK;
+
+        /** T12: getter, не аргумент enum — щоб після перемикання мови було новою мовою. */
+        val title: String
+            get() = when (this) {
+                STRONG -> tr("сильний", "strong")
+                MEDIUM -> tr("середній", "medium")
+                WEAK -> tr("слабкий", "weak")
+            }
     }
 
     fun level(rssi: Int): Level = when {

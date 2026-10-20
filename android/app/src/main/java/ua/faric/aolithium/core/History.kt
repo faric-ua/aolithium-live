@@ -162,9 +162,16 @@ object Health {
 
     fun overchargeAdvice(count: Int): String? =
         if (count < OVERCHARGE_MANY) null
-        else "Плата $count разів зупиняла заряд через перезаряд комірки. Найчастіша причина — зарядний пристрій дає " +
-            "забагато вольт (для 4 комірок LiFePO4 зазвичай радять 14,2–14,4 В на заряді й 13,5–13,6 В на підтримці), " +
-            "або одна комірка доходить до межі раніше за інших (тоді різниця комірок наприкінці заряду велика). " +
-            "Плата при цьому батарею захистила — це не поломка, але часті спрацювання старять комірки. " +
-            "Перевір налаштування зарядного (інвертора) — це орієнтир, не діагноз."
+        else tr(
+            "Плата $count разів зупиняла заряд через перезаряд комірки. Найчастіша причина — зарядний пристрій дає " +
+                "забагато вольт (для 4 комірок LiFePO4 зазвичай радять 14,2–14,4 В на заряді й 13,5–13,6 В на підтримці), " +
+                "або одна комірка доходить до межі раніше за інших (тоді різниця комірок наприкінці заряду велика). " +
+                "Плата при цьому батарею захистила — це не поломка, але часті спрацювання старять комірки. " +
+                "Перевір налаштування зарядного (інвертора) — це орієнтир, не діагноз.",
+            "The BMS stopped charging $count times because of cell overcharge. The most common cause is that the charger gives " +
+                "too many volts (for 4 LiFePO4 cells, 14.2–14.4 V for charging and 13.5–13.6 V for float are usually recommended), " +
+                "or one cell reaches the limit before the others (then the cell difference at the end of charge is big). " +
+                "The BMS protected the battery — this is not a fault, but frequent trips age the cells. " +
+                "Check the charger (inverter) settings — this is a guide, not a diagnosis.",
+        )
 }

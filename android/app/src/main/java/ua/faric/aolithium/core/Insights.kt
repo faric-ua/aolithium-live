@@ -288,10 +288,16 @@ object Laggard {
 object ChargerCheck {
     data class Result(val maxV: Double, val maxCellMv: Int?, val verdict: Verdict)
 
-    enum class Verdict(val title: String) {
-        LOW("не доходить до повної"),
-        OK("в нормі"),
-        HIGH("забагато"),
+    enum class Verdict {
+        LOW, OK, HIGH;
+
+        /** T12: getter, не аргумент enum — щоб після перемикання мови було новою мовою. */
+        val title: String
+            get() = when (this) {
+                LOW -> tr("не доходить до повної", "does not reach full")
+                OK -> tr("в нормі", "normal")
+                HIGH -> tr("забагато", "too high")
+            }
     }
 
     /** Нижче — зарядний, мабуть, не доводить до кінця (плата рідко уточнює відсоток). */
