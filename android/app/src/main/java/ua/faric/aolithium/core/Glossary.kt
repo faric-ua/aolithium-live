@@ -121,9 +121,9 @@ object Glossary {
             tr("Нижче 80 % — батарея помітно постаріла.", "Below 80% — the battery has clearly aged."))
         e("care", Group.CHARGE, tr("Як берегти батарею", "How to look after the battery"), null,
             tr("Поради для LiFePO4 (Aolithium, Logic Power): працювати між 20 і 90 % — це зелена зона на «спідометрі»; раз на " +
-                "2–4 тижні заряджати до 100 % — плата вирівнює комірки саме наприкінці заряду; на зберігання лишати 50–60 %.",
+                "1–2 тижні заряджати до 100 % — плата вирівнює комірки саме наприкінці заряду; на зберігання лишати 50–60 %.",
                 "Tips for LiFePO4 (Aolithium, Logic Power): work between 20 and 90% — the green zone on the \"speedometer\"; " +
-                    "every 2–4 weeks charge to 100% — the BMS balances the cells right at the end of charge; for storage leave 50–60%."),
+                    "every 1–2 weeks charge to 100% — the BMS balances the cells right at the end of charge; for storage leave 50–60%."),
             tr("Зарядний пристрій — 13,8–14,6 В для 4 комірок (наприклад, 14,16 В — норма). Заряджати вище 0 °C.",
                 "Charger — 13.8–14.6 V for 4 cells (for example, 14.16 V is normal). Charge above 0 °C."),
             tr("Глибокий розряд (червона зона) — лише якщо дуже треба. Заряд на морозі плата сама забороняє — це не поломка.",
