@@ -86,22 +86,48 @@ object Glossary {
                 "Remaining ÷ full capacity = charge percent (86.31 ÷ 92.34 = 93%)."),
             tr("Нічого — це просто запас. Щоб оцінити, на скільки вистачить, ділимо залишок на струм розряду.",
                 "Nothing — it is just the reserve. To estimate how long it lasts, divide the remaining by the discharge current."))
+        // faric 20.10 17:04: «паспортна ємність менша на 7–8 % — чому? і чи розрядити повністю, щоб плата перерахувала?»
         e("full", Group.CHARGE, tr("Повна ємність, А·год", "Full capacity, Ah"), "Nominal Capacity",
-            tr("Скільки ампер-годин плата вважає «100 %». На етикетці 100 А·год, а плата Aolithium каже 92,34 — " +
-                "це або налаштування з заводу, або плата «вивчила» реальну ємність після циклів.",
-                "How many amp-hours the BMS counts as \"100%\". The label says 100 Ah, but the Aolithium BMS says 92.34 — " +
-                    "either a factory setting, or the BMS \"learned\" the real capacity after cycles."),
-            tr("Близько до етикетки. 80 % і більше від етикетки — нормальна батарея.",
-                "Close to the label. 80% of the label or more is a normal battery."),
-            tr("Помітно менше за етикетку (нижче ~80 %) — батарея постаріла: вистачатиме на менше часу.",
-                "Much less than the label (below ~80%) — the battery has aged: it will last a shorter time."))
+            tr("Скільки ампер-годин плата вважає «100 %». Від цього числа вона рахує відсоток заряду. Число записане в самій " +
+                "платі: його задає виробник (часто — після виміру розрядом), а деякі плати підправляють його після повних циклів. " +
+                "На етикетці Aolithium 100 А·год, а плата каже 92,34 — на 7,7 % менше. Так буває з трьох причин: заводське " +
+                "налаштування із запасом; комірки трохи слабші за етикетку (у недорогих батареях це звично); природне старіння — " +
+                "кілька відсотків за роки й сотні циклів.",
+                "How many amp-hours the BMS counts as \"100%\". It calculates the charge percent from this number. The number is " +
+                    "stored in the BMS itself: the maker sets it (often after measuring by discharge), and some boards adjust it after " +
+                    "full cycles. The Aolithium label says 100 Ah, but the BMS says 92.34 — 7.7% less. This happens for three reasons: " +
+                    "a factory setting with a margin; cells slightly weaker than the label (common in inexpensive batteries); " +
+                    "natural ageing — a few percent over years and hundreds of cycles."),
+            tr("80 % від етикетки і більше — нормальна батарея; 90–100 % — як нова. LiFePO4 розраховані на тисячі циклів, " +
+                "доки ємність не впаде до 80 %.",
+                "80% of the label or more is a normal battery; 90–100% is like new. LiFePO4 batteries are rated for thousands " +
+                    "of cycles before capacity drops to 80%."),
+            tr("Нижче ~80 % від етикетки — батарея постаріла: вистачатиме на менше часу. Навмисно розряджати до нуля, щоб плата " +
+                "«перерахувала», не варто: виробник не обіцяє, що плата перевчиться, а глибокий розряд — зайве навантаження " +
+                "(і під час відключення лишишся без запасу). Справжню ємність краще побачити під час довгого відключення: " +
+                "зарядити до 100 %, потім звичайне навантаження до 10–15 % — у «Графіки» → «Відключення світла» видно, скільки " +
+                "А·год віддано. Змінити число в платі застосунок не може: він лише читає плату.",
+                "Below ~80% of the label — the battery has aged: it will last a shorter time. Draining it to zero on purpose so " +
+                    "the BMS \"recalculates\" is not worth it: the maker does not promise the BMS will re-learn, and a deep discharge " +
+                    "is extra stress (and during an outage you are left without a reserve). The real capacity is better seen during a " +
+                    "long outage: charge to 100%, then normal load down to 10–15% — \"Charts\" → \"Power outages\" shows how many Ah " +
+                    "were given. The app cannot change the number in the BMS: it only reads the BMS."))
         e("soh", Group.CHARGE, tr("Здоров'я (від етикетки)", "Health (vs label)"), null,
             tr("Повна ємність, яку знає плата, у відсотках від числа на етикетці (з назви моделі: AL12-100-4S → 100 А·год). " +
-                "Це оцінка: плата може просто мати заводське налаштування ємності.",
+                "Це оцінка: число в платі може бути заводським налаштуванням, а не виміром (див. «Повна ємність»).",
                 "The full capacity known by the BMS, as a percent of the label number (from the model name: AL12-100-4S → 100 Ah). " +
-                    "This is an estimate: the BMS may just have a factory capacity setting."),
+                    "This is an estimate: the number in the BMS may be a factory setting, not a measurement (see \"Full capacity\")."),
             tr("90–100 % — як нова; 80–90 % — добре.", "90–100% — like new; 80–90% — good."),
             tr("Нижче 80 % — батарея помітно постаріла.", "Below 80% — the battery has clearly aged."))
+        e("care", Group.CHARGE, tr("Як берегти батарею", "How to look after the battery"), null,
+            tr("Поради для LiFePO4 (Aolithium, Logic Power): працювати між 20 і 90 % — це зелена зона на «спідометрі»; раз на " +
+                "2–4 тижні заряджати до 100 % — плата вирівнює комірки саме наприкінці заряду; на зберігання лишати 50–60 %.",
+                "Tips for LiFePO4 (Aolithium, Logic Power): work between 20 and 90% — the green zone on the \"speedometer\"; " +
+                    "every 2–4 weeks charge to 100% — the BMS balances the cells right at the end of charge; for storage leave 50–60%."),
+            tr("Зарядний пристрій — 13,8–14,6 В для 4 комірок (наприклад, 14,16 В — норма). Заряджати вище 0 °C.",
+                "Charger — 13.8–14.6 V for 4 cells (for example, 14.16 V is normal). Charge above 0 °C."),
+            tr("Глибокий розряд (червона зона) — лише якщо дуже треба. Заряд на морозі плата сама забороняє — це не поломка.",
+                "Deep discharge (red zone) — only if really needed. Charging in frost is blocked by the BMS itself — this is not a fault."))
         e("time", Group.CHARGE, tr("Вистачить на / до повної", "Lasts for / until full"), null,
             tr("Оцінка: залишок ÷ струм (або скільки бракує до повної ÷ струм заряду). Струм беремо середній за 2 хвилини, " +
                 "і число перераховується лише тоді, коли струм стабільно змінився більше ніж на 10 % — тому воно не скаче щосекунди. " +

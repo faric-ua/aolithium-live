@@ -43,7 +43,7 @@ class LinkLineTest {
         assertEquals("оновлено щойно", m.second)
         assertEquals("дані наживо", m.detail)
         assertFalse(m.retry)
-        assertEquals("демо, без батареї", LinkLine.build(State.LIVE, liveAt = now, now = now, demo = true).detail)
+        assertEquals("демо", LinkLine.build(State.LIVE, liveAt = now, now = now, demo = true).detail)
     }
 
     @Test fun lost_after_live_points_at_this_session_data() {
