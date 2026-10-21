@@ -42,14 +42,22 @@ object Telegram {
     )
 
     /** Відповідь Telegram: [ok] і що прийшло, або [error] людською мовою, [code] — номер помилки (401, 403, 409…). */
-    data class Reply(val ok: Boolean, val result: Any?, val code: Int = 0, val error: String = "")
+    data class Reply(
+        val ok: Boolean,
+        val result: Any?,
+        val code: Int = 0,
+        val error: String = "",
+        /** T52: група стала супергрупою — у неї новий номер чату; повідомлення треба слати туди. */
+        val migrateTo: Long? = null,
+    )
 
     fun reply(text: String?): Reply {
         val o = JsonTree.obj(JsonTree.parseOrNull(text))
             ?: return Reply(false, null, 0, tr("незрозуміла відповідь", "unreadable answer"))
         if (o["ok"] == true) return Reply(true, o["result"])
         val code = JsonTree.long(o["error_code"])?.toInt() ?: 0
-        return Reply(false, null, code, o["description"] as? String ?: "")
+        val migrate = JsonTree.long(JsonTree.obj(o["parameters"])?.get("migrate_to_chat_id"))
+        return Reply(false, null, code, o["description"] as? String ?: "", migrate)
     }
 
     /** Ім'я бота з `getMe` — «@aolithium_home_bot». */
@@ -70,20 +78,27 @@ object Telegram {
         }
     }
 
+    /** T52: у групі учасник — уся група, тож і ім'я — назва групи («Батареї родини»), а не того, хто натиснув. */
+    private fun who(chat: Map<String, Any?>?, from: Map<String, Any?>?): String {
+        val type = chat?.get("type")
+        val title = chat?.get("title") as? String
+        return if ((type == "group" || type == "supergroup") && !title.isNullOrBlank()) title else person(from)
+    }
+
     private fun update(u: Map<String, Any?>?): Update? {
         if (u == null) return null
         val id = JsonTree.long(u["update_id"]) ?: return null
         JsonTree.obj(u["message"])?.let { m ->
             val chat = JsonTree.obj(m["chat"]) ?: return Update(id, 0, "?", false)
             val chatId = JsonTree.long(chat["id"]) ?: return Update(id, 0, "?", false)
-            return Update(id, chatId, person(JsonTree.obj(m["from"])), chat["type"] == "private", text = m["text"] as? String)
+            return Update(id, chatId, who(chat, JsonTree.obj(m["from"])), chat["type"] == "private", text = m["text"] as? String)
         }
         JsonTree.obj(u["callback_query"])?.let { q ->
             val msg = JsonTree.obj(q["message"])
             val chatId = JsonTree.long(JsonTree.obj(msg?.get("chat"))?.get("id")) ?: return Update(id, 0, "?", false)
-            val chatType = JsonTree.obj(msg?.get("chat"))?.get("type")
+            val chat = JsonTree.obj(msg?.get("chat"))
             return Update(
-                id, chatId, person(JsonTree.obj(q["from"])), chatType == "private",
+                id, chatId, who(chat, JsonTree.obj(q["from"])), chat?.get("type") == "private",
                 callbackId = q["id"] as? String, callbackData = q["data"] as? String,
                 messageId = JsonTree.long(msg?.get("message_id")),
             )
