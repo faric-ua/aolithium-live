@@ -52,6 +52,9 @@ object GuardBot {
          */
         data class Status(val chatId: Long, val text: String, val look: GuardPicture.Look, val grid: Boolean,
             val keyboard: List<List<Telegram.Button>>? = null) : Action()
+
+        /** T64: «/diag» — прочитати батарею й надіслати файл з даними для перевірки ([by] — хто попросив). */
+        data class Diag(val chatId: Long, val by: String) : Action()
     }
 
     /** Спроби коду: chatId → (скільки, коли перша у вікні). Лише в пам'яті сторожа. */
@@ -81,6 +84,7 @@ object GuardBot {
             "status" to tr("Що зараз з батареєю", "What the battery is doing now"),
             "settings" to tr("Що мені надсилати", "What to send me"),
             "menu" to tr("Кнопки: стан усіх батарей, вигляд", "Buttons: all batteries, picture look"),
+            "diag" to tr("Файл з даними плати для перевірки", "File with BMS data for checking"),
             "stop" to tr("Більше не надсилати", "Stop sending"),
             "help" to tr("Як це працює", "How it works"),
         )
@@ -116,6 +120,8 @@ object GuardBot {
                 Result(input.members, listOf(Action.Send(u.chatId, menuText(), menuKeyboard())), input.tries)
             cmd == "/settings" || cmd == "/start" || word == "налаштування" -> // uk-only: слово людини
                 Result(input.members, listOf(Action.Send(u.chatId, settingsText(me), keyboard(me))), input.tries)
+            cmd == "/diag" -> Result(input.members, listOf(Action.Diag(u.chatId, u.name)), input.tries,
+                tr("${me.name} попросив дані для перевірки", "${me.name} asked for check data"))
             cmd == "/stop" -> {
                 val left = input.members.filterNot { it.chatId == u.chatId }
                 Result(left, listOf(Action.Send(u.chatId, tr(
@@ -219,9 +225,9 @@ object GuardBot {
 
     fun help(): String = tr(
         "Я стежу за батареєю й пишу, коли щось сталося. Команди:\n/status — що зараз з батареєю\n/menu — кнопки\n/settings — що тобі надсилати\n" +
-            "/stop — більше не надсилати\nЩодня зранку пишу «Сторож працює». Не прийшло — зі сторожем щось сталося.",
+            "/diag — файл з даними плати для перевірки\n/stop — більше не надсилати\nЩодня зранку пишу «Сторож працює». Не прийшло — зі сторожем щось сталося.",
         "I watch the battery and write when something happens. Commands:\n/status — what the battery is doing now\n/menu — buttons\n" +
-            "/settings — what to send you\n/stop — stop sending\nEvery morning I write \"The guard is working\". If it does not come, " +
+            "/settings — what to send you\n/diag — file with BMS data for checking\n/stop — stop sending\nEvery morning I write \"The guard is working\". If it does not come, " +
             "something happened to the guard.",
     )
 

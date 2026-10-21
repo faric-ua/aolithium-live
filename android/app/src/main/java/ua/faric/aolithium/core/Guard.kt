@@ -48,11 +48,13 @@ object Guard {
     }
 
     /** Одне повідомлення в Telegram. [battery] — назва батареї (порожньо — про сторожа загалом). */
-    data class Msg(val kind: Kind, val title: String, val text: String, val battery: String = "") {
-        fun render(): String = buildString {
+    data class Msg(val kind: Kind, val title: String, val text: String, val battery: String = "", val urgent: Boolean = false) {
+        /** [call] — T50: для серйозного ([urgent]) дописати номери (`Emergency.telegramText`). */
+        fun render(call: Emergency.Plan? = null): String = buildString {
             append(kind.icon).append(' ').append(title)
             if (battery.isNotEmpty()) append("\n🔋 ").append(battery)
             if (text.isNotEmpty()) append('\n').append(text)
+            if (urgent && call != null) append('\n').append(Emergency.telegramText(call))
         }
     }
 
@@ -153,7 +155,7 @@ object Guard {
                 Alerts.Kind.TEMP -> Kind.TEMP
                 Alerts.Kind.NO_DATA, Alerts.Kind.CHARGING -> null
             } ?: continue
-            out += Msg(kind, e.title, e.text, battery)
+            out += Msg(kind, e.title, e.text, battery, urgent = e.urgent)
         }
         n = empty(n, s, battery, out)
         n = step(n, s, battery, out, quiet = lowSaid)
@@ -220,7 +222,9 @@ object Guard {
         fun fresh(at: Long) = at > 0 && t - at in 0..JUMP_WINDOW_MS
         val reasons = ArrayList<String>()
         var mins = 0L
+        var heat = false // T50: стрибок температури — серйозне; стрибок лише різниці комірок — ні
         if (!temp.isNaN() && !st.baseTemp.isNaN() && fresh(st.tempAt) && temp - st.baseTemp >= JUMP_TEMP_C) {
+            heat = true
             reasons += tr("температура ${Fmt.celsius(st.baseTemp)} → ${Fmt.celsius(temp)}",
                 "temperature ${Fmt.celsius(st.baseTemp)} → ${Fmt.celsius(temp)}")
             mins = maxOf(mins, (t - st.tempAt) / 60_000L)
@@ -235,7 +239,7 @@ object Guard {
             val m = mins.coerceAtLeast(1)
             out += Msg(Kind.JUMP, tr("Різкий стрибок за $m хв", "Sudden jump in $m min"),
                 reasons.joinToString("; ") + ". " + tr("Глянь на батарею, якщо можеш.", "Have a look at the battery if you can.") +
-                    "\n" + short(s), battery)
+                    "\n" + short(s), battery, urgent = heat)
             n = n.copy(jumpAt = t)
         }
         if (!temp.isNaN() && (!fresh(st.tempAt) || st.baseTemp.isNaN() || temp < st.baseTemp)) n = n.copy(tempAt = t, baseTemp = temp)
@@ -256,6 +260,18 @@ object Guard {
         s.deltaMv?.let { parts += tr("різниця ${Fmt.millivolts(it)}", "difference ${Fmt.millivolts(it)}") }
         return parts.joinToString(" · ")
     }
+
+    /**
+     * T50: «Перевірка тривоги» — як виглядатиме найгірше (з номерами), щоб перевірити без справжньої біди.
+     * Вид — захист плати; позначено «ПЕРЕВІРКА», щоб ніхто не злякався.
+     */
+    fun urgentTest(battery: String): Msg = Msg(
+        Kind.PROTECTION,
+        tr("ПЕРЕВІРКА тривоги — так виглядатиме найгірше", "TEST alarm — this is how the worst case looks"),
+        tr("Насправді з батареєю все гаразд. Справжня тривога буде, наприклад: «Плата вимкнула заряд: перегрів при заряді».",
+            "The battery is actually fine. A real alarm would be, for example: \"BMS turned off charging: overheating while charging\"."),
+        battery, urgent = true,
+    )
 
     // ---------- щоденне «я працюю» ----------
 

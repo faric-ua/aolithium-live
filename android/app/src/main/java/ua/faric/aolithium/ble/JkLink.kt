@@ -13,6 +13,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import java.util.UUID
 import ua.faric.aolithium.core.BatterySnapshot
+import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.ConnectPlan
 import ua.faric.aolithium.core.Jk
@@ -411,6 +412,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
     }
 
     private fun onFrame(f: JkFrame) {
+        DiagFrames.add(Diag.Raw(System.currentTimeMillis(), Diag.JK, f.type, f.bytes)) // T64: для «Даних для перевірки»
         when (f.type) {
             Jk.TYPE_DEVICE -> {
                 device = JkParser.device(f.bytes)

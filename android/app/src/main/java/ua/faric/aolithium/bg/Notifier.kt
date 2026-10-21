@@ -6,12 +6,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
+import android.net.Uri
 import ua.faric.aolithium.R
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.ChargeNote
+import ua.faric.aolithium.core.Emergency
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
@@ -139,6 +142,34 @@ object Notifier {
         post(ctx, address, listOf(e), force = true)
     }
 
+    /**
+     * T50: кнопки «Подзвонити 101» / «Подзвонити <ім'я>» — відкривають набір номера (ACTION_DIAL, без дозволу на дзвінки):
+     * натискає й дзвонить людина, сам застосунок не дзвонить.
+     */
+    private fun addCallButtons(ctx: Context, nb: Notification.Builder, id: Int) {
+        val contacts = AlertSettings(ctx).callPlan.contacts
+        contacts.forEachIndexed { i, c ->
+            val dial = PendingIntent.getActivity(
+                ctx, id * 10 + i + 1,
+                Intent(Intent.ACTION_DIAL, Uri.parse(Emergency.dialUri(c))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            nb.addAction(Notification.Action.Builder(Icon.createWithResource(ctx, R.drawable.ic_note_battery), Emergency.buttonLabel(c), dial).build())
+        }
+    }
+
+    /**
+     * T50: «Перевірка тривоги» — як виглядатиме найгірше: з кнопками «Подзвонити», позначено «ПЕРЕВІРКА».
+     * Тим самим каналом, що й захист плати; на стан правил не впливає.
+     */
+    fun testUrgent(ctx: Context, address: String) {
+        val e = Alerts.Event(Alerts.Kind.PROTECTION, tr("ПЕРЕВІРКА тривоги", "TEST alarm"),
+            tr("Так виглядатиме найгірше (перегрів, коротке замикання). Насправді з батареєю все гаразд. Кнопки нижче лише відкривають набір номера.",
+                "This is how the worst case looks (overheating, short circuit). The battery is actually fine. The buttons below only open the dialer."),
+            urgent = true)
+        post(ctx, address, listOf(e), force = true)
+    }
+
     private fun post(ctx: Context, address: String, events: List<Alerts.Event>, force: Boolean = false) {
         if (events.isEmpty()) return
         val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
@@ -159,7 +190,7 @@ object Notifier {
                     .putExtra(MainActivity.EXTRA_BATTERY, address),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-            val note = Notification.Builder(ctx, channelId(e.kind))
+            val nb = Notification.Builder(ctx, channelId(e.kind))
                 .setSmallIcon(R.drawable.ic_note_battery)
                 .setColor(Palette.accent)
                 .setContentTitle(e.title)
@@ -171,7 +202,8 @@ object Notifier {
                 .setShowWhen(true)
                 .setWhen(System.currentTimeMillis())
                 .setCategory(Notification.CATEGORY_STATUS)
-                .build()
+            if (e.urgent) addCallButtons(ctx, nb, id)
+            val note = nb.build()
             try {
                 nm.notify(id, note)
                 val short = BmsMatch.shortAddress(address)

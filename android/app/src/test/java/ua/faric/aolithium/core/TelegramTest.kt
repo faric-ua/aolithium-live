@@ -60,6 +60,13 @@ class TelegramTest {
         assertTrue("підпис — UTF-8", String(body, Charsets.UTF_8).contains("Світло зникло"))
     }
 
+    @Test fun document_multipart_is_plain_text() {
+        val body = Telegram.multipart("B", Telegram.photoFields(7, "📎"), "document", "aolithium-diag-20261022-0105.txt",
+            "дані".toByteArray(Charsets.UTF_8), "text/plain; charset=utf-8")
+        val text = String(body, Charsets.UTF_8)
+        assertTrue(text.contains("name=\"document\"; filename=\"aolithium-diag-20261022-0105.txt\"\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nдані\r\n--B--"))
+    }
+
     @Test fun errors() {
         val r = Telegram.reply("""{"ok":false,"error_code":403,"description":"Forbidden: bot was blocked by the user"}""")
         assertFalse(r.ok)

@@ -27,6 +27,14 @@ object TelegramHttp {
         return post(token, "sendPhoto", "multipart/form-data; boundary=$boundary", body, 60_000)
     }
 
+    /** T64: текстовий файл (дані для перевірки) — `sendDocument`. */
+    fun sendDocument(token: String, chatId: Long, fileName: String, text: String, caption: String): Telegram.Reply {
+        val boundary = "aolithium" + System.nanoTime().toString(16)
+        val body = Telegram.multipart(boundary, Telegram.photoFields(chatId, caption), "document", fileName,
+            text.toByteArray(Charsets.UTF_8), "text/plain; charset=utf-8")
+        return post(token, "sendDocument", "multipart/form-data; boundary=$boundary", body, 60_000)
+    }
+
     private fun post(token: String, method: String, contentType: String, body: ByteArray, readTimeoutMs: Int): Telegram.Reply {
         val c = try {
             URL(Telegram.url(token, method)).openConnection() as HttpURLConnection

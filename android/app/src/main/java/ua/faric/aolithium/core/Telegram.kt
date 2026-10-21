@@ -145,7 +145,8 @@ object Telegram {
      * T59: тіло `multipart/form-data` без бібліотек — текстові поля й один файл PNG. [boundary] — рядок, якого нема
      * в даних (у полях — лише текст, а PNG перевіряти не треба: межу шукають лише з «\r\n--» на початку рядка).
      */
-    fun multipart(boundary: String, fields: List<Pair<String, String>>, fileField: String, fileName: String, png: ByteArray): ByteArray {
+    fun multipart(boundary: String, fields: List<Pair<String, String>>, fileField: String, fileName: String, png: ByteArray,
+        fileType: String = "image/png"): ByteArray {
         val out = java.io.ByteArrayOutputStream()
         fun w(s: String) = out.write(s.toByteArray(Charsets.UTF_8))
         for ((k, v) in fields) {
@@ -154,7 +155,7 @@ object Telegram {
             w("\r\n")
         }
         w("--$boundary\r\nContent-Disposition: form-data; name=\"$fileField\"; filename=\"$fileName\"\r\n")
-        w("Content-Type: image/png\r\n\r\n")
+        w("Content-Type: $fileType\r\n\r\n")
         out.write(png)
         w("\r\n--$boundary--\r\n")
         return out.toByteArray()

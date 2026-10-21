@@ -405,6 +405,20 @@ class RecordService : Service() {
             }
         }
 
+        /**
+         * T64: сторож просить свіже читання («/diag»). Служба працює — читає зараз (якщо вже не читає); не працює — false.
+         */
+        fun requestRead(): Boolean {
+            val s = instance ?: return false
+            s.h.post {
+                if (!s.busy) {
+                    LinkLog.add(tr("фон: сторож просить свіже читання (/diag)", "background: the guard asks for a fresh read (/diag)"))
+                    s.tick()
+                }
+            }
+            return true
+        }
+
         /** Кличе `LinkHolder`, коли відкривають екран батареї. Головний потік. */
         fun yieldTo(address: String) {
             instance?.cancelFor(address)

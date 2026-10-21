@@ -13,6 +13,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import java.util.UUID
 import ua.faric.aolithium.core.BatterySnapshot
+import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.ConnectPlan
 import ua.faric.aolithium.core.Jbd
@@ -452,6 +453,7 @@ class JbdLink(context: Context, override val address: String, private val quick:
         }
         h.removeCallbacks(answerTimeout)
         expected = -1
+        DiagFrames.add(Diag.Raw(System.currentTimeMillis(), Diag.JBD, f.cmd, f.data, f.status)) // T64: для «Даних для перевірки»
         if (f.ok) {
             when (f.cmd) {
                 Jbd.CMD_BASIC -> basic = JbdParser.basic(f.data) ?: basic

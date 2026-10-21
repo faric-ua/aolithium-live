@@ -137,4 +137,14 @@ class GuardBotTest {
         assertEquals("999999", GuardBot.newCode { 0.9999999 })
         assertEquals(6, GuardBot.newCode { 0.5 }.length)
     }
+
+    @Test fun diag_asks_for_a_file_only_from_members() {
+        val members = listOf(GuardBot.Member(-100, "Aolithium_room"))
+        val r = GuardBot.handle(Telegram.Update(4, -100, "Aolithium_room", false, text = "/diag@Aolithium_mom_bot"), input(members))
+        assertEquals(listOf(GuardBot.Action.Diag(-100, "Aolithium_room")), r.actions)
+        // Чужий (без коду) — лише привітання, жодних даних плати.
+        val stranger = GuardBot.handle(text(55, "/diag"), input(members))
+        assertTrue(stranger.actions.none { it is GuardBot.Action.Diag })
+        assertTrue(GuardBot.commands.any { it.first == "diag" })
+    }
 }
