@@ -13,6 +13,7 @@ import ua.faric.aolithium.core.JkCells
 import ua.faric.aolithium.core.JkDemo
 import ua.faric.aolithium.core.JkDevice
 import ua.faric.aolithium.core.JkParser
+import ua.faric.aolithium.core.JkSettings
 import ua.faric.aolithium.core.tr
 
 /**
@@ -88,14 +89,16 @@ class DemoLink(private val scene: DemoFrames.Scene) : BatteryLink {
         val a = JkAssembler()
         var device: JkDevice? = null
         var cells: JkCells? = null
-        for (chunk in (JkDemo.device() + JkDemo.cells()).toList().chunked(20)) {
+        var settings: JkSettings? = null
+        for (chunk in (JkDemo.device() + JkDemo.settings() + JkDemo.cells()).toList().chunked(20)) {
             for (f in a.feed(chunk.toByteArray())) when (f.type) {
                 Jk.TYPE_DEVICE -> device = JkParser.device(f.bytes)
+                Jk.TYPE_SETTINGS -> settings = JkParser.settings(f.bytes)
                 Jk.TYPE_CELLS -> cells = JkParser.cells(f.bytes, device?.swMajor ?: 0)
             }
         }
         val c = cells ?: return
-        val snap = BatterySnapshot.fromJk(c, device)
+        val snap = BatterySnapshot.fromJk(c, device, settings)
         val now = System.currentTimeMillis()
         lastSnapshot = snap
         lastSnapshotAt = now

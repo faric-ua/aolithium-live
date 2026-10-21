@@ -20,6 +20,7 @@ import ua.faric.aolithium.core.JkAssembler
 import ua.faric.aolithium.core.JkDevice
 import ua.faric.aolithium.core.JkFrame
 import ua.faric.aolithium.core.JkParser
+import ua.faric.aolithium.core.JkSettings
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.tr
 
@@ -53,6 +54,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
     private var writeChar: BluetoothGattCharacteristic? = null
     private val assembler = JkAssembler()
     private var device: JkDevice? = null
+    private var settings: JkSettings? = null
     private var reading = false
     private var askedCells = false
     private var silentRounds = 0
@@ -416,8 +418,12 @@ class JkLink(context: Context, override val address: String, private val quick: 
                     "   BMS: ${device?.model} · firmware ${device?.sw} · hardware ${device?.hw}"))
                 if (!askedCells) askCells(tr("прошу «комірки й стан» (0x96)", "asking for \"cells and state\" (0x96)"))
             }
-            Jk.TYPE_SETTINGS ->
-                LinkLog.add(tr("   налаштування плати (лише прочитано, не показуємо)", "   BMS settings (read only, not shown)"))
+            Jk.TYPE_SETTINGS -> {
+                // T28: лише показ — плата сама шле цей кадр; ми нічого в неї не пишемо.
+                settings = JkParser.settings(f.bytes) ?: settings
+                LinkLog.add(tr("   налаштування плати (лише прочитано): комірок ${settings?.cellCount}, перезаряд ${settings?.cellOverMv} мВ",
+                    "   BMS settings (read only): cells ${settings?.cellCount}, overcharge ${settings?.cellOverMv} mV"))
+            }
             Jk.TYPE_CELLS -> onCells(f)
             else -> LinkLog.add(tr("   невідомий кадр 0x%02x", "   unknown frame 0x%02x").format(f.type))
         }
@@ -437,7 +443,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
         }
         everLive = true
         reconnects = 0
-        val snap = BatterySnapshot.fromJk(c, device)
+        val snap = BatterySnapshot.fromJk(c, device, settings)
         lastSnapshot = snap
         lastSnapshotAt = now
         main.post { listener?.onSnapshot(snap, now) }

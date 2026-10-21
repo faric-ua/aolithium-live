@@ -108,6 +108,10 @@ start --es demo JK --es dialog tab:BOARD
 shot p19e-jk-board 4
 scroll_down
 shot p19f-jk-board-scrolled
+scroll_down
+shot p19f2-jk-board-settings
+scroll_down
+shot p19f3-jk-board-settings2
 # T7: інструкція (WebView з assets) — розділ «Демо без батареї» з кнопками демо.
 start --es page HELP --es section demo
 shot p19g-guide-demo 5

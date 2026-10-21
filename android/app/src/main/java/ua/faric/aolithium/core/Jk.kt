@@ -163,6 +163,62 @@ data class JkCells(
     val chargeStage: Int?,
 )
 
+/**
+ * T28 (v0.4.15): налаштування плати з кадру 0x01 — **лише показ**. Плата шле цей кадр сама у відповідь на «комірки й стан»
+ * (0x96); ми нічого в неї не пишемо. Місця байтів — esphome-jk-bms (`decode_jk02_settings_`), однакові для 24S і 32S;
+ * перевірено на справжніх кадрах (`JkRealFramesTest`). Нуль — «плата цього не має» (старі програми), не показуємо.
+ */
+data class JkSettings(
+    /** Комірка: перерозряд — розряд вимикається / повертається; перезаряд — заряд вимикається / повертається, мВ. */
+    val cellUnderMv: Int,
+    val cellUnderBackMv: Int,
+    val cellOverMv: Int,
+    val cellOverBackMv: Int,
+    /** Коли вважати 100 % і 0 % (мВ на комірку), коли плата вимикається зовсім. */
+    val soc100Mv: Int,
+    val soc0Mv: Int,
+    val powerOffMv: Int,
+    /** Балансир: починає з такої напруги комірки, коли різниця більша за поріг, струм до. */
+    val balanceStartMv: Int,
+    val balanceTriggerMv: Int,
+    val balanceMaxA: Double,
+    val chargeMaxA: Double,
+    val dischargeMaxA: Double,
+    /** Температури, °C: заряд — гаряче / повернення, холодно / повернення; розряд — гаряче / повернення; ключі (MOS). */
+    val chargeHotC: Double,
+    val chargeHotBackC: Double,
+    val chargeColdC: Double,
+    val chargeColdBackC: Double,
+    val dischargeHotC: Double,
+    val dischargeHotBackC: Double,
+    val mosHotC: Double,
+    val cellCount: Int,
+    val capacityAh: Double,
+    val chargeSwitch: Boolean,
+    val dischargeSwitch: Boolean,
+    val balancerSwitch: Boolean,
+) {
+    /** Для пам'яті телефона (останній стан батареї): «ключ=значення;…». */
+    fun encode(): String = listOf(
+        cellUnderMv, cellUnderBackMv, cellOverMv, cellOverBackMv, soc100Mv, soc0Mv, powerOffMv, balanceStartMv, balanceTriggerMv,
+        balanceMaxA, chargeMaxA, dischargeMaxA, chargeHotC, chargeHotBackC, chargeColdC, chargeColdBackC, dischargeHotC,
+        dischargeHotBackC, mosHotC, cellCount, capacityAh, if (chargeSwitch) 1 else 0, if (dischargeSwitch) 1 else 0,
+        if (balancerSwitch) 1 else 0,
+    ).joinToString(";")
+
+    companion object {
+        fun decode(raw: String?): JkSettings? {
+            val v = raw?.split(';')?.map { it.toDoubleOrNull() ?: return null } ?: return null
+            if (v.size != 24) return null
+            return JkSettings(
+                v[0].toInt(), v[1].toInt(), v[2].toInt(), v[3].toInt(), v[4].toInt(), v[5].toInt(), v[6].toInt(), v[7].toInt(),
+                v[8].toInt(), v[9], v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], v[18], v[19].toInt(), v[20],
+                v[21] != 0.0, v[22] != 0.0, v[23] != 0.0,
+            )
+        }
+    }
+}
+
 object JkParser {
     /** Датчика нема — плата пише −200,0 °C. */
     private const val NO_SENSOR = -2000
@@ -243,6 +299,24 @@ object JkParser {
         )
     }
 
+    /** T28: кадр 0x01 → налаштування (лише показ). Не той кадр — null. */
+    fun settings(f: ByteArray): JkSettings? {
+        if (f.size < Jk.FRAME_LEN || (f[4].toInt() and 0xFF) != Jk.TYPE_SETTINGS) return null
+        fun mv(i: Int) = u32(f, i).toInt()
+        fun a(i: Int) = u32(f, i) / 1000.0
+        fun c(i: Int) = s32(f, i) / 10.0
+        return JkSettings(
+            cellUnderMv = mv(10), cellUnderBackMv = mv(14), cellOverMv = mv(18), cellOverBackMv = mv(22),
+            soc100Mv = mv(30), soc0Mv = mv(34), powerOffMv = mv(46),
+            balanceStartMv = mv(138), balanceTriggerMv = mv(26), balanceMaxA = a(78),
+            chargeMaxA = a(50), dischargeMaxA = a(62),
+            chargeHotC = c(82), chargeHotBackC = c(86), chargeColdC = c(98), chargeColdBackC = c(102),
+            dischargeHotC = c(90), dischargeHotBackC = c(94), mosHotC = c(106),
+            cellCount = f[114].toInt() and 0xFF, capacityAh = a(130),
+            chargeSwitch = f[118].toInt() != 0, dischargeSwitch = f[122].toInt() != 0, balancerSwitch = f[126].toInt() != 0,
+        )
+    }
+
     fun str(b: ByteArray, from: Int, to: Int): String {
         val sb = StringBuilder()
         for (i in from until minOf(to, b.size)) {
@@ -276,6 +350,8 @@ data class JkExtra(
     val chargeStage: Int?,
     val hw: String?,
     val serial: String?,
+    /** T28: налаштування плати (лише показ); плата ще не прислала — null. */
+    val settings: JkSettings? = null,
 ) {
     val balancing: Boolean get() = balancerAction != 0
 
@@ -332,11 +408,71 @@ object JkDemo {
         if (layout == JkLayout.S32) f[280] = 0
     }
 
+    /** Налаштування демо (T28): LiFePO4 4S ~305 А·год, як могло б бути в Logic Power. */
+    fun settings(): ByteArray = Jk.responseFrame(Jk.TYPE_SETTINGS) { f ->
+        put32(f, 10, 2_600); put32(f, 14, 2_900); put32(f, 18, 3_650); put32(f, 22, 3_400)
+        put32(f, 26, 10); put32(f, 30, 3_450); put32(f, 34, 2_900); put32(f, 46, 2_500)
+        put32(f, 50, 100_000); put32(f, 62, 150_000); put32(f, 78, 2_000)
+        put32(f, 82, 650); put32(f, 86, 600); put32(f, 90, 700); put32(f, 94, 650)
+        put32(f, 98, 0); put32(f, 102, 50); put32(f, 106, 800); put32(f, 110, 700)
+        f[114] = 4; f[118] = 1; f[122] = 1; f[126] = 1
+        put32(f, 130, 305_000); put32(f, 138, 3_400)
+    }
+
     private fun putStr(f: ByteArray, at: Int, s: String) = s.toByteArray(Charsets.US_ASCII).copyInto(f, at)
     fun put16(f: ByteArray, at: Int, v: Int) {
         f[at] = v.toByte(); f[at + 1] = (v shr 8).toByte()
     }
     fun put32(f: ByteArray, at: Int, v: Long) {
         put16(f, at, (v and 0xFFFF).toInt()); put16(f, at + 2, ((v shr 16) and 0xFFFF).toInt())
+    }
+}
+
+/**
+ * T28: що показати з налаштувань JK — рядки «назва — значення» групами. Нулі (старі програми плати цього не мають)
+ * не показуємо. Без Android — тест `JkRealFramesTest`.
+ */
+object JkSettingsView {
+    data class Group(val title: String, val rows: List<Pair<String, String>>)
+
+    private fun pair(main: String, back: String) = tr("$main (знову з $back)", "$main (again from $back)")
+
+    fun groups(s: JkSettings): List<Group> {
+        val cell = ArrayList<Pair<String, String>>()
+        if (s.cellOverMv > 0) cell += tr("Заряд вимикає на", "Charge stops at") to pair(Fmt.cellVolts(s.cellOverMv), Fmt.cellVolts(s.cellOverBackMv))
+        if (s.cellUnderMv > 0) cell += tr("Розряд вимикає на", "Discharge stops at") to pair(Fmt.cellVolts(s.cellUnderMv), Fmt.cellVolts(s.cellUnderBackMv))
+        if (s.soc100Mv > 0) cell += tr("100 % — від", "100 % — from") to Fmt.cellVolts(s.soc100Mv)
+        if (s.soc0Mv > 0) cell += tr("0 % — на", "0 % — at") to Fmt.cellVolts(s.soc0Mv)
+        if (s.powerOffMv > 0) cell += tr("Плата вимикається на", "BMS powers off at") to Fmt.cellVolts(s.powerOffMv)
+
+        val current = ArrayList<Pair<String, String>>()
+        if (s.chargeMaxA > 0) current += tr("Заряд — до", "Charge — up to") to Fmt.num(s.chargeMaxA, 0) + " " + Fmt.A
+        if (s.dischargeMaxA > 0) current += tr("Розряд — до", "Discharge — up to") to Fmt.num(s.dischargeMaxA, 0) + " " + Fmt.A
+
+        val bal = ArrayList<Pair<String, String>>()
+        bal += tr("Балансир", "Balancer") to if (s.balancerSwitch) tr("увімкнено", "on") else tr("вимкнено", "off")
+        if (s.balanceStartMv > 0) bal += tr("Працює від", "Works from") to Fmt.cellVolts(s.balanceStartMv)
+        if (s.balanceTriggerMv > 0) bal += tr("Коли різниця більша за", "When the difference exceeds") to Fmt.millivolts(s.balanceTriggerMv)
+        if (s.balanceMaxA > 0) bal += tr("Струм — до", "Current — up to") to Fmt.num(s.balanceMaxA, 1) + " " + Fmt.A
+
+        val temp = ArrayList<Pair<String, String>>()
+        if (s.chargeHotC != 0.0) temp += tr("Заряд: гаряче", "Charge: hot") to pair(Fmt.celsius(s.chargeHotC), Fmt.celsius(s.chargeHotBackC))
+        if (s.chargeColdC != 0.0 || s.chargeColdBackC != 0.0) temp += tr("Заряд: холодно", "Charge: cold") to pair(Fmt.celsius(s.chargeColdC), Fmt.celsius(s.chargeColdBackC))
+        if (s.dischargeHotC != 0.0) temp += tr("Розряд: гаряче", "Discharge: hot") to pair(Fmt.celsius(s.dischargeHotC), Fmt.celsius(s.dischargeHotBackC))
+        if (s.mosHotC != 0.0) temp += tr("Ключі (MOS): гаряче", "Switches (MOS): hot") to Fmt.celsius(s.mosHotC)
+
+        val other = ArrayList<Pair<String, String>>()
+        if (s.capacityAh > 0) other += tr("Ємність (налаштована)", "Capacity (set)") to Fmt.num(s.capacityAh, 0) + " " + Fmt.AH
+        if (s.cellCount > 0) other += tr("Комірок (налаштовано)", "Cells (set)") to "${s.cellCount}"
+        other += tr("Ключ заряду", "Charge switch") to if (s.chargeSwitch) tr("увімкнено", "on") else tr("вимкнено", "off")
+        other += tr("Ключ розряду", "Discharge switch") to if (s.dischargeSwitch) tr("увімкнено", "on") else tr("вимкнено", "off")
+
+        return listOf(
+            Group(tr("Комірка", "Cell"), cell),
+            Group(tr("Струм", "Current"), current),
+            Group(tr("Балансир", "Balancer"), bal),
+            Group(tr("Температура", "Temperature"), temp),
+            Group(tr("Інше", "Other"), other),
+        ).filter { it.rows.isNotEmpty() }
     }
 }
