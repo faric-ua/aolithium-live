@@ -41,6 +41,16 @@ object Diag {
     /** Скільки чекати свіжого читання, перш ніж скласти файл. */
     const val WAIT_MS = 45_000L
 
+    /** T66: як часто сторож дивиться, чи фон уже дочитав. */
+    const val POLL_MS = 2_000L
+
+    /**
+     * T66 (файл faric 22.10 02:47 прийшов через ~50 с, хоча фон дочитав за 4 с): складати файл, щойно фон дочитав —
+     * є свіжі кадри від плати і фон більше не читає; інакше — не довше за [WAIT_MS].
+     */
+    fun readyToSend(elapsedMs: Long, freshFrames: Boolean, stillReading: Boolean): Boolean =
+        elapsedMs >= WAIT_MS || (freshFrames && !stillReading)
+
     /** Рядків журналу зв'язку у файлі. */
     const val LOG_LINES = 150
 

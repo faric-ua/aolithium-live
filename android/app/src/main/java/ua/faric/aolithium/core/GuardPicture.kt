@@ -76,6 +76,18 @@ object GuardPicture {
     fun keyboard(current: Look): List<List<Telegram.Button>> =
         Look.entries.map { l -> Telegram.Button((if (l == current) "$CHOSEN " else "$NOT_CHOSEN ") + l.title, "l:${l.key}") }.chunked(2)
 
+    /**
+     * T65 (faric 22.10 01:57): рядок температури під картинкою бота — на картинці були %, вати, вольти, А·год, а градусів нема.
+     * Найвища з датчиків; якщо датчики розходяться на 1 °C і більше — «від … до …». Датчиків нема — рядка нема.
+     */
+    fun tempLine(temps: List<Double>): String? {
+        if (temps.isEmpty()) return null
+        val lo = temps.min()
+        val hi = temps.max()
+        val value = if (hi - lo >= 1.0) Fmt.num(lo, 1) + "…" + Fmt.celsius(hi) else Fmt.celsius(hi)
+        return tr("температура ", "temperature ") + value
+    }
+
     const val CHOSEN = "🔵"
     const val NOT_CHOSEN = "⚪"
 }

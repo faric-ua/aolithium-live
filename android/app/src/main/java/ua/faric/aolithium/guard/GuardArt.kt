@@ -39,6 +39,7 @@ import ua.faric.aolithium.widget.WidgetArt
  */
 object GuardArt {
     private const val W_DP = 360
+    private const val FOOT_DP = 26f
     private const val WAIT_MS = 5_000L
 
     fun battery(ctx: Context, look: GuardPicture.Look, name: String, s: BatterySnapshot?, at: Long?, now: Long): Bitmap? =
@@ -71,7 +72,12 @@ object GuardArt {
         val d = density(ctx)
         val pad = (12 * d).toInt()
         val art = WidgetArt.draw(WidgetModel.of(name, s, at, now), W_DP, 170, d)
-        return frame(art.width + 2 * pad, art.height + 2 * pad) { c -> c.drawBitmap(art, pad.toFloat(), pad.toFloat(), null) }
+        val temp = s?.let { GuardPicture.tempLine(it.temperatures) }
+        val foot = if (temp != null) FOOT_DP * d else 0f
+        return frame(art.width + 2 * pad, (art.height + 2 * pad + foot).toInt()) { c ->
+            c.drawBitmap(art, pad.toFloat(), pad.toFloat(), null)
+            if (temp != null) footer(c, temp, pad.toFloat(), pad + art.height.toFloat(), art.width.toFloat(), d)
+        }
     }
 
     private fun gauge(ctx: Context, name: String, s: BatterySnapshot, at: Long, now: Long): Bitmap {
@@ -92,7 +98,8 @@ object GuardArt {
         val model = WidgetModel.of(name, s, at, now)
         val zone = Zones.of(s.soc)
         val head = 30 * d
-        val lines = listOf(zone.title to GaugeView.toneColor(zone.tone), model.status to statusColor(model.tone), model.line1 to Palette.muted)
+        val lines = listOf(zone.title to GaugeView.toneColor(zone.tone), model.status to statusColor(model.tone), model.line1 to Palette.muted,
+            GuardPicture.tempLine(s.temperatures).orEmpty() to Palette.muted) // T65
             .filter { it.first.isNotBlank() }
         val lineH = 22 * d
         val h = (pad + head + gh + 8 * d + lines.size * lineH + pad).toInt()
@@ -116,17 +123,20 @@ object GuardArt {
         val pad = (12 * d).toInt()
         val art = WidgetArt.draw(WidgetModel.of(name, s, at, now), W_DP, 170, d)
         val mv = s?.cellsMv.orEmpty()
-        if (mv.isEmpty()) return frame(art.width + 2 * pad, art.height + 2 * pad) { c -> c.drawBitmap(art, pad.toFloat(), pad.toFloat(), null) }
+        if (mv.isEmpty()) return widget(ctx, name, s, at, now)
+        val temp = s?.let { GuardPicture.tempLine(it.temperatures) }
+        val foot = if (temp != null) FOOT_DP * d else 0f
         val w = art.width + 2 * pad
         val cols = min(4, mv.size)
         val rows = ceil(mv.size / cols.toDouble()).toInt()
         val gap = 8 * d
         val tileH = 58 * d
         val title = 30 * d
-        val h = (pad + art.height + gap + title + rows * tileH + (rows - 1) * gap + pad).toInt()
+        val h = (pad + art.height + foot + gap + title + rows * tileH + (rows - 1) * gap + pad).toInt()
         return frame(w, h) { c ->
             c.drawBitmap(art, pad.toFloat(), pad.toFloat(), null)
-            var y = pad + art.height + gap
+            if (temp != null) footer(c, temp, pad.toFloat(), pad + art.height.toFloat(), art.width.toFloat(), d)
+            var y = pad + art.height + foot + gap
             val delta = s?.deltaMv
             val verdict = s?.deltaVerdict
             val t = tr("Комірки", "Cells") + (if (delta != null) " · " + tr("різниця", "difference") + " " + Fmt.millivolts(delta) +
@@ -199,6 +209,12 @@ object GuardArt {
         c.drawText(timeText, right, y + tp.textSize * 1.2f, tp)
         val np = text(17f, d, Palette.text, medium = true)
         c.drawText(fit(m.name.ifBlank { name }, np, right - x - tw - 12 * d), x, y + np.textSize * 1.1f, np)
+    }
+
+    /** T65: рядок під картинкою віджета (температура) — по центру, приглушений. */
+    private fun footer(c: Canvas, line: String, x: Float, top: Float, width: Float, d: Float) {
+        val p = text(13.5f, d, Palette.muted, center = true)
+        c.drawText(fit(line, p, width), x + width / 2f, top + 6 * d + p.textSize, p)
     }
 
     private fun statusColor(t: WidgetModel.Tone) = when (t) {
