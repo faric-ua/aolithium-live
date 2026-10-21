@@ -122,7 +122,7 @@ class JkRealFramesTest {
         assertEquals("кадр комірок — не налаштування", null, JkParser.settings(JkRealFrames.cellInfoJk0232sV19))
         val view = JkSettingsView.groups(st)
         assertEquals(listOf("Комірка", "Струм", "Балансир", "Температура", "Інше"), view.map { it.title })
-        assertTrue(view[0].rows.any { it.second == "3,650 В (знову з 3,448 В)" })
+        assertTrue(view[0].rows.any { it.second == "3,650 В (знову\u00A0з\u00A03,448\u00A0В)" })
     }
 
     @Test fun demo_settings_go_through_the_same_parser() {

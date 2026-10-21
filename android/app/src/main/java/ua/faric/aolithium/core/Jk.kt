@@ -435,7 +435,9 @@ object JkDemo {
 object JkSettingsView {
     data class Group(val title: String, val rows: List<Pair<String, String>>)
 
-    private fun pair(main: String, back: String) = tr("$main (знову з $back)", "$main (again from $back)")
+    /** «3,650 В (знову з 3,400 В)»: дужка не розривається — переносом іде вся, а не «з / 3,400 В» (знімок CI 21.10). */
+    private fun pair(main: String, back: String) =
+        main + " " + tr("(знову з $back)", "(again from $back)").replace(' ', '\u00A0')
 
     fun groups(s: JkSettings): List<Group> {
         val cell = ArrayList<Pair<String, String>>()
