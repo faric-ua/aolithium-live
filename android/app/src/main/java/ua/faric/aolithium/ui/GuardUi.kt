@@ -114,6 +114,13 @@ class GuardUi(
             },
             ui.button(tr("Вимкнути сторожа", "Turn off the guard"), Ui.Kind.DANGER) { showOff() },
         )), ui.matchWrap())
+        // T60 (faric 21.10 18:28): копія сторожа — на випадок, якщо застосунок доведеться ставити заново. Сторож НЕ вимикається.
+        card.addView(ui.button(tr("Зберегти копію сторожа", "Save a guard backup"), Ui.Kind.NORMAL) {
+            if (!sample) {
+                val pack = GuardTransfer.Pack(st.token, st.botName, st.code, st.members, st.dailyHour)
+                host.shareText(tr("Сторож батареї — копія", "Battery guard — backup"), GuardTransfer.backupMessage(pack))
+            }
+        }, ui.matchWrap())
         // T54 (faric 21.10 03:11): за бажанням — передати бота разом з людьми й кодом на інший телефон.
         card.addView(ui.button(tr("Передати сторожа на інший телефон", "Move the guard to another phone"), Ui.Kind.QUIET) { showMove() },
             ui.matchWrap())

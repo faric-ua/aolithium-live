@@ -52,4 +52,13 @@ class GuardTransferTest {
         assertTrue(GuardBot.isGroup(r.members[0]))
         assertTrue((r.actions.first() as GuardBot.Action.Send).text.contains("групу «Батареї родини»"))
     }
+
+    @Test fun backup_restores_the_same_guard() {
+        // T60: копія — той самий пакет; вставлена цілим повідомленням — розпізнається.
+        val p = GuardTransfer.Pack("1234567890:AAH_fake-token-for-tests-only_abcdefgh", "@AolithiumLive_bot", "482913",
+            listOf(GuardBot.Member(-100777, "Aolithium Room", look = GuardPicture.Look.CELLS)), 9)
+        val msg = GuardTransfer.backupMessage(p)
+        assertTrue(msg.contains("заново"))
+        assertEquals(p, GuardTransfer.decode(msg))
+    }
 }

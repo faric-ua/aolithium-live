@@ -58,6 +58,20 @@ object GuardTransfer {
         return Pack(token, (o["bot"] as? String).orEmpty(), code, members, hour)
     }
 
+    /**
+     * T60 (faric 21.10 18:28: «щоб не загубились… сразу цей код вставити, і він далі продовжується»): копія сторожа —
+     * той самий текст, що й передача, але сторож тут працює далі. Зберегти собі (Telegram «Збережене», нотатки, Диск);
+     * знадобиться після встановлення застосунку заново: «Налаштувати сторожа» → вставити → «Перевірити й увімкнути».
+     */
+    fun backupMessage(p: Pack): String = tr(
+        "Копія сторожа батареї Aolithium Live (${p.botName}, ${p.members.size} учасн.). Знадобиться, якщо застосунок " +
+            "доведеться поставити заново: Aolithium Live → батарея → «Ще» → «Сторож (Telegram)» → «Налаштувати сторожа» → " +
+            "встав увесь цей текст → «Перевірити й увімкнути» — бот, люди й код повернуться. Тримай лише в себе: це ключ від бота.\n\n",
+        "Aolithium Live battery guard backup (${p.botName}, ${p.members.size} members). You need it if the app has to be " +
+            "installed again: Aolithium Live → battery → \"More\" → \"Guard (Telegram)\" → \"Set up the guard\" → " +
+            "paste all of this text → \"Check and turn on\" — the bot, members and code come back. Keep it to yourself: it is the key to the bot.\n\n",
+    ) + encode(p)
+
     /** Що пересилає старий телефон: пояснення + сам текст (людина копіює все повідомлення — decode знайде своє). */
     fun message(p: Pack): String = tr(
         "Сторож батареї Aolithium Live (${p.botName}, ${p.members.size} учасн.). Відкрий Aolithium Live → батарея → «Ще» → " +
