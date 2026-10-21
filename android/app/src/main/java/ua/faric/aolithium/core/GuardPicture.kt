@@ -18,9 +18,10 @@ object GuardPicture {
         ;
 
         val title: String get() = when (this) {
-            GAUGE -> tr("Як спідометр", "Like the gauge")
-            WIDGET -> tr("Як віджет", "Like the widget")
-            CELLS -> tr("Віджет + комірки", "Widget + cells")
+            // T61 (скрін faric 21.10 19:31): коротко — «Віджет + комірки» Telegram обрізав до «Віджет + комірк…».
+            GAUGE -> tr("Спідометр", "Gauge")
+            WIDGET -> tr("Віджет", "Widget")
+            CELLS -> tr("З комірками", "With cells")
             NONE -> tr("Без картинки", "No picture")
         }
 
@@ -68,7 +69,13 @@ object GuardPicture {
 
     fun safeName(name: String): Boolean = Regex("""g-\d+-\d+-[a-z]+\.png""").matches(name)
 
-    /** Кнопки вибору вигляду в /settings: 🔘 — вибрано, ⚪ — ні (не галочки — правило інтерфейсу). Два в ряд. */
+    /**
+     * Кнопки вибору вигляду в /settings: [CHOSEN] — вибрано, [NOT_CHOSEN] — ні (не галочки — правило інтерфейсу). Два в ряд.
+     * T61: було 🔘 / ⚪ — на телефоні сірий і білий кружечки майже однакові; синій видно одразу.
+     */
     fun keyboard(current: Look): List<List<Telegram.Button>> =
-        Look.entries.map { l -> Telegram.Button((if (l == current) "🔘 " else "⚪ ") + l.title, "l:${l.key}") }.chunked(2)
+        Look.entries.map { l -> Telegram.Button((if (l == current) "$CHOSEN " else "$NOT_CHOSEN ") + l.title, "l:${l.key}") }.chunked(2)
+
+    const val CHOSEN = "🔵"
+    const val NOT_CHOSEN = "⚪"
 }

@@ -861,13 +861,13 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><span><b>Свій бот (2 хв, один раз).</b> У Telegram знайди <b>@BotFather</b> → «Start» → надішли <b>/newbot</b>. Назва — будь-яка («Батарея вдома»), ім'я — латиницею й закінчується на <b>bot</b>. BotFather надішле <b>токен</b> — довгий рядок «123456789:AA…»; скопіюй його.</span></li>
     <li><span>На телефоні-сторожі: батарея → <b>«Ще»</b> → «Сторож (Telegram)» → <span class="btn prim">Налаштувати сторожа</span> → встав токен → <span class="btn prim">Перевірити й увімкнути</span>. «Запис у фоні» для цієї батареї ввімкнеться сам.</span></li>
     <li><span><span class="btn prim">Запросити людину</span> → перешли запрошення (собі теж). Людина відкриває посилання → «Start» — Telegram сам надсилає код, і вона в списку.</span></li>
-    <li><span>Кожен у чаті з ботом: <b>/settings</b> — торкаєшся видів, 🔔 надсилати, 🔕 ні, а нижче — <b>вигляд картинки</b> (🔘 вибрано). <b>/status</b> — що зараз з батареєю, <b>/menu</b> — кнопки «Стан усіх батарей» і «Що надсилати», <b>/stop</b> — більше не надсилати.</span></li>
+    <li><span>Кожен у чаті з ботом: <b>/settings</b> — торкаєшся видів, 🔔 надсилати, 🔕 ні, а нижче — <b>вигляд картинки</b> (🔵 вибрано). <b>/status</b> — що зараз з батареєю, <b>/menu</b> — кнопки «Стан усіх батарей» і «Що надсилати», <b>/stop</b> — більше не надсилати.</span></li>
   </ol>
   <ol class="steps en">
     <li><span><b>Your own bot (2 min, once).</b> In Telegram find <b>@BotFather</b> → "Start" → send <b>/newbot</b>. Name — any ("Home battery"), username — Latin letters, ending in <b>bot</b>. BotFather sends a <b>token</b> — a long line "123456789:AA…"; copy it.</span></li>
     <li><span>On the guard phone: battery → <b>"More"</b> → "Guard (Telegram)" → <span class="btn prim">Set up the guard</span> → paste the token → <span class="btn prim">Check and turn on</span>. "Background recording" for this battery turns on by itself.</span></li>
     <li><span><span class="btn prim">Invite a person</span> → forward the invitation (to yourself too). The person opens the link → "Start" — Telegram sends the code by itself, and they are on the list.</span></li>
-    <li><span>Everyone in the bot chat: <b>/settings</b> — tap the kinds, 🔔 send, 🔕 don't, and below — <b>the picture look</b> (🔘 chosen). <b>/status</b> — what the battery is doing now, <b>/menu</b> — the "All batteries" and "What to send" buttons, <b>/stop</b> — stop sending.</span></li>
+    <li><span>Everyone in the bot chat: <b>/settings</b> — tap the kinds, 🔔 send, 🔕 don't, and below — <b>the picture look</b> (🔵 chosen). <b>/status</b> — what the battery is doing now, <b>/menu</b> — the "All batteries" and "What to send" buttons, <b>/stop</b> — stop sending.</span></li>
   </ol>
   <div class="grid2">
     <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/guard.webp" alt="Картка «Сторож (Telegram)»"><figcaption>«Ще» → «Сторож (Telegram)»: бот, код, учасники, «я працюю» щодня.</figcaption></figure>
@@ -923,7 +923,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr class="hd"><th>Що написати боту</th><th>Що буде</th></tr>
       <tr><td class="k"><b>/status</b></td><td>стан батареї зараз — картинкою й текстом</td></tr>
       <tr><td class="k"><b>/menu</b></td><td>кнопки «📊 Стан усіх батарей» і «⚙️ Що надсилати й вигляд»</td></tr>
-      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — що надсилати; 🔘 — вигляд картинки; «Готово»</td></tr>
+      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — що надсилати; 🔵 — вигляд картинки; «Готово»</td></tr>
       <tr><td class="k"><b>/stop</b></td><td>більше не писати в цей чат (інші чати й група — як були). Повернутись — знову надіслати код</td></tr>
       <tr><td class="k"><b>/help</b></td><td>коротко, як це працює</td></tr>
     </table>
@@ -931,7 +931,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr class="hd"><th>What to send the bot</th><th>What happens</th></tr>
       <tr><td class="k"><b>/status</b></td><td>the battery state now — as a picture and text</td></tr>
       <tr><td class="k"><b>/menu</b></td><td>the "📊 All batteries" and "⚙️ What to send and look" buttons</td></tr>
-      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — what to send; 🔘 — picture look; "Done"</td></tr>
+      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — what to send; 🔵 — picture look; "Done"</td></tr>
       <tr><td class="k"><b>/stop</b></td><td>stop writing to this chat (other chats and the group stay as they were). To come back, send the code again</td></tr>
       <tr><td class="k"><b>/help</b></td><td>briefly, how it works</td></tr>
     </table>
@@ -976,21 +976,25 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><span>Затисни порожнє місце на головному екрані → <b>«Віджети»</b>.</span></li>
     <li><span>Знайди <b>Aolithium Live</b> → «Aolithium · великий» або «Aolithium · малий».</span></li>
     <li><span>Перетягни на екран і відпусти.</span></li>
+    <li><span>Якщо в застосунку дві батареї й більше — відкриється <b>«Яку батарею показувати?»</b>: торкнись потрібної. Кожен віджет — свою, тож можна поставити два поруч (Aolithium і Logic Power).</span></li>
   </ol>
   <ol class="steps en">
     <li><span>Press and hold an empty spot on the home screen → <b>"Widgets"</b>.</span></li>
     <li><span>Find <b>Aolithium Live</b> → "Aolithium · <span lang="uk">великий</span>" (large) or "Aolithium · <span lang="uk">малий</span>" (small) — these two names are Ukrainian on any phone.</span></li>
     <li><span>Drag it onto the screen and let go.</span></li>
+    <li><span>If the app has two or more batteries, <b>"Which battery to show?"</b> opens: tap the one you need. Each widget has its own, so you can put two side by side (Aolithium and Logic Power).</span></li>
   </ol>
   <ul class="dots uk">
     <li>Кільце з відсотками, вати зі стрілкою (<b style="color:var(--bad)">червона ▲</b> — віддає, <b style="color:var(--ok)">зелена ▼</b> — заряджається), «вистачить на» і «записано 21:05».</li>
     <li>Оновлюється з кожним записом — з «Записом у фоні» раз на ~5 хв, а ще <b>щойно розблокуєш телефон</b> (якщо останній запис старший за хвилину й телефон поруч з батареєю). Понад 15 хв без даних — сірий, з часом останнього запису.</li>
-    <li>Показує батарею із «Записом у фоні», а якщо такої нема — ту, з якою був останній зв'язок. Торкнись — відкриється батарея.</li>
+    <li>Показує вибрану батарею. «Автоматично» (і всі віджети, поставлені до версії 0.4.16) — батарею із «Записом у фоні», а якщо такої нема — ту, з якою був останній зв'язок. Торкнись — відкриється батарея.</li>
+    <li>Змінити батарею: на Android 12 і новіших — <b>затисни віджет → налаштування віджета</b>; на старших — прибери віджет і додай знову.</li>
   </ul>
   <ul class="dots en">
     <li>A ring with the percent, watts with an arrow (<b style="color:var(--bad)">red ▲</b> — giving power, <b style="color:var(--ok)">green ▼</b> — charging), "lasts for" and "recorded 21:05".</li>
     <li>Updates with each record — every ~5 min with "Background recording", and also <b>as soon as you unlock the phone</b> (if the last record is older than a minute and the phone is near the battery). After 15 min without data it turns grey and shows the last record time.</li>
-    <li>Shows the battery with "Background recording", or if there is none, the one last connected. Tap it to open the battery.</li>
+    <li>Shows the chosen battery. "Automatic" (and every widget placed before version 0.4.16) — the battery with "Background recording", or if there is none, the one last connected. Tap it to open the battery.</li>
+    <li>To change the battery: on Android 12 and newer — <b>long-press the widget → widget settings</b>; on older ones — remove the widget and add it again.</li>
   </ul>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/widget.webp" alt="Віджети великий і малий"><figcaption>Великий і малий віджет (світла нема), нижче — як виглядає «нема даних».</figcaption></figure>
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/widget.webp" alt="Large and small widgets"><figcaption>The large and small widget (no power), below — how "no data" looks.</figcaption></figure>
