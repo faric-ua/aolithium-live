@@ -168,6 +168,15 @@ object GuardRunner {
                     st.lastSentAt = System.currentTimeMillis()
                     st.lastError = ""
                 }
+                r.migrateTo != null -> {
+                    // T52: група стала супергрупою — новий номер; переписати учасника й чергу і спробувати знову.
+                    val to = r.migrateTo
+                    st.members = GuardBot.migrate(st.members, chat, to)
+                    box = box.map { if (it.first == chat) to to it.second else it }
+                    st.outbox = box
+                    LinkLog.add(tr("сторож: група стала супергрупою — оновлено", "guard: the group became a supergroup — updated"))
+                    continue
+                }
                 Telegram.goneForGood(r) -> {
                     val gone = st.members.firstOrNull { it.chatId == chat }
                     st.members = st.members.filterNot { it.chatId == chat }

@@ -921,6 +921,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>Один бот — один сторож.</b> Для другого сторожа (наприклад, у мами) — свій бот.</li>
     <li><b>Приватність:</b> токен — лише на телефоні-сторожі. Без коду до бота не під'єднатись; 5 хибних кодів — година паузи. <span class="btn norm">Новий код</span> — для нових людей, ті, хто вже є, лишаються. Прибрати людину — <span class="btn norm">Учасники</span>.</li>
     <li>Тримай сторожа на зарядці й дозволь «Не обмежувати у фоні» (картка «Запис у фоні») — тоді Android його не приспить.</li>
+    <li><b>Кілька сторожів в одній групі (за бажанням).</b> <span class="btn norm">Запросити в групу Telegram</span> → відкрий посилання → вибери групу (ти маєш бути її адміном). Так у одну групу «Батареї родини» можна звести свого сторожа, мамин, братів — кожне повідомлення підписане назвою батареї 🔋. Вибір у /settings тоді спільний для всієї групи; команди в групі — через кнопку «Меню».</li>
+    <li><b>Передати сторожа на інший телефон (за бажанням).</b> <span class="btn quiet">Передати сторожа на інший телефон</span> → «Передати»: тут сторож вимикається, а текст передачі (бот, люди, код) пересилаєш тій людині. На її телефоні: «Налаштувати сторожа» → встав увесь текст → «Перевірити й увімкнути». Людям під'єднуватись заново не треба. Текст — як ключ від бота: лише тій людині.</li>
   </ul>
   <ul class="dots en">
     <li><b>The guard needs internet.</b> When the power goes out, the router turns off — then messages wait in a queue and go as soon as the connection returns. To send right away: the router on the same battery / UPS, or a SIM with mobile data in the guard.</li>
@@ -928,6 +930,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>One bot — one guard.</b> For a second guard (for example, at mom's) — its own bot.</li>
     <li><b>Privacy:</b> the token stays on the guard phone only. Nobody joins the bot without the code; 5 wrong codes — an hour's pause. <span class="btn norm">New code</span> — for new people, those already there stay. Remove a person — <span class="btn norm">Members</span>.</li>
     <li>Keep the guard on charge and allow "Don't restrict in background" (the "Background recording" card) — then Android will not put it to sleep.</li>
+    <li><b>Several guards in one group (optional).</b> <span class="btn norm">Invite to a Telegram group</span> → open the link → pick the group (you must be its admin). This way your guard, mom's and your brother's can share one "Family batteries" group — each message is signed with the battery name 🔋. The /settings choice is then shared by the whole group; in a group, use the "Menu" button for commands.</li>
+    <li><b>Move the guard to another phone (optional).</b> <span class="btn quiet">Move the guard to another phone</span> → "Move": the guard turns off here, and you send the transfer text (bot, members, code) to that person. On their phone: "Set up the guard" → paste the whole text → "Check and turn on". People do not need to join again. The text is like a key to the bot: only for that person.</li>
   </ul>
 </section>
 
@@ -1289,6 +1293,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.12</b> · 21.10.2026</td><td>сторож: за бажанням — у групу Telegram (кілька сторожів в одному чаті) і передача на інший телефон разом з людьми й кодом; ім'я бота не ламається</td></tr>
       <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>сторож у Telegram: телефон удома пише тобі й рідним — світло, заряд, захист, кожні −10 %, щоранку «я працюю»; кожен сам вибирає, що отримувати; версія «0.4.10 · збірка 26» більше не переноситься</td></tr>
       <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>запис у фоні спершу шукає батарею в ефірі й пробує тричі — менше «нема зв'язку» поруч з батареєю; у кожному вікні заголовок згори й кнопки знизу завжди видно, прокручується середина; журнал зв'язку — свіжіші зверху</td></tr>
       <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>сповіщення «Заряджається» зі смужкою й часом до повної; віджет оновлюється, щойно розблокуєш телефон; одна порада «раз на 1–2 тижні до 100 %»</td></tr>
@@ -1319,6 +1324,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.12</b> · 21.10.2026</td><td>guard: optionally into a Telegram group (several guards in one chat) and moving to another phone together with members and code; the bot name no longer breaks</td></tr>
       <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>guard in Telegram: a phone at home writes to you and your family — power, charge, protection, every −10 %, "I am working" every morning; everyone picks what to get; the version "0.4.10 · build 26" no longer wraps</td></tr>
       <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>background recording first looks for the battery on air and tries three times — fewer "no connection" near the battery; in every window the title on top and the buttons at the bottom are always visible, the middle scrolls; connection log — newest on top</td></tr>
       <tr><td class="k"><b>0.4.9</b> · 20.10.2026</td><td>"Charging" notification with a progress bar and time to full; the widget updates as soon as you unlock the phone; one tip "every 1–2 weeks to 100%"</td></tr>

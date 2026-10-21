@@ -9,6 +9,7 @@ import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardBot
+import ua.faric.aolithium.core.GuardTransfer
 import ua.faric.aolithium.core.Telegram
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
@@ -58,14 +59,16 @@ class GuardUi(
                 ui.matchWrap())
             return card
         }
-        card.addView(ui.fact(tr("Бот", "Bot"), bot))
+        // T53 (скрін faric 21.10 03:04): ім'я бота — цілим (не влазить — під підписом), підписи — короткі, в один рядок.
+        card.addView(ui.factOneLine(tr("Бот", "Bot"), bot.replace(" ", "\u00A0")))
         card.addView(ui.fact(tr("Код доступу", "Access code"), code))
-        card.addView(ui.fact(tr("Учасники", "Members"), "${members.size}"))
+        val groups = members.count { GuardBot.isGroup(it) }
+        card.addView(ui.fact(tr("Учасники", "Members"), if (groups > 0) tr("${members.size} (груп: $groups)", "${members.size} ($groups groups)") else "${members.size}"))
         val watched = if (sample) 1 else BgSettings(host).enabled().count { !it.startsWith("demo:") }
-        card.addView(ui.fact(tr("Батарей під наглядом", "Batteries watched"), "$watched"))
+        card.addView(ui.fact(tr("Батарей", "Batteries"), "$watched"))
         val sent = if (sample) tr("сьогодні о 09:00", "today at 09:00")
             else st.lastSentAt.takeIf { it > 0 }?.let { Background.hhmm(it) } ?: tr("ще нічого", "nothing yet")
-        card.addView(ui.fact(tr("Останнє надіслано", "Last sent"), sent))
+        card.addView(ui.fact(tr("Надіслано", "Last sent"), sent))
         if (!sample && st.lastError.isNotEmpty()) {
             card.addView(ui.text(tr("Telegram: ", "Telegram: ") + st.lastError, 13f, Palette.warning))
         }
@@ -84,6 +87,8 @@ class GuardUi(
                 "in the bot chat what to get (/settings).",
         ), 12.5f))
         card.addView(ui.iconButton(LineIcon.LIST, tr("Запросити людину", "Invite a person"), Ui.Kind.PRIMARY) { invite() }, ui.matchWrap())
+        // T52 (faric 21.10 03:11): за бажанням — у групу Telegram, куди можна звести кількох сторожів (свій, мами, брата).
+        card.addView(ui.button(tr("Запросити в групу Telegram", "Invite to a Telegram group"), Ui.Kind.NORMAL) { inviteGroup() }, ui.matchWrap())
         card.addView(ui.grid(listOf(
             ui.button(tr("Учасники (${members.size})", "Members (${members.size})"), Ui.Kind.NORMAL) { showMembers() },
             ui.button(tr("Надіслати перевірку", "Send a test"), Ui.Kind.NORMAL) {
@@ -109,6 +114,9 @@ class GuardUi(
             },
             ui.button(tr("Вимкнути сторожа", "Turn off the guard"), Ui.Kind.DANGER) { showOff() },
         )), ui.matchWrap())
+        // T54 (faric 21.10 03:11): за бажанням — передати бота разом з людьми й кодом на інший телефон.
+        card.addView(ui.button(tr("Передати сторожа на інший телефон", "Move the guard to another phone"), Ui.Kind.QUIET) { showMove() },
+            ui.matchWrap())
         card.addView(ui.muted(tr(
             "Новий код — для нових людей; ті, хто вже в списку, лишаються. Повідомлення без інтернету чекають у черзі.",
             "A new code is for new people; those already on the list stay. Messages wait in a queue while there is no internet.",
@@ -148,6 +156,45 @@ class GuardUi(
         host.shareText(tr("Сторож батареї", "Battery guard"), text)
     }
 
+    private fun inviteGroup() {
+        val name = bot.removePrefix("@")
+        val text = tr(
+            "Додай сторожа батареї в групу Telegram — він писатиме туди: відкрий посилання, вибери групу (треба бути її адміном):\n" +
+                "https://t.me/$name?startgroup=$code\n\nТак можна звести в одну групу кількох сторожів (свій, мами, брата) — " +
+                "кожне повідомлення підписане назвою батареї.",
+            "Add the battery guard to a Telegram group — it will write there: open the link, pick the group (you must be its admin):\n" +
+                "https://t.me/$name?startgroup=$code\n\nThis way several guards (yours, mom's, brother's) can share one group — " +
+                "each message is signed with the battery name.",
+        )
+        host.shareText(tr("Сторож батареї в групу", "Battery guard to a group"), text)
+    }
+
+    private fun showMove() {
+        val box = host.overlay.dialog(
+            tr("Передати сторожа?", "Move the guard?"),
+            tr(
+                "Бот, учасники (${members.size}) і код перейдуть на інший телефон — людям не треба під'єднуватись заново. " +
+                    "Тут сторож вимкнеться одразу (два телефони з одним ботом Telegram не пускає). Далі вибери, кому надіслати " +
+                    "текст передачі, — лише тій людині: це ключ від бота. На тому телефоні: «Налаштувати сторожа» → вставити текст.",
+                "The bot, members (${members.size}) and code move to another phone — people do not need to join again. " +
+                    "The guard turns off here right away (Telegram does not allow two phones with one bot). Then pick whom to send " +
+                    "the transfer text to — only that person: it is the key to the bot. On that phone: \"Set up the guard\" → paste the text.",
+            ),
+            actions = listOf(tr("Передати", "Move") to Ui.Kind.PRIMARY, tr("Скасувати", "Cancel") to Ui.Kind.QUIET),
+            onAction = { i ->
+                host.overlay.dismiss()
+                if (i == 0 && !sample) {
+                    val pack = GuardTransfer.Pack(st.token, st.botName, st.code, st.members, st.dailyHour)
+                    st.turnOff()
+                    GuardRunner.stop()
+                    onChange()
+                    host.shareText(tr("Сторож батареї — передача", "Battery guard — transfer"), GuardTransfer.message(pack))
+                }
+            },
+        )
+        host.overlay.show(KEY_MOVE, box)
+    }
+
     fun showSetup() {
         val field = EditText(host).apply {
             setText(draft)
@@ -159,6 +206,7 @@ class GuardUi(
             background = ui.rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12)
             setPadding(ui.dp(14), ui.dp(12), ui.dp(14), ui.dp(12))
             minimumHeight = ui.dp(Ui.MIN_TOUCH_DP)
+            maxLines = 4 // T54: текст передачі довгий — видно початок, не розтягує вікно
             addTextChangedListener(object : android.text.TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
                 override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -172,10 +220,12 @@ class GuardUi(
             addView(ui.text(tr(
                 "1. У Telegram знайди @BotFather → «Start» → надішли /newbot.\n" +
                     "2. Назва — будь-яка («Батарея вдома»); ім'я — латиницею й закінчується на bot (aolithium_home_bot).\n" +
-                    "3. BotFather надішле токен — довгий рядок «123456789:AA…». Скопіюй і встав нижче.",
+                    "3. BotFather надішле токен — довгий рядок «123456789:AA…». Скопіюй і встав нижче.\n" +
+                    "Переносиш сторожа з іншого телефона — встав увесь текст передачі.",
                 "1. In Telegram find @BotFather → \"Start\" → send /newbot.\n" +
                     "2. Name — any (\"Home battery\"); username — Latin letters, ending in bot (aolithium_home_bot).\n" +
-                    "3. BotFather sends a token — a long line \"123456789:AA…\". Copy it and paste below.",
+                    "3. BotFather sends a token — a long line \"123456789:AA…\". Copy it and paste below.\n" +
+                    "Moving the guard from another phone — paste the whole transfer text.",
             ), 14f, Palette.text))
             addView(field, ui.matchWrap())
             addView(status, ui.matchWrap())
@@ -193,7 +243,8 @@ class GuardUi(
                     return@dialog
                 }
                 if (sample) return@dialog
-                val token = Telegram.cleanToken(field.text.toString())
+                val pack = GuardTransfer.decode(field.text.toString())
+                val token = pack?.token ?: Telegram.cleanToken(field.text.toString())
                 if (!Telegram.tokenLooksRight(token)) {
                     status.setTextColor(Palette.warning)
                     status.text = tr("Це не схоже на токен: має бути «цифри:літери», 40+ знаків. Скопіюй повністю з повідомлення BotFather.",
@@ -208,7 +259,13 @@ class GuardUi(
                         status.text = error ?: ""
                         return@checkToken
                     }
-                    if (token != st.token) {
+                    if (pack != null) {
+                        // T54: передача — бот разом з людьми, кодом і годиною «я працюю».
+                        st.offset = 0L
+                        st.members = pack.members
+                        st.code = pack.code.ifEmpty { GuardBot.newCode { Math.random() } }
+                        st.dailyHour = pack.dailyHour
+                    } else if (token != st.token) {
                         st.offset = 0L
                         st.members = emptyList() // новий бот — люди під'єднуються до нього заново
                         st.code = GuardBot.newCode { Math.random() }
@@ -237,7 +294,8 @@ class GuardUi(
             val row = ui.row(10)
             val info = ui.column(2)
             info.addView(ui.text(m.name, 15f, Palette.text, medium = true))
-            info.addView(ui.muted(tr("отримує ${m.kinds.size} з ${Guard.Kind.entries.size}", "gets ${m.kinds.size} of ${Guard.Kind.entries.size}"), 12.5f))
+            val kind = if (GuardBot.isGroup(m)) tr("група · ", "group · ") else ""
+            info.addView(ui.muted(kind + tr("отримує ${m.kinds.size} з ${Guard.Kind.entries.size}", "gets ${m.kinds.size} of ${Guard.Kind.entries.size}"), 12.5f))
             row.addView(info, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             row.addView(ui.button(tr("Прибрати", "Remove"), Ui.Kind.DANGER) {
                 if (!sample) {
@@ -282,6 +340,7 @@ class GuardUi(
             KEY_SETUP -> showSetup()
             KEY_MEMBERS -> showMembers()
             KEY_OFF -> showOff()
+            KEY_MOVE -> showMove()
             else -> return false
         }
         return true
@@ -291,6 +350,7 @@ class GuardUi(
         const val KEY_SETUP = "guard:setup"
         const val KEY_MEMBERS = "guard:members"
         const val KEY_OFF = "guard:off"
+        const val KEY_MOVE = "guard:move"
         val HOURS = listOf(7, 9, 12, 20)
 
         /** Чернетка токена — переживає перестворення екрана (зміна мови), але не перезапуск застосунку. */

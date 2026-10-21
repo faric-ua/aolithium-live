@@ -118,9 +118,14 @@ object GuardBot {
             return say(input, u.chatId, tr("У сторожа вже $MAX_MEMBERS учасників — більше не можна.", "The guard already has $MAX_MEMBERS members — no more allowed."))
         }
         val m = Member(u.chatId, u.name, Guard.Kind.ALL, input.now)
-        val welcome = tr(
+        val welcome = if (u.private) tr(
             "Вітаю, ${u.name}! Тепер я надсилатиму тобі новини батареї. Нижче — що саме; торкнись, щоб вимкнути зайве.",
             "Welcome, ${u.name}! I will now send you battery news. Below is what exactly; tap to turn off what you don't need.",
+        ) else tr(
+            "Готово: тепер я писатиму в групу «${u.name}». Нижче — що саме; вибір спільний для всієї групи. " +
+                "У групі команди — через кнопку «Меню» (там вони з моїм ім'ям, щоб відповів саме я).",
+            "Done: I will now write to the group \"${u.name}\". Below is what exactly; the choice is shared by the whole group. " +
+                "In a group, use the \"Menu\" button for commands (they carry my name there, so that I am the one who answers).",
         )
         return Result(
             input.members + m,
@@ -181,6 +186,14 @@ object GuardBot {
         Guard.Kind.entries.map { k ->
             listOf(Telegram.Button((if (m.wants(k)) "🔔 " else "🔕 ") + k.title, "k:${k.key}"))
         } + listOf(listOf(Telegram.Button(tr("Готово", "Done"), "done")))
+
+    /** T52: група стала супергрупою — той самий учасник, новий номер чату. */
+    fun migrate(members: List<Member>, from: Long, to: Long): List<Member> =
+        if (members.any { it.chatId == to }) members.filterNot { it.chatId == from }
+        else members.map { if (it.chatId == from) it.copy(chatId = to) else it }
+
+    /** Учасник — група (номери груп у Telegram від'ємні). */
+    fun isGroup(m: Member): Boolean = m.chatId < 0
 
     /** Кому слати це повідомлення. */
     fun recipients(members: List<Member>, kind: Guard.Kind): List<Long> = members.filter { it.wants(kind) }.map { it.chatId }
