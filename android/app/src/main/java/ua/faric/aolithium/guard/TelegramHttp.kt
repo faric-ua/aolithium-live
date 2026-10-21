@@ -17,7 +17,17 @@ object TelegramHttp {
     private const val MAX_BYTES = 1_000_000
 
     /** Виклик методу Bot API з тілом JSON. [readTimeoutMs] — для довгого опитування більше за його тайм-аут. */
-    fun call(token: String, method: String, body: String, readTimeoutMs: Int = 20_000): Telegram.Reply {
+    fun call(token: String, method: String, body: String, readTimeoutMs: Int = 20_000): Telegram.Reply =
+        post(token, method, "application/json; charset=utf-8", body.toByteArray(Charsets.UTF_8), readTimeoutMs)
+
+    /** T59: картинка батареї з підписом (і кнопками) — `sendPhoto`, тіло multipart без бібліотек. */
+    fun sendPhoto(token: String, chatId: Long, png: ByteArray, caption: String, keyboard: List<List<Telegram.Button>>? = null): Telegram.Reply {
+        val boundary = "aolithium" + System.nanoTime().toString(16)
+        val body = Telegram.multipart(boundary, Telegram.photoFields(chatId, caption, keyboard), "photo", "battery.png", png)
+        return post(token, "sendPhoto", "multipart/form-data; boundary=$boundary", body, 60_000)
+    }
+
+    private fun post(token: String, method: String, contentType: String, body: ByteArray, readTimeoutMs: Int): Telegram.Reply {
         val c = try {
             URL(Telegram.url(token, method)).openConnection() as HttpURLConnection
         } catch (e: IOException) {
@@ -28,9 +38,10 @@ object TelegramHttp {
             c.connectTimeout = 15_000
             c.readTimeout = readTimeoutMs
             c.doOutput = true
-            c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            c.setRequestProperty("Content-Type", contentType)
             c.setRequestProperty("User-Agent", "AolithiumLive-Guard/1")
-            c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+            c.setFixedLengthStreamingMode(body.size)
+            c.outputStream.use { it.write(body) }
             val code = c.responseCode
             val stream = if (code in 200..299) c.inputStream else c.errorStream
             val text = stream?.let { read(it) }

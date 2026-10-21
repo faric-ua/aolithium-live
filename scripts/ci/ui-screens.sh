@@ -86,6 +86,15 @@ start --es demo DISCHARGING --es dialog widgets
 shot p17-widget-discharging 10
 start --es demo CHARGING --es dialog widgets
 shot p17b-widget-charging 10
+# T59: картинки, які шле бот сторожа (той самий GuardArt) — три вигляди й сітка кількох батарей.
+for v in gauge widget cells grid; do
+  start --es demo DISCHARGING --es dialog "botpics:$v"
+  shot "p21-botpic-$v" 8
+done
+start --es demo JK --es dialog botpics:cells
+shot p21b-botpic-jk-cells 8
+start --es demo IDLE --es dialog log:long
+shot p22-log-parts 6
 # v0.4 (T5): плата JK BMS (Logic Power) — демо з кадрами JK: «Зараз», «Комірки» (балансир, опір дротів), «Плата».
 start --es demo JK
 shot p19-jk-now 5

@@ -1,6 +1,7 @@
 package ua.faric.aolithium
 
 import android.app.Application
+import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.data.LangSettings
 
 /**
@@ -11,5 +12,6 @@ class AolithiumApp : Application() {
     override fun onCreate() {
         super.onCreate()
         LangSettings.load(this)
+        LinkLog.init(filesDir) // T57: журнал зв'язку частинами у файлах — переживає перезапуск
     }
 }

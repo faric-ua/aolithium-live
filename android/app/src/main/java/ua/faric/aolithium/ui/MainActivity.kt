@@ -388,7 +388,7 @@ class MainActivity : Activity() {
         if (uri == null) return
         if (write == null) {
             // Вікно повернули після повороту екрана — вміст загубився. Чесно кажемо.
-            toast(tr("Не збереглося — натисни «Зберегти CSV» ще раз", "Not saved. Tap \"Save CSV\" again"))
+            toast(tr("Не збереглося — натисни «Зберегти» ще раз", "Not saved. Tap \"Save\" again"))
             return
         }
         Thread {

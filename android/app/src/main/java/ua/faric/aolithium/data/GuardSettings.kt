@@ -1,15 +1,21 @@
 package ua.faric.aolithium.data
 
 import android.content.Context
+import java.io.File
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardBot
+import ua.faric.aolithium.core.GuardPicture
 
 /**
  * T48 «Сторож (Telegram)»: усе — лише в пам'яті цього телефона (SharedPreferences). Токен бота й учасники — ніде
  * більше: ні в репо, ні в журналі зв'язку, ні в історії. Вимкнено за замовчуванням.
  */
 class GuardSettings(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("guard", Context.MODE_PRIVATE)
+    private val app = context.applicationContext
+    private val prefs = app.getSharedPreferences("guard", Context.MODE_PRIVATE)
+
+    /** T59: картинки батареї, що чекають у черзі (`files/guard-pics/`). Надіслане чи викинуте з черги — стирається. */
+    val picDir: File get() = File(app.filesDir, "guard-pics")
 
     var enabled: Boolean
         get() = prefs.getBoolean("on", false)
@@ -62,21 +68,25 @@ class GuardSettings(context: Context) {
     }
 
     /**
-     * Черга ненадісланого (нема інтернету — наприклад, світло зникло й роутер вимкнувся): «chatId<TAB>текст» по
-     * рядку, переноси в тексті — як символ U+2028. Не більше [OUTBOX_MAX] — найстаріші випадають.
+     * Черга ненадісланого (нема інтернету — наприклад, світло зникло й роутер вимкнувся): кому, текст і (T59) картинка.
+     * Формат рядка — `GuardPicture.encode`. Не більше [OUTBOX_MAX] — найстаріші випадають.
      */
-    var outbox: List<Pair<Long, String>>
-        get() = prefs.getString("outbox", "").orEmpty().lines().mapNotNull { l ->
-            val id = l.substringBefore('\t').toLongOrNull() ?: return@mapNotNull null
-            id to l.substringAfter('\t').replace('\u2028', '\n')
-        }
+    var outbox: List<GuardPicture.Out>
+        get() = GuardPicture.decode(prefs.getString("outbox", ""))
         set(v) {
-            prefs.edit().putString("outbox", v.takeLast(OUTBOX_MAX).joinToString("\n") { (id, t) -> "$id\t" + t.replace('\n', '\u2028') }).apply()
+            prefs.edit().putString("outbox", GuardPicture.encode(v.takeLast(OUTBOX_MAX))).apply()
         }
+
+    /** Стерти картинки, яких уже нема в черзі. */
+    fun cleanPics() {
+        val keep = outbox.mapNotNull { it.photo }.toSet()
+        picDir.listFiles().orEmpty().filter { it.name !in keep }.forEach { it.delete() }
+    }
 
     /** Вимкнути сторожа: токен, учасники й код лишаються (увімкнути знову — без нового налаштування). */
     fun turnOff() {
         prefs.edit().putBoolean("on", false).putString("outbox", "").apply()
+        picDir.listFiles().orEmpty().forEach { it.delete() }
     }
 
     companion object {

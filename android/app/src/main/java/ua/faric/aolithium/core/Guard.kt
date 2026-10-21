@@ -74,6 +74,11 @@ object Guard {
     const val JUMP_QUIET_MS = 30 * 60_000L
     /** Сторож не бачить батарею стільки — кажемо. */
     const val NO_DATA_MS = 30 * 60_000L
+    /**
+     * T56 (скріни faric 21.10 14:52): на межі дальності «не бачу» / «знову бачу» йшли парами кілька разів за ніч.
+     * Після «знову бачу» наступне «не бачу» — не раніше, ніж через стільки (плюс звичайні [NO_DATA_MS] без даних).
+     */
+    const val NO_DATA_AGAIN_MS = 60 * 60_000L
     const val DAILY_HOUR_DEFAULT = 9
 
     // ---------- стан однієї батареї ----------
@@ -90,11 +95,14 @@ object Guard {
         val baseDelta: Int = -1,
         val jumpAt: Long = 0L,
         val noData: Boolean = false,
+        /** T56: з якого часу не бачимо (останні дані до «не бачу») і коли востаннє сказали «знову бачу». */
+        val lostSince: Long = 0L,
+        val seenAgainAt: Long = 0L,
     ) {
         fun encode(): String = listOf(
             "a" to alerts.encode().replace(";", "|"), "step" to "$step", "empty" to (if (empty) "1" else "0"),
             "tt" to "$tempAt", "btemp" to (if (baseTemp.isNaN()) "" else "$baseTemp"), "dt" to "$deltaAt", "bd" to "$baseDelta",
-            "ja" to "$jumpAt", "nd" to (if (noData) "1" else "0"),
+            "ja" to "$jumpAt", "nd" to (if (noData) "1" else "0"), "ls" to "$lostSince", "sa" to "$seenAgainAt",
         ).joinToString(";") { "${it.first}=${it.second}" }
 
         companion object {
@@ -111,6 +119,8 @@ object Guard {
                     baseDelta = m["bd"]?.toIntOrNull() ?: -1,
                     jumpAt = m["ja"]?.toLongOrNull() ?: 0L,
                     noData = m["nd"] == "1",
+                    lostSince = m["ls"]?.toLongOrNull() ?: 0L,
+                    seenAgainAt = m["sa"]?.toLongOrNull() ?: 0L,
                 )
             }
         }
@@ -124,8 +134,10 @@ object Guard {
         val out = ArrayList<Msg>()
         var n = st
         if (n.noData) {
-            out += Msg(Kind.NO_DATA, tr("Знову бачу батарею", "I can see the battery again"), short(s), battery)
-            n = n.copy(noData = false)
+            val gap = if (n.lostSince in 1 until t) tr("не бачив ${Fmt.duration((t - n.lostSince) / 3_600_000.0)} · ",
+                "not seen for ${Fmt.duration((t - n.lostSince) / 3_600_000.0)} · ") else ""
+            out += Msg(Kind.NO_DATA, tr("Знову бачу батарею", "I can see the battery again"), gap + short(s), battery)
+            n = n.copy(noData = false, seenAgainAt = t)
         }
         val a = Alerts.onSnapshot(n.alerts, s, t, tz)
         n = n.copy(alerts = a.state)
@@ -152,12 +164,14 @@ object Guard {
     /** Сторож не дістав батарею. [lastOkAt] — останній знімок звідки завгодно; null — ще не було. */
     fun onNoData(st: State, lastOkAt: Long?, now: Long, battery: String, tz: TimeZone = TimeZone.getDefault()): Step {
         if (lastOkAt == null || st.noData || now - lastOkAt < NO_DATA_MS) return Step(st, emptyList())
+        // T56: щойно казали «знову бачу» — ще почекати: на межі дальності батарея то зникає, то з'являється.
+        if (st.seenAgainAt > 0 && now - st.seenAgainAt in 0 until NO_DATA_AGAIN_MS) return Step(st, emptyList())
         val m = Msg(Kind.NO_DATA, tr("Сторож не бачить батарею з ${Background.hhmm(lastOkAt, tz)}",
                 "The guard has not seen the battery since ${Background.hhmm(lastOkAt, tz)}"), tr(
             "Bluetooth не дістає: батарею вимкнули, вона зайнята іншим телефоном, або сторож далеко. Напишу, щойно побачу знову.",
             "Bluetooth cannot reach it: the battery is off, another phone is using it, or the guard is far. I will write when I see it again.",
         ), battery)
-        return Step(st.copy(noData = true), listOf(m))
+        return Step(st.copy(noData = true, lostSince = lastOkAt), listOf(m))
     }
 
     private fun empty(st: State, s: BatterySnapshot, battery: String, out: MutableList<Msg>): State {
@@ -255,6 +269,16 @@ object Guard {
     fun dailyDue(lastDay: Int, now: Long, hour: Int, tz: TimeZone = TimeZone.getDefault()): Boolean {
         val c = Calendar.getInstance(tz).apply { timeInMillis = now }
         return dayKey(now, tz) != lastDay && c.get(Calendar.HOUR_OF_DAY) >= hour
+    }
+
+    /**
+     * T56 (21.10: сторожа ввімкнули о 02:56, «я працюю» о 9:00 не прийшло). Що записати як «день останнього
+     * "я працюю"» в мить увімкнення: година вже минула — сьогодні (перше — завтра; зараз є «Надіслати перевірку»);
+     * ще не настала (зокрема одразу після півночі) — нічого, перше прийде сьогодні о [hour]:00.
+     */
+    fun dayOnTurnOn(now: Long, hour: Int, tz: TimeZone = TimeZone.getDefault()): Int {
+        val c = Calendar.getInstance(tz).apply { timeInMillis = now }
+        return if (c.get(Calendar.HOUR_OF_DAY) >= hour) dayKey(now, tz) else 0
     }
 
     /** Що відомо про одну батарею для «я працюю» і «/стан». */

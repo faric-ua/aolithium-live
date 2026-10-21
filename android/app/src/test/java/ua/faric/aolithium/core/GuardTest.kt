@@ -136,6 +136,32 @@ class GuardTest {
         assertEquals("Знову бачу батарею", back.messages.first().title)
     }
 
+    @Test fun no_data_pairs_are_quieter_at_the_edge_of_range() {
+        // T56: на межі дальності батарея то зникає, то з'являється — не сипати парами «не бачу / знову бачу».
+        val gone = Guard.onNoData(Guard.State(), t0, t0 + 31 * min, "A", kyiv)
+        val back = Guard.onSnapshot(gone.state, snap(), t0 + 50 * min, "A", kyiv)
+        val again = back.messages.first()
+        assertTrue(again.text, again.text.startsWith("не бачив 50 хв · "))
+        // зникла знову одразу — 30 хв без даних минуло, але після «знову бачу» лише 40 хв: мовчимо
+        assertTrue(Guard.onNoData(back.state, t0 + 51 * min, t0 + 90 * min, "A", kyiv).messages.isEmpty())
+        // через годину після «знову бачу» — кажемо
+        val later = Guard.onNoData(back.state, t0 + 51 * min, t0 + 111 * min, "A", kyiv)
+        assertEquals("Сторож не бачить батарею з 08:51", later.messages.single().title)
+        assertEquals(later.state, Guard.State.decode(later.state.encode()))
+    }
+
+    @Test fun turned_on_after_midnight_still_says_daily_this_morning() {
+        // T56: 21.10 сторожа ввімкнули о 02:56 — «я працюю» мало прийти о 9:00 того ж ранку.
+        val at0256 = t0 - 5 * 60 * min - 4 * min // 08:00 − 5 год 04 хв
+        val day = Guard.dayOnTurnOn(at0256, 9, kyiv)
+        assertEquals(0, day)
+        assertTrue("о 09:01 того ж дня — пора", Guard.dailyDue(day, t0 + 61 * min, 9, kyiv))
+        // увімкнули о 10:00 — сьогоднішня 9:00 минула, перше — завтра
+        val day2 = Guard.dayOnTurnOn(t0 + 120 * min, 9, kyiv)
+        assertEquals(20261021, day2)
+        assertFalse(Guard.dailyDue(day2, t0 + 180 * min, 9, kyiv))
+    }
+
     @Test fun daily_once_a_day_from_the_hour() {
         val today = Guard.dayKey(t0, kyiv)
         assertEquals(20261021, today)

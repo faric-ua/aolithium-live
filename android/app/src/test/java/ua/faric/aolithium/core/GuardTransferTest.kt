@@ -10,7 +10,7 @@ class GuardTransferTest {
     private val token = "1234567890:AAH_fake-token-for-tests-only_abcdefgh"
     private val pack = GuardTransfer.Pack(
         token, "@AolithiumLive_bot", "375773",
-        listOf(GuardBot.Member(42, "Олег", Guard.Kind.ALL - Guard.Kind.STEP, 5), GuardBot.Member(-100777, "Батареї родини", setOf(Guard.Kind.OUTAGE))),
+        listOf(GuardBot.Member(42, "Олег", Guard.Kind.ALL - Guard.Kind.STEP, 5, GuardPicture.Look.WIDGET), GuardBot.Member(-100777, "Батареї родини", setOf(Guard.Kind.OUTAGE))),
         12,
     )
 

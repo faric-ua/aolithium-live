@@ -1,6 +1,7 @@
 package ua.faric.aolithium.guard
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
@@ -10,6 +11,7 @@ import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardBot
+import ua.faric.aolithium.core.GuardPicture
 import ua.faric.aolithium.core.Telegram
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
@@ -22,7 +24,8 @@ import ua.faric.aolithium.data.LastSnapshot
  *  - **довге опитування** бота (`getUpdates`, до 25 с): люди під'єднуються кодом, вибирають, що їм слати, питають /status;
  *  - **черга повідомлень**: що каже `core/Guard` про кожен знімок батареї — кожному учаснику, хто цей вид не вимкнув;
  *    нема інтернету (світло зникло, роутер вимкнувся) — лежить у черзі й піде, щойно зв'язок повернеться;
- *  - **щоденне «я працюю»** у вибрану годину.
+ *  - **щоденне «я працюю»** у вибрану годину;
+ *  - T59: до кожного повідомлення — **картинка батареї** у вигляді, який учасник вибрав (`guard/GuardArt.kt`).
  *
  * Знімки приходять звідти ж, звідки й сповіщення в шторці (`Notifier`): фон раз на ~5 хв і відкритий екран.
  * Демо-батареї сторож не чіпає. Батареї сторожа — ті, для яких увімкнено «Запис у фоні».
@@ -38,6 +41,13 @@ object GuardRunner {
     private var tries: Map<Long, GuardBot.Tries> = emptyMap()
     private var commandsSet = false
     private var wake: PowerManager.WakeLock? = null
+    private var picSeq = 0
+
+    /** Про що картинка: одна батарея (знімок, з якого повідомлення) або стан усіх батарей сторожа. */
+    private sealed class Pic {
+        data class One(val name: String, val snapshot: BatterySnapshot?, val at: Long?) : Pic()
+        object All : Pic()
+    }
 
     /** Для екрана: чи живе потік сторожа зараз. */
     val running: Boolean get() = h != null
@@ -85,9 +95,10 @@ object GuardRunner {
         ensure(app)
         h?.post {
             val st = GuardSettings(app)
-            val step = Guard.onSnapshot(st.state(address), s, atMs, name(app, address))
+            val nm = name(app, address)
+            val step = Guard.onSnapshot(st.state(address), s, atMs, nm)
             st.save(address, step.state)
-            queue(app, step.messages)
+            queue(app, step.messages, Pic.One(nm, s, atMs))
         }
     }
 
@@ -99,10 +110,12 @@ object GuardRunner {
         h?.post {
             val st = GuardSettings(app)
             val lastOk = listOfNotNull(BgSettings(app).result(address)?.takeIf { it.ok }?.at, LastSnapshot(app).load(address)?.second).maxOrNull()
-            val step = Guard.onNoData(st.state(address), lastOk, now, name(app, address))
+            val nm = name(app, address)
+            val step = Guard.onNoData(st.state(address), lastOk, now, nm)
             if (step.messages.isNotEmpty()) {
                 st.save(address, step.state)
-                queue(app, step.messages)
+                val last = LastSnapshot(app).load(address)
+                queue(app, step.messages, Pic.One(nm, last?.first, last?.second))
             }
         }
     }
@@ -114,7 +127,7 @@ object GuardRunner {
         h?.post {
             val st = GuardSettings(app)
             val text = "🧪 " + tr("Перевірка сторожа", "Guard test") + "\n" + Guard.status(seen(app), System.currentTimeMillis())
-            st.outbox = st.outbox + st.members.map { it.chatId to text }
+            st.outbox = st.outbox + outItems(app, st.members, text, Pic.All)
             flush(app)
         }
     }
@@ -139,18 +152,58 @@ object GuardRunner {
         Guard.Seen(name(ctx, a), last?.first, last?.second)
     }
 
-    private fun queue(ctx: Context, msgs: List<Guard.Msg>) {
+    private fun queue(ctx: Context, msgs: List<Guard.Msg>, pic: Pic) {
         if (msgs.isEmpty()) return
         val st = GuardSettings(ctx)
         val members = st.members
-        val add = ArrayList<Pair<Long, String>>()
+        val add = ArrayList<GuardPicture.Out>()
+        val pics = HashMap<GuardPicture.Look, String?>() // одна картинка кожного вигляду на всю пачку
         for (m in msgs) {
             LinkLog.add(tr("сторож: ${m.title}", "guard: ${m.title}"))
-            for (id in GuardBot.recipients(members, m.kind)) add += id to m.render()
+            for (mem in members.filter { it.wants(m.kind) }) {
+                val photo = pics.getOrPut(mem.look) { savePic(ctx, mem.look, pic) }
+                add += GuardPicture.Out(mem.chatId, m.render(), photo)
+            }
         }
         if (add.isEmpty()) return
         st.outbox = st.outbox + add
         flush(ctx)
+    }
+
+    /** Той самий текст усім [members] — кожному з картинкою його вигляду. */
+    private fun outItems(ctx: Context, members: List<GuardBot.Member>, text: String, pic: Pic): List<GuardPicture.Out> {
+        val pics = HashMap<GuardPicture.Look, String?>()
+        return members.map { m -> GuardPicture.Out(m.chatId, text, pics.getOrPut(m.look) { savePic(ctx, m.look, pic) }) }
+    }
+
+    /** Намалювати картинку й покласти у файл до черги; не вийшло — null (піде лише текст). */
+    private fun savePic(ctx: Context, look: GuardPicture.Look, pic: Pic): String? {
+        val bmp = render(ctx, look, pic, grid = false) ?: return null
+        val st = GuardSettings(ctx)
+        val name = GuardPicture.fileName(System.currentTimeMillis(), picSeq++, look)
+        return try {
+            st.picDir.mkdirs()
+            java.io.File(st.picDir, name).writeBytes(GuardArt.png(bmp))
+            name
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun render(ctx: Context, look: GuardPicture.Look, pic: Pic, grid: Boolean): Bitmap? {
+        if (look == GuardPicture.Look.NONE) return null
+        val now = System.currentTimeMillis()
+        return when (pic) {
+            is Pic.One -> GuardArt.battery(ctx, look, pic.name, pic.snapshot, pic.at, now)
+            Pic.All -> {
+                val all = seen(ctx)
+                when {
+                    all.isEmpty() -> null
+                    all.size == 1 && !grid -> GuardArt.battery(ctx, look, all[0].name, all[0].snapshot, all[0].at, now)
+                    else -> GuardArt.grid(ctx, all, now)
+                }
+            }
+        }
     }
 
     /** Надіслати все з черги по черзі. Нема зв'язку — лишити, спробуємо на наступному колі опитування. */
@@ -161,8 +214,22 @@ object GuardRunner {
         holdAwake(ctx)
         val token = st.token
         while (box.isNotEmpty()) {
-            val (chat, text) = box.first()
-            val r = TelegramHttp.call(token, "sendMessage", Telegram.sendBody(chat, text))
+            val item = box.first()
+            val chat = item.chatId
+            val png = item.photo?.let { f -> java.io.File(st.picDir, f).takeIf { it.isFile }?.let { readOrNull(it) } }
+            val split = GuardPicture.split(item.text)
+            var r = if (png != null) TelegramHttp.sendPhoto(token, chat, png, split.caption)
+                else TelegramHttp.call(token, "sendMessage", Telegram.sendBody(chat, item.text))
+            if (png != null && !r.ok && r.code == 400 && !Telegram.goneForGood(r) && r.migrateTo == null) {
+                // Картинку не прийняли (зіпсований файл тощо) — не губити повідомлення: надіслати текстом.
+                r = TelegramHttp.call(token, "sendMessage", Telegram.sendBody(chat, item.text))
+            } else if (png != null && r.ok && split.followUp != null) {
+                // Картинка пішла з коротким підписом; повний текст — наступним повідомленням (і він переживе обрив).
+                box = listOf(GuardPicture.Out(chat, split.followUp)) + box.drop(1)
+                st.outbox = box
+                st.lastSentAt = System.currentTimeMillis()
+                continue
+            }
             when {
                 r.ok -> {
                     st.lastSentAt = System.currentTimeMillis()
@@ -172,7 +239,7 @@ object GuardRunner {
                     // T52: група стала супергрупою — новий номер; переписати учасника й чергу і спробувати знову.
                     val to = r.migrateTo
                     st.members = GuardBot.migrate(st.members, chat, to)
-                    box = box.map { if (it.first == chat) to to it.second else it }
+                    box = box.map { if (it.chatId == chat) it.copy(chatId = to) else it }
                     st.outbox = box
                     LinkLog.add(tr("сторож: група стала супергрупою — оновлено", "guard: the group became a supergroup — updated"))
                     continue
@@ -180,7 +247,7 @@ object GuardRunner {
                 Telegram.goneForGood(r) -> {
                     val gone = st.members.firstOrNull { it.chatId == chat }
                     st.members = st.members.filterNot { it.chatId == chat }
-                    box = box.filterNot { it.first == chat }
+                    box = box.filterNot { it.chatId == chat }
                     st.outbox = box
                     LinkLog.add(tr("сторож: ${gone?.name ?: chat} заблокував бота — прибрано", "guard: ${gone?.name ?: chat} blocked the bot — removed"))
                     continue
@@ -194,6 +261,13 @@ object GuardRunner {
             box = box.drop(1)
             st.outbox = box
         }
+        st.cleanPics()
+    }
+
+    private fun readOrNull(f: java.io.File): ByteArray? = try {
+        f.readBytes()
+    } catch (e: Exception) {
+        null
     }
 
     private fun loop(ctx: Context) {
@@ -233,7 +307,7 @@ object GuardRunner {
     private fun answer(ctx: Context, u: Telegram.Update) {
         val st = GuardSettings(ctx)
         val res = GuardBot.handle(u, GuardBot.Input(st.code, st.members, { Guard.status(seen(ctx), System.currentTimeMillis()) },
-            System.currentTimeMillis(), tries))
+            System.currentTimeMillis(), tries, st.botName))
         tries = res.tries
         if (res.members != st.members) st.members = res.members
         res.note?.let { LinkLog.add(tr("сторож: ", "guard: ") + it) }
@@ -242,8 +316,23 @@ object GuardRunner {
                 is GuardBot.Action.Send -> TelegramHttp.call(st.token, "sendMessage", Telegram.sendBody(a.chatId, a.text, a.keyboard))
                 is GuardBot.Action.Edit -> TelegramHttp.call(st.token, "editMessageText", Telegram.editBody(a.chatId, a.messageId, a.text, a.keyboard))
                 is GuardBot.Action.Answer -> TelegramHttp.call(st.token, "answerCallbackQuery", Telegram.answerBody(a.callbackId, a.text))
+                is GuardBot.Action.Status -> status(ctx, st.token, a)
             }
         }
+    }
+
+    /** T59: «/status», «Стан усіх батарей» — одразу, з картинкою вигляду учасника; не вийшло з картинкою — текстом. */
+    private fun status(ctx: Context, token: String, a: GuardBot.Action.Status) {
+        val bmp = if (a.look == GuardPicture.Look.NONE) null else render(ctx, if (a.grid) GuardPicture.Look.WIDGET else a.look, Pic.All, a.grid)
+        if (bmp != null) {
+            val split = GuardPicture.split(a.text)
+            val r = TelegramHttp.sendPhoto(token, a.chatId, GuardArt.png(bmp), split.caption, if (split.followUp == null) a.keyboard else null)
+            if (r.ok) {
+                split.followUp?.let { TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, it, a.keyboard)) }
+                return
+            }
+        }
+        TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, a.text, a.keyboard))
     }
 
     /** Раз на хвилину: «я працюю», якщо пора. («Не бачу батарею» кличе фон через [onNoData].) */
@@ -252,7 +341,7 @@ object GuardRunner {
         if (!st.enabled) return
         if (Guard.dailyDue(st.dailyDay, now, st.dailyHour)) {
             st.dailyDay = Guard.dayKey(now)
-            queue(ctx, listOf(Guard.daily(seen(ctx), now)))
+            queue(ctx, listOf(Guard.daily(seen(ctx), now)), Pic.All)
         } else if (st.outbox.isNotEmpty()) {
             flush(ctx)
         }

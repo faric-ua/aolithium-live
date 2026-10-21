@@ -137,7 +137,8 @@ class GuardUi(
     private fun turnOn() {
         if (sample) return
         if (st.code.length != GuardBot.CODE_LEN) st.code = GuardBot.newCode { Math.random() }
-        st.dailyDay = Guard.dayKey(System.currentTimeMillis()) // перше «я працюю» — завтра; зараз є «Надіслати перевірку»
+        // T56: година «я працюю» сьогодні вже минула — перше завтра; ні (увімкнули після півночі) — сьогодні о цій годині.
+        st.dailyDay = Guard.dayOnTurnOn(System.currentTimeMillis(), st.dailyHour)
         st.enabled = true
         watchThis()
         host.requestNotifications()

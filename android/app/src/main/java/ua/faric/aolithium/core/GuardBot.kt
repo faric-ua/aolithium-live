@@ -14,20 +14,29 @@ object GuardBot {
     const val MAX_TRIES = 5
     const val TRIES_WINDOW_MS = 3_600_000L
 
-    data class Member(val chatId: Long, val name: String, val kinds: Set<Guard.Kind> = Guard.Kind.ALL, val since: Long = 0L) {
+    data class Member(
+        val chatId: Long,
+        val name: String,
+        val kinds: Set<Guard.Kind> = Guard.Kind.ALL,
+        val since: Long = 0L,
+        /** T59: який вигляд картинки слати цьому учаснику. */
+        val look: GuardPicture.Look = GuardPicture.DEFAULT,
+    ) {
         fun wants(k: Guard.Kind) = k in kinds
     }
 
     /** Учасники — рядок для пам'яті телефона: по рядку на людину, поля через табуляцію. */
     fun encode(members: List<Member>): String = members.joinToString("\n") { m ->
-        listOf("${m.chatId}", m.name.replace('\t', ' ').replace('\n', ' '), m.kinds.joinToString(",") { it.key }, "${m.since}").joinToString("\t")
+        listOf("${m.chatId}", m.name.replace('\t', ' ').replace('\n', ' '), m.kinds.joinToString(",") { it.key }, "${m.since}", m.look.key)
+            .joinToString("\t")
     }
 
     fun decode(raw: String?): List<Member> = raw.orEmpty().lines().mapNotNull { line ->
         val f = line.split('\t')
         val id = f.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
         val kinds = if (f.size > 2) f[2].split(',').mapNotNull { Guard.Kind.of(it) }.toSet() else Guard.Kind.ALL
-        Member(id, f.getOrNull(1).orEmpty().ifBlank { "?" }, kinds, f.getOrNull(3)?.toLongOrNull() ?: 0L)
+        Member(id, f.getOrNull(1).orEmpty().ifBlank { "?" }, kinds, f.getOrNull(3)?.toLongOrNull() ?: 0L,
+            GuardPicture.Look.of(f.getOrNull(4)) ?: GuardPicture.DEFAULT)
     }
 
     /** Новий код доступу з [random] (0 ≤ x < 1) — шість цифр, не з нуля, щоб не губився при копіюванні. */
@@ -37,6 +46,12 @@ object GuardBot {
         data class Send(val chatId: Long, val text: String, val keyboard: List<List<Telegram.Button>>? = null) : Action()
         data class Edit(val chatId: Long, val messageId: Long, val text: String, val keyboard: List<List<Telegram.Button>>?) : Action()
         data class Answer(val callbackId: String, val text: String) : Action()
+        /**
+         * T59: стан батарей з картинкою у вигляді учасника — малює сторож (тут без Android). [grid] — одна спільна
+         * картинка всіх батарей («Стан усіх батарей»); ні — картинка батареї, а коли їх кілька — теж сітка.
+         */
+        data class Status(val chatId: Long, val text: String, val look: GuardPicture.Look, val grid: Boolean,
+            val keyboard: List<List<Telegram.Button>>? = null) : Action()
     }
 
     /** Спроби коду: chatId → (скільки, коли перша у вікні). Лише в пам'яті сторожа. */
@@ -49,6 +64,8 @@ object GuardBot {
         val status: () -> String,
         val now: Long,
         val tries: Map<Long, Tries> = emptyMap(),
+        /** «@AolithiumLive_bot» — щоб упізнати, що в групу додали саме цього бота (T58). */
+        val botName: String = "",
     )
 
     data class Result(
@@ -63,6 +80,7 @@ object GuardBot {
         get() = listOf(
             "status" to tr("Що зараз з батареєю", "What the battery is doing now"),
             "settings" to tr("Що мені надсилати", "What to send me"),
+            "menu" to tr("Кнопки: стан усіх батарей, вигляд", "Buttons: all batteries, picture look"),
             "stop" to tr("Більше не надсилати", "Stop sending"),
             "help" to tr("Як це працює", "How it works"),
         )
@@ -71,6 +89,12 @@ object GuardBot {
         if (u.chatId == 0L) return Result(input.members, emptyList(), input.tries)
         val me = input.members.firstOrNull { it.chatId == u.chatId }
         u.callbackData?.let { return callback(u, it, me, input) }
+        if (u.text == null && !u.private && me == null && (u.groupCreated ||
+                (input.botName.isNotEmpty() && u.added.any { it.equals(input.botName, ignoreCase = true) }))) {
+            // T58 (faric 21.10 17:51): бота додали в групу вручну — коду нема, і сторож мовчав. Підказати, як увімкнути.
+            return Result(input.members, listOf(Action.Send(u.chatId, groupHint(input.botName, u.name))), input.tries,
+                tr("мене додали в групу «${u.name}» без коду", "I was added to the group \"${u.name}\" without a code"))
+        }
         val raw = u.text?.trim() ?: return Result(input.members, emptyList(), input.tries)
         val cmd = raw.substringBefore(' ').substringBefore('@').lowercase()
         val arg = raw.substringAfter(' ', "").trim()
@@ -86,7 +110,10 @@ object GuardBot {
             return join(u, offered, input)
         }
         return when {
-            cmd == "/status" || word == "стан" || word == "status" -> say(input, u.chatId, input.status()) // uk-only: слово людини
+            cmd == "/status" || word == "стан" || word == "status" -> // uk-only: слово людини
+                Result(input.members, listOf(Action.Status(u.chatId, input.status(), me.look, grid = false, keyboard = menuKeyboard())), input.tries)
+            cmd == "/menu" || word == "меню" || word == "menu" -> // uk-only: слово людини
+                Result(input.members, listOf(Action.Send(u.chatId, menuText(), menuKeyboard())), input.tries)
             cmd == "/settings" || cmd == "/start" || word == "налаштування" -> // uk-only: слово людини
                 Result(input.members, listOf(Action.Send(u.chatId, settingsText(me), keyboard(me))), input.tries)
             cmd == "/stop" -> {
@@ -141,6 +168,21 @@ object GuardBot {
             return Result(input.members, listOf(Action.Answer(id, tr("Спершу надішли код доступу.", "Send the access code first."))), input.tries)
         }
         val msgId = u.messageId
+        when (data) {
+            "all" -> return Result(input.members, listOf(Action.Answer(id, ""),
+                Action.Status(u.chatId, input.status(), me.look, grid = true, keyboard = menuKeyboard())), input.tries)
+            "set" -> return Result(input.members, listOf(Action.Answer(id, ""),
+                Action.Send(u.chatId, settingsText(me), keyboard(me))), input.tries)
+        }
+        if (data.startsWith("l:")) {
+            val look = GuardPicture.Look.of(data.removePrefix("l:"))
+                ?: return Result(input.members, listOf(Action.Answer(id, "")), input.tries)
+            val updated = me.copy(look = look)
+            val members = input.members.map { if (it.chatId == me.chatId) updated else it }
+            val acts = mutableListOf<Action>(Action.Answer(id, tr("Картинка: ", "Picture: ") + look.title))
+            if (msgId != null) acts += Action.Edit(u.chatId, msgId, settingsText(updated), keyboard(updated))
+            return Result(members, acts, input.tries)
+        }
         if (data == "done") {
             val acts = mutableListOf<Action>(Action.Answer(id, tr("Збережено", "Saved")))
             if (msgId != null) acts += Action.Edit(u.chatId, msgId, summary(me), null)
@@ -162,30 +204,53 @@ object GuardBot {
             "the guard's owner sees it in the app.",
     )
 
+    /** T58: що сказати в групу, куди бота додали без коду (сам код у групу не пишемо — його знає лише власник). */
+    fun groupHint(botName: String, group: String): String {
+        val cmd = "/start" + botName + " " + tr("КОД", "CODE")
+        return tr(
+            "Мене додали в групу «$group», але без коду доступу — тож поки я сюди не пишу. Щоб писав, власник сторожа " +
+                "надсилає в цю групу:\n$cmd\n(КОД — 6 цифр із застосунку: батарея → «Ще» → «Сторож (Telegram)»). " +
+                "Або там же — кнопка «Запросити в групу Telegram»: вона додає мене вже з кодом.",
+            "I was added to the group \"$group\", but without the access code — so I do not write here yet. To make me write, " +
+                "the guard's owner sends to this group:\n$cmd\n(CODE is 6 digits from the app: battery → \"More\" → " +
+                "\"Guard (Telegram)\"). Or use the \"Invite to a Telegram group\" button there: it adds me with the code.",
+        )
+    }
+
     fun help(): String = tr(
-        "Я стежу за батареєю й пишу, коли щось сталося. Команди:\n/status — що зараз з батареєю\n/settings — що тобі надсилати\n" +
+        "Я стежу за батареєю й пишу, коли щось сталося. Команди:\n/status — що зараз з батареєю\n/menu — кнопки\n/settings — що тобі надсилати\n" +
             "/stop — більше не надсилати\nЩодня зранку пишу «Сторож працює». Не прийшло — зі сторожем щось сталося.",
-        "I watch the battery and write when something happens. Commands:\n/status — what the battery is doing now\n" +
+        "I watch the battery and write when something happens. Commands:\n/status — what the battery is doing now\n/menu — buttons\n" +
             "/settings — what to send you\n/stop — stop sending\nEvery morning I write \"The guard is working\". If it does not come, " +
             "something happened to the guard.",
     )
 
     fun settingsText(m: Member): String = tr(
-        "Що надсилати тобі (${m.kinds.size} з ${Guard.Kind.entries.size}). Торкнись, щоб увімкнути або вимкнути:",
-        "What to send you (${m.kinds.size} of ${Guard.Kind.entries.size}). Tap to turn on or off:",
+        "Що надсилати тобі (${m.kinds.size} з ${Guard.Kind.entries.size}). Торкнись, щоб увімкнути або вимкнути. " +
+            "Нижче — вигляд картинки батареї до кожного повідомлення (зараз: ${m.look.title.lowercase()}):",
+        "What to send you (${m.kinds.size} of ${Guard.Kind.entries.size}). Tap to turn on or off. " +
+            "Below is the look of the battery picture with each message (now: ${m.look.title.lowercase()}):",
+    )
+
+    /** T59: меню в чаті — кнопки під повідомленням (і в групі працюють без імені бота). */
+    fun menuText(): String = tr("Що показати?", "What to show?")
+
+    fun menuKeyboard(): List<List<Telegram.Button>> = listOf(
+        listOf(Telegram.Button(tr("📊 Стан усіх батарей", "📊 All batteries"), "all")),
+        listOf(Telegram.Button(tr("⚙️ Що надсилати й вигляд", "⚙️ What to send and look"), "set")),
     )
 
     fun summary(m: Member): String = if (m.kinds.isEmpty()) tr(
         "Усе вимкнено — я нічого не надсилатиму. Змінити — /settings.",
         "Everything is off — I will send nothing. To change — /settings.",
     ) else tr("Надсилатиму: ", "I will send: ") + Guard.Kind.entries.filter { m.wants(it) }.joinToString(", ") { it.title } +
-        tr(". Змінити — /settings.", ". To change — /settings.")
+        tr(". Картинка: ", ". Picture: ") + m.look.title.lowercase() + tr(". Змінити — /settings.", ". To change — /settings.")
 
     /** Кнопки: 🔔 — увімкнено, 🔕 — вимкнено (не галочки — правило інтерфейсу). */
     fun keyboard(m: Member): List<List<Telegram.Button>> =
         Guard.Kind.entries.map { k ->
             listOf(Telegram.Button((if (m.wants(k)) "🔔 " else "🔕 ") + k.title, "k:${k.key}"))
-        } + listOf(listOf(Telegram.Button(tr("Готово", "Done"), "done")))
+        } + GuardPicture.keyboard(m.look) + listOf(listOf(Telegram.Button(tr("Готово", "Done"), "done")))
 
     /** T52: група стала супергрупою — той самий учасник, новий номер чату. */
     fun migrate(members: List<Member>, from: Long, to: Long): List<Member> =
