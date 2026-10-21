@@ -354,7 +354,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.12 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.13 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -739,12 +739,14 @@ details > div{padding:0 0 12px; color:var(--muted)}
   </div>
   <ul class="dots uk">
     <li><b>Лише поруч з батареєю:</b> Bluetooth дістає кілька метрів. Далеко — у шторці «нема зв'язку — батарея далеко», нічого не пишеться.</li>
+    <li><b>Не вийшло — ще раз через 2 хв</b> (двічі поспіль), потім знову раз на 5 хв: на краю дальності друга спроба часто вдається, а коли телефон справді далеко, фон не ганяє Bluetooth зайвий раз.</li>
     <li>Після перезапуску телефона й після оновлення застосунку запис відновлюється сам.</li>
     <li>Перемикач — окремо для кожної батареї. Вимкнути — тут або кнопкою «Вимкнути» в шторці.</li>
     <li>У демо не працює — лише зі справжньою батареєю.</li>
   </ul>
   <ul class="dots en">
     <li><b>Only near the battery:</b> Bluetooth reaches a few meters. Far away, the shade says "no connection — battery far away" and nothing is recorded.</li>
+    <li><b>Failed — again in 2 min</b> (twice in a row), then every 5 min again: at the edge of range a second try often works, and when the phone is really far, background does not use Bluetooth for nothing.</li>
     <li>After a phone restart and after an app update, recording resumes by itself.</li>
     <li>The switch is per battery. Turn it off here or with the "Turn off" button in the shade.</li>
     <li>Does not work in demo — only with a real battery.</li>
@@ -1151,8 +1153,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.12 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.12.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.12 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.12.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.13 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.13.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.13 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.13.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
@@ -1300,6 +1302,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.13</b> · 21.10.2026</td><td>з'єднання з батареєю коротше на ~2,5 с (плата Aolithium не губить першу команду); на краю дальності фон пробує ще раз через 2 хв</td></tr>
       <tr><td class="k"><b>0.4.12</b> · 21.10.2026</td><td>сторож: за бажанням — у групу Telegram (кілька сторожів в одному чаті) і передача на інший телефон разом з людьми й кодом; ім'я бота не ламається</td></tr>
       <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>сторож у Telegram: телефон удома пише тобі й рідним — світло, заряд, захист, кожні −10 %, щоранку «я працюю»; кожен сам вибирає, що отримувати; версія «0.4.10 · збірка 26» більше не переноситься</td></tr>
       <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>запис у фоні спершу шукає батарею в ефірі й пробує тричі — менше «нема зв'язку» поруч з батареєю; у кожному вікні заголовок згори й кнопки знизу завжди видно, прокручується середина; журнал зв'язку — свіжіші зверху</td></tr>
@@ -1331,6 +1334,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.13</b> · 21.10.2026</td><td>connecting to the battery is ~2.5 s shorter (the Aolithium BMS no longer loses the first command); at the edge of range, background tries again in 2 min</td></tr>
       <tr><td class="k"><b>0.4.12</b> · 21.10.2026</td><td>guard: optionally into a Telegram group (several guards in one chat) and moving to another phone together with members and code; the bot name no longer breaks</td></tr>
       <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>guard in Telegram: a phone at home writes to you and your family — power, charge, protection, every −10 %, "I am working" every morning; everyone picks what to get; the version "0.4.10 · build 26" no longer wraps</td></tr>
       <tr><td class="k"><b>0.4.10</b> · 20.10.2026</td><td>background recording first looks for the battery on air and tries three times — fewer "no connection" near the battery; in every window the title on top and the buttons at the bottom are always visible, the middle scrolls; connection log — newest on top</td></tr>

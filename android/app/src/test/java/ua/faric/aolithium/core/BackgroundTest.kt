@@ -52,6 +52,19 @@ class BackgroundTest {
     }
 
     @Test
+    fun retrySoonAfterFailureButNotForever() {
+        // T55: не дістали — ще раз через 2 хв, двічі поспіль; далі — знову раз на 5 хв (телефон справді далеко).
+        assertEquals(false, Background.retrySoon(0))
+        assertEquals(true, Background.retrySoon(1))
+        assertEquals(true, Background.retrySoon(2))
+        assertEquals(false, Background.retrySoon(3))
+        assertEquals(at + 2 * 60_000L, Background.nextAt(at, at + 50_000L, retrySoon = true))
+        assertEquals(at + 5 * 60_000L, Background.nextAt(at, at + 50_000L, retrySoon = false))
+        // Читання тривало 75 с — повтор не раніше ніж за хвилину від зараз.
+        assertEquals(at + 75_000L + 60_000L, Background.nextAt(at, at + 75_000L, retrySoon = true))
+    }
+
+    @Test
     fun csvForSpreadsheets() {
         val p = HistoryPoint(at, 64, 13.12, -4.1, 59.2, 12.3, 14.0, listOf(3280, 3285, 3270, 3279))
         assertEquals("2026-10-19 04:35:10,$at,64,13.12,-4.10,-53.8,59.20,12.3,14.0,15,3280;3285;3270;3279", HistoryCsv.row(p, kyiv))

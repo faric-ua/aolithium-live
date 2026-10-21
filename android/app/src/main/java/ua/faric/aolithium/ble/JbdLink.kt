@@ -67,6 +67,8 @@ class JbdLink(context: Context, override val address: String, private val quick:
     private var silentCycles = 0
     private var reconnects = 0
     private var everLive = false
+    /** T55: Android сказав «підключено» (для підпису обриву: до з'єднання чи вже після). */
+    private var linked = false
     private var attempt = 0
     private var pendingConnect = false
     private val short get() = (if (quick) tr("фон ", "bg ") else "") + BmsMatch.shortAddress(address)
@@ -249,6 +251,8 @@ class JbdLink(context: Context, override val address: String, private val quick:
     }
 
     private fun closeGatt() {
+        linked = false
+        h.removeCallbacks(firstCycle)
         h.removeCallbacks(connectTimeout)
         h.removeCallbacks(answerTimeout)
         h.removeCallbacks(nextCycle)
@@ -296,6 +300,7 @@ class JbdLink(context: Context, override val address: String, private val quick:
         when {
             newState == BluetoothProfile.STATE_CONNECTED && statusCode == BluetoothGatt.GATT_SUCCESS -> {
                 h.removeCallbacks(connectTimeout)
+                linked = true
                 LinkLog.add(tr("$short: підключено, шукаю службу FF00", "$short: connected, looking for service FF00"))
                 status(LinkStatus.Phase.READING)
                 // Невелика пауза перед пошуком служб — відома порада для Samsung/Huawei.
@@ -307,7 +312,9 @@ class JbdLink(context: Context, override val address: String, private val quick:
             }
             newState == BluetoothProfile.STATE_DISCONNECTED -> {
                 val whenText = if (everLive) tr(", після даних)", ", after data)")
-                else if (expected == -1 && !reading) tr(", ще до з'єднання)", ", before link was ready)")
+                else if (!linked) tr(", ще до з'єднання)", ", before link was ready)")
+                // T55: 21.10 13:26 — код 8 уже після «підключено» підписувався «ще до з'єднання».
+                else if (!reading) tr(", після підключення, до читання)", ", after connecting, before reading)")
                 else tr(", під час читання)", ", while reading)")
                 LinkLog.add(tr("$short: відключено (код Android $statusCode", "$short: disconnected (Android code $statusCode") + whenText)
                 closeGatt()
@@ -381,8 +388,12 @@ class JbdLink(context: Context, override val address: String, private val quick:
         if (!running || reading) return
         reading = true
         LinkLog.add(tr("$short: сповіщення ввімкнено, читаю", "$short: notifications on, reading"))
-        cycle()
+        // T55 (журнал 21.10): одразу після ввімкнення сповіщень плата JBD першу команду губить — 6 з 7 з'єднань чекали
+        // 2,5 с і повторювали; коли до першої команди минало ~2 с — відповідь з першого разу. Коротка пауза дешевша.
+        h.postDelayed(firstCycle, FIRST_COMMAND_DELAY_MS)
     }
+
+    private val firstCycle = Runnable { cycle() }
 
     private fun cycle() {
         if (!running || gatt == null) return
@@ -510,6 +521,8 @@ class JbdLink(context: Context, override val address: String, private val quick:
         val CCCD: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
         const val POLL_MS = 2_000L
         const val ANSWER_TIMEOUT_MS = 2_500L
+        /** T55: пауза між «сповіщення ввімкнено» і першою командою. */
+        const val FIRST_COMMAND_DELAY_MS = 700L
         const val CONNECT_TIMEOUT_MS = 15_000L
         const val RECONNECT_DELAY_MS = 3_000L
         const val MAX_RECONNECTS = 3

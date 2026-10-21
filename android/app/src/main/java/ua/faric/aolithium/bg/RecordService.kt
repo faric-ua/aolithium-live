@@ -58,6 +58,10 @@ class RecordService : Service() {
     private val fallbackTick = Runnable { tick() }
     private val readTimeout = Runnable { finishRead(null, Background.Skip.NO_ANSWER.name) }
 
+    /** T55: скільки тіків поспіль не дістали батарею (лише в пам'яті). */
+    private var failStreak = 0
+    private var tickFailed = false
+
     /**
      * T40: розблокування телефона. «Користувач тут» (`USER_PRESENT`) Android з Android 8 не надсилає приймачам
      * із маніфесту — лише зареєстрованим у живому застосунку. Тож слухає сама служба, поки працює запис у фоні.
@@ -211,7 +215,7 @@ class RecordService : Service() {
     // ---------- розклад ----------
 
     private fun schedule() {
-        val at = Background.nextAt(settings.lastTickAt, System.currentTimeMillis())
+        val at = Background.nextAt(settings.lastTickAt, System.currentTimeMillis(), Background.retrySoon(failStreak))
         val am = getSystemService(AlarmManager::class.java) ?: return
         val pi = tickIntent(this)
         try {
@@ -237,6 +241,7 @@ class RecordService : Service() {
             return
         }
         busy = true
+        tickFailed = false
         GuardRunner.ensure(this)
         settings.lastTickAt = System.currentTimeMillis()
         schedule()
@@ -250,6 +255,12 @@ class RecordService : Service() {
         val addr = queue.removeFirstOrNull()
         if (addr == null) {
             busy = false
+            // T55: не дістали — наступна спроба раніше (до двох разів поспіль), дістали — знову раз на 5 хв.
+            failStreak = if (tickFailed) failStreak + 1 else 0
+            if (Background.retrySoon(failStreak)) {
+                LinkLog.add(tr("фон: не вийшло — ще раз через 2 хв", "background: failed — again in 2 min"))
+            }
+            schedule()
             updateNote()
             Wake.release()
             return
@@ -307,6 +318,7 @@ class RecordService : Service() {
             Widgets.onData(this, fromScreen = false)
         } else {
             settings.saveResult(addr, Background.Result(atMs, ok = false, note = note))
+            if (note == Background.Skip.NO_ANSWER.name) tickFailed = true
             val short = BmsMatch.shortAddress(addr)
             val why = Background.Skip.localize(note)
             LinkLog.add(tr("фон $short: $why", "background $short: $why"))

@@ -97,8 +97,20 @@ object Background {
 
     fun readOnUnlock(lastTickAt: Long, now: Long, busy: Boolean): Boolean = !busy && now - lastTickAt >= UNLOCK_MIN_MS
 
+    /**
+     * T55 (журнал faric 21.10 12:45–14:10): на межі дальності половина спроб — код 133, а наступна вдала часто вже за
+     * кілька хвилин. Після невдачі — ще раз через [RETRY_MS], але лише [QUICK_RETRIES] рази поспіль: коли телефон
+     * справді далеко (на роботі), фон не ганяє Bluetooth удвічі частіше весь день.
+     */
+    const val RETRY_MS = 2 * 60_000L
+    const val QUICK_RETRIES = 2
+
+    /** Чи наступний тік — швидкий повтор: [failStreak] — скільки тіків поспіль закінчились «нема зв'язку». */
+    fun retrySoon(failStreak: Int): Boolean = failStreak in 1..QUICK_RETRIES
+
     /** Коли наступний тік: від початку попереднього, але не раніше ніж за хвилину від зараз. */
-    fun nextAt(lastTickAt: Long, now: Long): Long = maxOf(lastTickAt + EVERY_MS, now + 60_000L)
+    fun nextAt(lastTickAt: Long, now: Long, retrySoon: Boolean = false): Long =
+        maxOf(lastTickAt + (if (retrySoon) RETRY_MS else EVERY_MS), now + 60_000L)
 
     fun hhmm(ms: Long, tz: TimeZone = TimeZone.getDefault()): String =
         SimpleDateFormat("HH:mm", Locale.ROOT).apply { timeZone = tz }.format(Date(ms))
