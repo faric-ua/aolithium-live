@@ -644,10 +644,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <table class="uk">
       <tr class="hd"><th>Картка</th><th>Що там</th></tr>
       <tr><td class="k"><b>Запис у фоні</b></td><td>писати раз на ~5 хв, навіть коли застосунок закритий — <a href="#background">окремий розділ</a></td></tr>
-      <tr><td class="k"><b>Сповіщення</b></td><td>7 перемикачів і «Перевірити сповіщення» — <a href="#alerts">окремий розділ</a></td></tr>
+      <tr><td class="k"><b>Сповіщення</b></td><td>перемикачі, «Перевірити сповіщення», <b>дзвінок при серйозній тривозі</b> («Номери для тривоги», «Перевірка тривоги») — <a href="#alerts">окремий розділ</a></td></tr>
       <tr><td class="k"><b><span lang="uk">Мова</span> · Language</b></td><td>українська або англійська — <a href="#language">окремий розділ</a></td></tr>
       <tr><td class="k"><b>Значок застосунку</b></td><td>чотири на вибір: А — батарея з блискавкою, Б — кільце заряду, В — рівень заряду, Г — батарея з пульсом. Торкнись іншого → «Поміняти». Застосунок може на мить закритися — відкрий знову; якщо значок зник з головного екрана — перетягни його ще раз зі списку застосунків</td></tr>
-      <tr><td class="k"><b>Дії</b></td><td>Перейменувати, Підключити ще раз, Журнал зв'язку, Прибрати зі списку</td></tr>
+      <tr><td class="k"><b>Дії</b></td><td>Перейменувати, Підключити ще раз, Журнал зв'язку (там же — «Дані для перевірки»), Прибрати зі списку</td></tr>
       <tr><td class="k"><b>Історія</b></td><td>скільки записано, як часто, 90 днів; <b>«Зберегти CSV (таблиця)»</b> — Android спитає, куди зберегти; «Стерти історію цієї батареї» — лише з підтвердженням</td></tr>
       <tr><td class="k"><b>Довідник</b></td><td>що означає кожен показник, групами</td></tr>
       <tr><td class="k"><b>Інструкція</b></td><td>відкриває цю інструкцію</td></tr>
@@ -655,10 +655,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <table class="en">
       <tr class="hd"><th>Card</th><th>What is there</th></tr>
       <tr><td class="k"><b>Background recording</b></td><td>record every ~5 min, even when the app is closed — <a href="#background">its own section</a></td></tr>
-      <tr><td class="k"><b>Notifications</b></td><td>7 switches and "Test notifications" — <a href="#alerts">its own section</a></td></tr>
+      <tr><td class="k"><b>Notifications</b></td><td>switches, "Test notifications", <b>call on a serious alarm</b> ("Alarm numbers", "Test alarm") — <a href="#alerts">its own section</a></td></tr>
       <tr><td class="k"><b><span lang="uk">Мова</span> · Language</b></td><td>Ukrainian or English — <a href="#language">its own section</a></td></tr>
       <tr><td class="k"><b>App icon</b></td><td>four to choose from: A — battery with a bolt, B — charge ring, C — charge level, D — battery with a pulse. Tap another one → "Change". The app may close for a moment — open it again; if the icon disappeared from the home screen, drag it there again from the app list</td></tr>
-      <tr><td class="k"><b>Actions</b></td><td>Rename, Reconnect, Connection log, Remove from list</td></tr>
+      <tr><td class="k"><b>Actions</b></td><td>Rename, Reconnect, Connection log (with "Check data" there), Remove from list</td></tr>
       <tr><td class="k"><b>History</b></td><td>how much is recorded, how often, 90 days; <b>"Save CSV (table)"</b> — Android asks where to save; "Clear this battery's history" — only with confirmation</td></tr>
       <tr><td class="k"><b>Glossary</b></td><td>what each value means, in groups</td></tr>
       <tr><td class="k"><b>Guide</b></td><td>opens this guide</td></tr>
@@ -812,6 +812,17 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><span class="btn norm">Test notifications</span> — the shade shows "Test: power outage" with sound; tap it and the battery opens.</li>
     <li><b>"Charging"</b> updates with each record (with "Background recording" — every ~5 min and as soon as you unlock the phone). No new data for 20 min — it goes away by itself, so old percents do not hang in the shade.</li>
   </ul>
+  <h3 class="uk">Дзвінок при серйозній тривозі</h3><h3 class="en">Call on a serious alarm</h3>
+  <p class="uk">Коли плата каже про <b>перегрів, надмірний струм чи коротке замикання</b> (або стало гаряче), у шторці з'являються кнопки <b>«Подзвонити 101»</b> і <b>«Подзвонити …»</b> (твій номер — сусід, родич), а в Telegram сторож дописує ці номери до тривоги. Застосунок <b>сам не дзвонить</b> — кнопка лише відкриває набір номера, натискаєш ти. Холод, перерозряд, різниця комірок — без кнопок: це не привід дзвонити.</p>
+  <p class="en">When the BMS reports <b>overheating, overcurrent or a short circuit</b> (or it got hot), the shade shows <b>"Call 101"</b> and <b>"Call …"</b> buttons (your number — a neighbour, a relative), and in Telegram the guard adds these numbers to the alarm. The app <b>never calls by itself</b> — the button only opens the dialer, you tap call. Cold, overdischarge, cell difference — no buttons: no reason to call.</p>
+  <ol class="steps uk">
+    <li><span>«Ще» → «Сповіщення» → <span class="btn">Номери для тривоги</span> → 101 так / ні, ім'я й номер → «Зберегти».</span></li>
+    <li><span><span class="btn">Перевірка тривоги</span> — у шторці зразок «ПЕРЕВІРКА тривоги» з кнопками, і (якщо сторож увімкнено) такий самий зразок у Telegram.</span></li>
+  </ol>
+  <ol class="steps en">
+    <li><span>"More" → "Notifications" → <span class="btn">Alarm numbers</span> → 101 yes / no, a name and a number → "Save".</span></li>
+    <li><span><span class="btn">Test alarm</span> — a "TEST alarm" sample with the buttons in the shade, and (if the guard is on) the same sample in Telegram.</span></li>
+  </ol>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: вісім перемикачів.</figcaption></figure>
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": eight switches.</figcaption></figure>
 </section>
@@ -926,6 +937,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>/status</b></td><td>стан батареї зараз — картинкою й текстом</td></tr>
       <tr><td class="k"><b>/menu</b></td><td>кнопки «📊 Стан усіх батарей» і «⚙️ Що надсилати й вигляд»</td></tr>
       <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — що надсилати; 🔵 — вигляд картинки; «Готово»</td></tr>
+      <tr><td class="k"><b>/diag</b></td><td>файл «Дані для перевірки»: сторож читає батарею й надсилає відповіді плати, розбір і журнал зв'язку (паролі плати затерто). Його пересилають Claude — так перевіряють батарею на відстані</td></tr>
       <tr><td class="k"><b>/stop</b></td><td>більше не писати в цей чат (інші чати й група — як були). Повернутись — знову надіслати код</td></tr>
       <tr><td class="k"><b>/help</b></td><td>коротко, як це працює</td></tr>
     </table>
@@ -934,6 +946,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>/status</b></td><td>the battery state now — as a picture and text</td></tr>
       <tr><td class="k"><b>/menu</b></td><td>the "📊 All batteries" and "⚙️ What to send and look" buttons</td></tr>
       <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — what to send; 🔵 — picture look; "Done"</td></tr>
+      <tr><td class="k"><b>/diag</b></td><td>a "Check data" file: the guard reads the battery and sends the BMS answers, the parsing and the connection log (BMS passwords blanked). Forward it to Claude — this is how the battery is checked from afar</td></tr>
       <tr><td class="k"><b>/stop</b></td><td>stop writing to this chat (other chats and the group stay as they were). To come back, send the code again</td></tr>
       <tr><td class="k"><b>/help</b></td><td>briefly, how it works</td></tr>
     </table>

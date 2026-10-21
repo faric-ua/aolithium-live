@@ -11,9 +11,9 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Toast
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import ua.faric.aolithium.bg.Notifier
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BatteryLink
@@ -23,8 +23,8 @@ import ua.faric.aolithium.ble.DemoLink
 import ua.faric.aolithium.ble.LinkHolder
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.ble.LinkStatus
-import ua.faric.aolithium.core.AppIcon
 import ua.faric.aolithium.core.Alerts
+import ua.faric.aolithium.core.AppIcon
 import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
@@ -32,8 +32,9 @@ import ua.faric.aolithium.core.CellRole
 import ua.faric.aolithium.core.CellTrend
 import ua.faric.aolithium.core.ChargerCheck
 import ua.faric.aolithium.core.DailyMin
+import ua.faric.aolithium.core.Diag
+import ua.faric.aolithium.core.Emergency
 import ua.faric.aolithium.core.Fmt
-import ua.faric.aolithium.guard.GuardArt
 import ua.faric.aolithium.core.Glossary
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardPicture
@@ -59,9 +60,13 @@ import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
+import ua.faric.aolithium.data.GuardSettings
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
 import ua.faric.aolithium.data.Marks
+import ua.faric.aolithium.guard.DiagReport
+import ua.faric.aolithium.guard.GuardArt
+import ua.faric.aolithium.guard.GuardRunner
 import ua.faric.aolithium.widget.WidgetArt
 import ua.faric.aolithium.widget.Widgets
 
@@ -251,6 +256,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
             key == DLG_LINK -> showLinkInfo()
             key == DLG_FORGET -> showForget()
+            key == DLG_CALL -> showCallNumbers()
             key.startsWith(DLG_ICON) -> AppIcon.Variant.of(key.removePrefix(DLG_ICON))?.let { showIconConfirm(it) } ?: return false
             key == DLG_CLEAR -> showClearHistory()
             key.startsWith(DLG_INFO) -> showInfo(key.removePrefix(DLG_INFO))
@@ -1593,9 +1599,102 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 Notifier.test(host, address, snapshot ?: stale?.first)
             }, ui.matchWrap())
         }
+        card.addView(callSection(), ui.matchWrap())
         card.addView(ui.muted(tr("Кожне — один раз, доки стан не мине. Захист «перезаряд комірки» наприкінці заряду — це «Батарея повна», не тривога.",
             "Each comes once, until the state passes. The \"cell overcharge\" protection at the end of charge means \"Battery full\", not an alarm."), 12.5f))
         return card
+    }
+
+    /**
+     * T50: «Дзвінок при серйозній тривозі» — кому (101 і свій номер), і «Перевірка тривоги»: шторка з кнопками
+     * «Подзвонити» на цьому телефоні та (якщо сторож увімкнено) зразок у Telegram усім учасникам.
+     */
+    private fun callSection(): View {
+        val box = ui.column(8).apply { setPadding(0, ui.dp(6), 0, 0) }
+        box.addView(ui.divider(), ui.matchWrap())
+        box.addView(ui.text(tr("Дзвінок при серйозній тривозі", "Call on a serious alarm"), 15f, Palette.text, medium = true))
+        val plan = alertPrefs.callPlan
+        val who = plan.contacts.joinToString(" · ") { if (it.number == Emergency.RESCUE) "101" else "${it.name.ifBlank { "" }} ${Emergency.clean(it.number)}".trim() }
+        box.addView(ui.muted(tr(
+            "Перегрів, струм, коротке замикання — у шторці кнопки «Подзвонити», у Telegram — номери. Застосунок сам не дзвонить: лише відкриває набір номера.",
+            "Overheating, current, short circuit — \"Call\" buttons in the shade, numbers in Telegram. The app never calls by itself: it only opens the dialer.",
+        ), 13f))
+        box.addView(ui.fact(tr("Номери", "Numbers"), who.ifBlank { tr("не вибрано", "none") }), ui.matchWrap())
+        val buttons = listOf(
+            ui.button(tr("Номери для тривоги", "Alarm numbers"), Ui.Kind.NORMAL) { showCallNumbers() },
+            ui.button(tr("Перевірка тривоги", "Test alarm"), Ui.Kind.NORMAL) {
+                host.requestNotifications()
+                if (demo == null) Notifier.testUrgent(host, address)
+                GuardRunner.sendUrgentTest(host)
+                Toast.makeText(host, if (GuardSettings(host).enabled) tr("Перевірка: шторка й Telegram", "Test: shade and Telegram")
+                    else tr("Перевірка: шторка", "Test: shade"), Toast.LENGTH_SHORT).show()
+            },
+        )
+        box.addView(ui.grid(buttons), ui.matchWrap())
+        return box
+    }
+
+    private var callDraft: Pair<String, String>? = null
+
+    private fun showCallNumbers() {
+        val plan = alertPrefs.callPlan
+        var rescue = plan.rescue
+        val draft = callDraft ?: (plan.contact?.name.orEmpty() to plan.contact?.number.orEmpty())
+        fun field(value: String, hintText: String, type: Int, onChange: (String) -> Unit) = EditText(host).apply {
+            setText(value)
+            hint = hintText
+            inputType = type
+            setTextColor(Palette.text)
+            setHintTextColor(Palette.faint)
+            textSize = 17f
+            background = ui.rounded(Palette.surfaceAlt, Palette.border, radiusDp = 12)
+            setPadding(ui.dp(14), ui.dp(12), ui.dp(14), ui.dp(12))
+            minimumHeight = ui.dp(Ui.MIN_TOUCH_DP)
+            setSingleLine()
+            addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) = onChange(s?.toString().orEmpty())
+            })
+        }
+        var name = draft.first
+        var number = draft.second
+        val extra = ui.column(10)
+        val rescueRow = ui.column()
+        fun drawRescue() {
+            rescueRow.removeAllViews()
+            rescueRow.addView(ui.grid(listOf(
+                ui.choice(tr("101 — так", "101 — yes"), rescue) { rescue = true; drawRescue() },
+                ui.choice(tr("101 — ні", "101 — no"), !rescue) { rescue = false; drawRescue() },
+            )), ui.matchWrap())
+        }
+        drawRescue()
+        extra.addView(ui.muted(tr("Рятувальники (ДСНС):", "Rescue service:"), 13f))
+        extra.addView(rescueRow, ui.matchWrap())
+        extra.addView(ui.muted(tr("Свій номер — хто поруч з батареєю (сусід, родич). Можна лишити порожнім.",
+            "Your own number — someone near the battery (neighbour, relative). Can be left empty."), 13f))
+        extra.addView(field(name, tr("Ім'я, напр. «Сусід Іван»", "Name, e.g. \"Neighbour John\""),
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS) { name = it; callDraft = name to number }, ui.matchWrap())
+        extra.addView(field(number, "+380…", InputType.TYPE_CLASS_PHONE) { number = it; callDraft = name to number }, ui.matchWrap())
+        val box = host.overlay.dialog(
+            tr("Номери для тривоги", "Alarm numbers"), "",
+            actions = listOf(tr("Зберегти", "Save") to Ui.Kind.PRIMARY, tr("Скасувати", "Cancel") to Ui.Kind.QUIET),
+            onAction = { i ->
+                if (i == 0) {
+                    if (number.isNotBlank() && !Emergency.valid(number)) {
+                        Toast.makeText(host, tr("Номер схожий на неправильний — перевір цифри", "The number looks wrong — check the digits"),
+                            Toast.LENGTH_LONG).show()
+                        return@dialog
+                    }
+                    alertPrefs.callPlan = Emergency.Plan(rescue, if (number.isBlank()) null else Emergency.Contact(name.trim(), number))
+                }
+                callDraft = null
+                host.overlay.dismiss()
+                render()
+            },
+            extra = extra,
+        )
+        host.overlay.show(DLG_CALL, box)
     }
 
     private fun setBackground(on: Boolean) {
@@ -1856,11 +1955,13 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val box = host.overlay.dialog(
             tr("Журнал зв'язку", "Connection log"),
             tr("Свіжіші записи — зверху. Що відправили (→) і що прийшло (←). Можна переслати Claude, якщо щось не так. " +
-                    "«Поділитися» — останні записи; «Зберегти все» — увесь журнал ($parts част.) одним файлом.",
+                    "«Поділитися» — останні записи; «Зберегти все» — увесь журнал ($parts част.) одним файлом; " +
+                    "«Дані для перевірки» — відповіді плати й розбір (без паролів плати).",
                     "Newest entries on top. What was sent (→) and what came back (←). You can send it to Claude if something is wrong. " +
-                    "\"Share\" — the latest entries; \"Save all\" — the whole log ($parts parts) as one file."),
+                    "\"Share\" — the latest entries; \"Save all\" — the whole log ($parts parts) as one file; " +
+                    "\"Check data\" — BMS answers and parsing (without BMS passwords)."),
             actions = listOf(tr("Поділитися", "Share") to Ui.Kind.PRIMARY, tr("Зберегти все", "Save all") to Ui.Kind.NORMAL,
-                    tr("Закрити", "Close") to Ui.Kind.QUIET),
+                    tr("Дані для перевірки", "Check data") to Ui.Kind.NORMAL, tr("Закрити", "Close") to Ui.Kind.QUIET),
             onAction = { i ->
                 when (i) {
                     0 -> host.shareText(tr("Aolithium Live — журнал зв'язку", "Aolithium Live — connection log"),
@@ -1869,6 +1970,13 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                         val ver = host.versionLine
                         host.saveFile(LogBook.fileName(System.currentTimeMillis()), "text/plain") { out ->
                             out.write((ver + "\n" + LinkLog.allNewestFirst() + "\n").toByteArray(Charsets.UTF_8))
+                        }
+                    }
+                    // T64: той самий файл, що надсилає бот на «/diag» — останні відповіді плати, розбір, самоперевірки.
+                    2 -> {
+                        val report = DiagReport.build(host, tr("кнопка в журналі", "log button"), fresh = false)
+                        host.saveFile(Diag.fileName(System.currentTimeMillis()), "text/plain") { out ->
+                            out.write(report.toByteArray(Charsets.UTF_8))
                         }
                     }
                 }
@@ -1914,6 +2022,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         /** Як виглядатиме віджет (debug/CI: знімки емулятора; на домашньому екрані емулятора віджет не поставиш). */
         const val DLG_WIDGETS = "widgets"
         const val DLG_ICON = "icon:"
+        const val DLG_CALL = "call"
         const val DLG_FORGET = "forget"
         const val LOG_SHOW_CHARS = 6_000
         const val INSIGHT_DAYS = 14L

@@ -59,7 +59,8 @@ object Alerts {
     }
 
     /** Подія для шторки. [cancel] — прибрати сповіщення цього виду (стан минув, нічого нового казати). */
-    data class Event(val kind: Kind, val title: String, val text: String, val cancel: Boolean = false)
+    /** [urgent] — T50: серйозне (перегрів, струм, КЗ): у шторці кнопки «Подзвонити», у боті — номери (`Emergency`). */
+    data class Event(val kind: Kind, val title: String, val text: String, val cancel: Boolean = false, val urgent: Boolean = false)
 
     // ---------- пороги ----------
 
@@ -321,7 +322,7 @@ object Alerts {
                 else -> append(tr("Плата не пояснила причину — подивись вкладку «Плата».", "The BMS gave no reason — see the \"BMS\" tab."))
             }
         }.trim()
-        return Event(Kind.PROTECTION, title, text)
+        return Event(Kind.PROTECTION, title, text, urgent = prots.any { it in Emergency.URGENT_PROTECTIONS })
     }
 
     // ---------- комірки ----------
@@ -364,7 +365,7 @@ object Alerts {
             ev += Event(Kind.TEMP, tr("Гаряче: ", "Hot: ") + Fmt.celsius(max), tr(
                 "Вище 50 °C плата може вимкнути заряд і розряд. Перевір, чи нічого не гріє батарею.",
                 "Above 50 °C the BMS may turn off charge and discharge. Check that nothing heats the battery.",
-            ))
+            ), urgent = true)
             n = n.copy(hot = true)
         }
         return n

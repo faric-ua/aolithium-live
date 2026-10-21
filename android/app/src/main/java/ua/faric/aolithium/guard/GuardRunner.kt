@@ -6,14 +6,18 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.PowerManager
+import ua.faric.aolithium.bg.RecordService
+import ua.faric.aolithium.ble.DiagFrames
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardBot
 import ua.faric.aolithium.core.GuardPicture
 import ua.faric.aolithium.core.Telegram
 import ua.faric.aolithium.core.tr
+import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.GuardSettings
@@ -132,6 +136,23 @@ object GuardRunner {
         }
     }
 
+    /**
+     * T50: «Перевірка тривоги» — усім учасникам зразок найгіршої тривоги з номерами, позначений «ПЕРЕВІРКА»
+     * (незалежно від їхніх перемикачів, як «Надіслати перевірку»).
+     */
+    fun sendUrgentTest(ctx: Context) {
+        val app = ctx.applicationContext
+        if (!GuardSettings(app).enabled) return
+        ensure(app)
+        h?.post {
+            val st = GuardSettings(app)
+            val names = seen(app).joinToString(", ") { it.name }
+            val text = "🧪 " + Guard.urgentTest(names).render(AlertSettings(app).callPlan)
+            st.outbox = st.outbox + outItems(app, st.members, text, Pic.All)
+            flush(app)
+        }
+    }
+
     /** Перевірити токен (`getMe`) — у фоновому потоці; [done] — на головному: ім'я бота або помилка. */
     fun checkToken(token: String, done: (bot: String?, error: String?) -> Unit) {
         val main = Handler(Looper.getMainLooper())
@@ -156,13 +177,14 @@ object GuardRunner {
         if (msgs.isEmpty()) return
         val st = GuardSettings(ctx)
         val members = st.members
+        val call = AlertSettings(ctx).callPlan // T50: номери під серйозною тривогою
         val add = ArrayList<GuardPicture.Out>()
         val pics = HashMap<GuardPicture.Look, String?>() // одна картинка кожного вигляду на всю пачку
         for (m in msgs) {
             LinkLog.add(tr("сторож: ${m.title}", "guard: ${m.title}"))
             for (mem in members.filter { it.wants(m.kind) }) {
                 val photo = pics.getOrPut(mem.look) { savePic(ctx, mem.look, pic) }
-                add += GuardPicture.Out(mem.chatId, m.render(), photo)
+                add += GuardPicture.Out(mem.chatId, m.render(call), photo)
             }
         }
         if (add.isEmpty()) return
@@ -317,6 +339,7 @@ object GuardRunner {
                 is GuardBot.Action.Edit -> TelegramHttp.call(st.token, "editMessageText", Telegram.editBody(a.chatId, a.messageId, a.text, a.keyboard))
                 is GuardBot.Action.Answer -> TelegramHttp.call(st.token, "answerCallbackQuery", Telegram.answerBody(a.callbackId, a.text))
                 is GuardBot.Action.Status -> status(ctx, st.token, a)
+                is GuardBot.Action.Diag -> diag(ctx, st.token, a)
             }
         }
     }
@@ -333,6 +356,39 @@ object GuardRunner {
             }
         }
         TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, a.text, a.keyboard))
+    }
+
+    private var lastDiagAt = 0L
+
+    /**
+     * T64: «/diag» — попросити фон свіже читання, почекати до [Diag.WAIT_MS] і надіслати файл з даними для перевірки
+     * туди, звідки попросили. Не частіше, ніж раз на [Diag.COOLDOWN_MS].
+     */
+    private fun diag(ctx: Context, token: String, a: GuardBot.Action.Diag) {
+        val now = System.currentTimeMillis()
+        if (now - lastDiagAt < Diag.COOLDOWN_MS) {
+            TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, tr(
+                "Щойно збирав — спробуй за пару хвилин.", "I have just collected it — try again in a couple of minutes.")))
+            return
+        }
+        lastDiagAt = now
+        val before = DiagFrames.lastAt()
+        val reading = RecordService.requestRead()
+        TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, if (reading) tr(
+            "Читаю батарею й збираю дані для перевірки — до хвилини.", "Reading the battery and collecting check data — up to a minute.")
+            else tr("«Запис у фоні» не працює — надішлю те, що є з останнього читання.",
+                "\"Background recording\" is not running — I will send what I have from the last read.")))
+        h?.postDelayed({
+            val fresh = DiagFrames.lastAt() > before
+            val text = DiagReport.build(ctx, a.by, fresh)
+            val r = TelegramHttp.sendDocument(token, a.chatId, Diag.fileName(System.currentTimeMillis()), text, tr(
+                "📎 Дані для перевірки. Перешли цей файл Claude.", "📎 Check data. Forward this file to Claude."))
+            if (!r.ok) {
+                TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, tr("Не вдалося надіслати файл: ", "Could not send the file: ") +
+                    Telegram.explain(r)))
+            }
+            LinkLog.add(tr("сторож: дані для перевірки — ", "guard: check data — ") + if (r.ok) "OK" else Telegram.explain(r))
+        }, if (reading) Diag.WAIT_MS else 0L)
     }
 
     /** Раз на хвилину: «я працюю», якщо пора. («Не бачу батарею» кличе фон через [onNoData].) */
