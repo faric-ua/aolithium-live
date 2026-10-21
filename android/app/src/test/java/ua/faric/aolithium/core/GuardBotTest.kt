@@ -83,10 +83,10 @@ class GuardBotTest {
         val r = GuardBot.handle(tap, input(members))
         assertEquals(GuardPicture.Look.WIDGET, r.members.first { it.chatId == 8L }.look)
         assertEquals(GuardPicture.DEFAULT, r.members.first { it.chatId == 7L }.look)
-        assertTrue(r.actions.any { it is GuardBot.Action.Answer && it.text == "Картинка: Як віджет" })
+        assertTrue(r.actions.any { it is GuardBot.Action.Answer && it.text == "Картинка: Віджет" })
         val edit = r.actions.filterIsInstance<GuardBot.Action.Edit>().single()
-        assertTrue(edit.keyboard!!.flatten().any { it.text == "🔘 Як віджет" })
-        assertTrue(edit.keyboard!!.flatten().any { it.text == "⚪ Як спідометр" })
+        assertTrue(edit.keyboard!!.flatten().any { it.text == "🔵 Віджет" })
+        assertTrue(edit.keyboard!!.flatten().any { it.text == "⚪ Спідометр" })
     }
 
     @Test fun menu_gives_all_batteries_picture() {

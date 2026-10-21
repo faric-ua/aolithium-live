@@ -40,8 +40,12 @@ class GuardPictureTest {
         val kb = GuardPicture.keyboard(GuardPicture.Look.CELLS)
         assertEquals(2, kb.size)
         val flat = kb.flatten()
-        assertEquals(1, flat.count { it.text.startsWith("🔘") })
-        assertEquals("l:cells", flat.first { it.text.startsWith("🔘") }.data)
+        assertEquals(1, flat.count { it.text.startsWith("🔵") })
+        assertEquals("l:cells", flat.first { it.text.startsWith("🔵") }.data)
+        assertEquals("🔵 З комірками", flat.first { it.data == "l:cells" }.text)
+        // T61: Telegram обрізає довгі кнопки (два в ряд) — назви вигляду короткі.
+        assertTrue(flat.all { it.text.length <= 15 })
+        assertTrue(flat.none { it.text.contains("🔘") })
         assertEquals(GuardPicture.Look.WIDGET, GuardPicture.Look.of("widget"))
         assertNull(GuardPicture.Look.of("щось"))
     }

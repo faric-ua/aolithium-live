@@ -71,6 +71,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- T22 (v0.4.16): «Яку батарею показувати?» — Android відкриває під час додавання віджета й за «налаштувати
+             віджет» (Android 12+). exported — бо відкриває домашній екран; чужі номери віджетів вікно відкидає. -->
+        <activity
+            android:name=".widget.WidgetSetupActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AolithiumLive">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Віджети на головний екран (v0.3.1): великий 4 × 2 і малий 2 × 2. -->
         <receiver
             android:name=".widget.WidgetLarge"
