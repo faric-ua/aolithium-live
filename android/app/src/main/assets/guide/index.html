@@ -924,6 +924,27 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <span class="n-txt en">🔋 Aolithium: 87 % · idle · 13.31 V · 15.2 °C · at 08:57</span>
     </div>
   </div>
+  <h3 class="uk">Керування ботом у Telegram</h3><h3 class="en">Controlling the bot in Telegram</h3>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Що написати боту</th><th>Що буде</th></tr>
+      <tr><td class="k"><b>/status</b></td><td>стан батареї зараз — картинкою й текстом</td></tr>
+      <tr><td class="k"><b>/menu</b></td><td>кнопки «📊 Стан усіх батарей» і «⚙️ Що надсилати й вигляд»</td></tr>
+      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — що надсилати; 🔘 — вигляд картинки; «Готово»</td></tr>
+      <tr><td class="k"><b>/stop</b></td><td>більше не писати в цей чат (інші чати й група — як були). Повернутись — знову надіслати код</td></tr>
+      <tr><td class="k"><b>/help</b></td><td>коротко, як це працює</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>What to send the bot</th><th>What happens</th></tr>
+      <tr><td class="k"><b>/status</b></td><td>the battery state now — as a picture and text</td></tr>
+      <tr><td class="k"><b>/menu</b></td><td>the "📊 All batteries" and "⚙️ What to send and look" buttons</td></tr>
+      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — what to send; 🔘 — picture look; "Done"</td></tr>
+      <tr><td class="k"><b>/stop</b></td><td>stop writing to this chat (other chats and the group stay as they were). To come back, send the code again</td></tr>
+      <tr><td class="k"><b>/help</b></td><td>briefly, how it works</td></tr>
+    </table>
+  </div>
+  <p class="uk"><b>Усі боти в одній групі, а особисто — ні.</b> Спершу в групі «Меню» → /status для кожного бота: відповів станом — група підключена. Тоді в особистому чаті з кожним ботом — <b>/stop</b>. У групі команди — лише через «Меню» (там вони з іменем бота).</p>
+  <p class="en"><b>All bots in one group, nothing in private.</b> First, in the group, "Menu" → /status for each bot: if it answers with the state, the group is connected. Then send <b>/stop</b> in the private chat with each bot. In a group, use commands only via "Menu" (they carry the bot name there).</p>
   <h3 class="uk">Картинка батареї в Telegram</h3><h3 class="en">Battery picture in Telegram</h3>
   <p class="uk">До кожного повідомлення сторож додає <b>картинку батареї</b> — як у застосунку. Вигляд кожен вибирає сам у <b>/settings</b>: <b>як спідометр</b> (вкладка «Зараз»), <b>як віджет</b>, <b>віджет + комірки</b> або <b>без картинки</b>. Текст той самий — підписом під картинкою. <b>/menu</b> → «📊 Стан усіх батарей» — одна картинка з усіма батареями цього сторожа.</p>
   <p class="en">The guard adds <b>a battery picture</b> to every message — like in the app. Everyone picks the look in <b>/settings</b>: <b>like the gauge</b> (the "Now" tab), <b>like the widget</b>, <b>widget + cells</b> or <b>no picture</b>. The text is the same — as the caption under the picture. <b>/menu</b> → "📊 All batteries" — one picture with all batteries of this guard.</p>
