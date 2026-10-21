@@ -39,6 +39,10 @@ object Telegram {
         val callbackId: String? = null,
         val callbackData: String? = null,
         val messageId: Long? = null,
+        /** T58: службове «додали учасників» — їхні імена «@бот» (щоб упізнати, що додали саме нас). */
+        val added: List<String> = emptyList(),
+        /** T58: службове «групу створено» — бот був серед перших учасників. */
+        val groupCreated: Boolean = false,
     )
 
     /** Відповідь Telegram: [ok] і що прийшло, або [error] людською мовою, [code] — номер помилки (401, 403, 409…). */
@@ -91,7 +95,10 @@ object Telegram {
         JsonTree.obj(u["message"])?.let { m ->
             val chat = JsonTree.obj(m["chat"]) ?: return Update(id, 0, "?", false)
             val chatId = JsonTree.long(chat["id"]) ?: return Update(id, 0, "?", false)
-            return Update(id, chatId, who(chat, JsonTree.obj(m["from"])), chat["type"] == "private", text = m["text"] as? String)
+            val added = JsonTree.list(m["new_chat_members"]).mapNotNull { x -> (JsonTree.obj(x)?.get("username") as? String)?.let { "@$it" } }
+            val created = m["group_chat_created"] == true || m["supergroup_chat_created"] == true
+            return Update(id, chatId, who(chat, JsonTree.obj(m["from"])), chat["type"] == "private", text = m["text"] as? String,
+                added = added, groupCreated = created)
         }
         JsonTree.obj(u["callback_query"])?.let { q ->
             val msg = JsonTree.obj(q["message"])
@@ -124,6 +131,33 @@ object Telegram {
         val m = linkedMapOf<String, Any?>("chat_id" to chatId, "message_id" to messageId, "text" to text.take(MAX_TEXT))
         if (keyboard != null) m["reply_markup"] = JsonTree.parse(keyboardJson(keyboard))
         return JsonTree.write(m)
+    }
+
+    /** T59: поля `sendPhoto` (сама картинка — окремо, файлом). Підпис — не довший за ліміт Telegram. */
+    fun photoFields(chatId: Long, caption: String, keyboard: List<List<Button>>? = null): List<Pair<String, String>> {
+        val f = arrayListOf("chat_id" to "$chatId")
+        if (caption.isNotEmpty()) f += "caption" to caption.take(GuardPicture.CAPTION_MAX)
+        if (keyboard != null) f += "reply_markup" to keyboardJson(keyboard)
+        return f
+    }
+
+    /**
+     * T59: тіло `multipart/form-data` без бібліотек — текстові поля й один файл PNG. [boundary] — рядок, якого нема
+     * в даних (у полях — лише текст, а PNG перевіряти не треба: межу шукають лише з «\r\n--» на початку рядка).
+     */
+    fun multipart(boundary: String, fields: List<Pair<String, String>>, fileField: String, fileName: String, png: ByteArray): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        fun w(s: String) = out.write(s.toByteArray(Charsets.UTF_8))
+        for ((k, v) in fields) {
+            w("--$boundary\r\nContent-Disposition: form-data; name=\"$k\"\r\n\r\n")
+            w(v)
+            w("\r\n")
+        }
+        w("--$boundary\r\nContent-Disposition: form-data; name=\"$fileField\"; filename=\"$fileName\"\r\n")
+        w("Content-Type: image/png\r\n\r\n")
+        out.write(png)
+        w("\r\n--$boundary--\r\n")
+        return out.toByteArray()
     }
 
     fun answerBody(callbackId: String, text: String): String =

@@ -354,7 +354,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.13 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.14 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -485,8 +485,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="en"><b>Tap the line</b> — a window with the full explanation and the <span class="btn norm">Reconnect</span> and <span class="btn norm">Connection log</span> buttons.</p>
   </div>
   <div class="ok-box">
-    <p class="uk"><b>Не допомогло?</b> «Журнал зв'язку» (торкнись рядка «Зв'язок» або «Ще») → «Поділитися» → надішли Claude. У журналі — що і коли відповіла плата, без особистих даних; свіжіші записи — зверху.</p>
-    <p class="en"><b>Still no luck?</b> "Connection log" (tap the "Connection" line, or "More") → "Share" → send it to Claude. The log shows what the BMS answered and when, with no personal data; newest entries are on top.</p>
+    <p class="uk"><b>Не допомогло?</b> «Журнал зв'язку» (торкнись рядка «Зв'язок» або «Ще») → «Поділитися» → надішли Claude. У журналі — що і коли відповіла плата, без особистих даних; свіжіші записи — зверху. Журнал пишеться частинами й переживає перезапуск застосунку: <span class="btn norm">Зберегти все</span> — увесь журнал (до 20 частин по 200 рядків) одним файлом.</p>
+    <p class="en"><b>Still no luck?</b> "Connection log" (tap the "Connection" line, or "More") → "Share" → send it to Claude. The log shows what the BMS answered and when, with no personal data; newest entries are on top. The log is kept in parts and survives an app restart: <span class="btn norm">Save all</span> — the whole log (up to 20 parts of 200 lines) as one file.</p>
   </div>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/link-lost.webp" alt="Рядок Зв'язок втрачено з кнопкою Ще раз"><figcaption>«Зв'язок втрачено»: рядок той самий, з'явилась кнопка «Ще раз», нижче — останні дані.</figcaption></figure>
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/link-lost.webp" alt="Connection lost line with Retry button"><figcaption>"Connection lost": the same line, a "Retry" button, the last data below.</figcaption></figure>
@@ -868,13 +868,13 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><span><b>Свій бот (2 хв, один раз).</b> У Telegram знайди <b>@BotFather</b> → «Start» → надішли <b>/newbot</b>. Назва — будь-яка («Батарея вдома»), ім'я — латиницею й закінчується на <b>bot</b>. BotFather надішле <b>токен</b> — довгий рядок «123456789:AA…»; скопіюй його.</span></li>
     <li><span>На телефоні-сторожі: батарея → <b>«Ще»</b> → «Сторож (Telegram)» → <span class="btn prim">Налаштувати сторожа</span> → встав токен → <span class="btn prim">Перевірити й увімкнути</span>. «Запис у фоні» для цієї батареї ввімкнеться сам.</span></li>
     <li><span><span class="btn prim">Запросити людину</span> → перешли запрошення (собі теж). Людина відкриває посилання → «Start» — Telegram сам надсилає код, і вона в списку.</span></li>
-    <li><span>Кожен у чаті з ботом: <b>/settings</b> — торкаєшся видів, 🔔 надсилати, 🔕 ні. <b>/status</b> — що зараз з батареєю, <b>/stop</b> — більше не надсилати.</span></li>
+    <li><span>Кожен у чаті з ботом: <b>/settings</b> — торкаєшся видів, 🔔 надсилати, 🔕 ні, а нижче — <b>вигляд картинки</b> (🔘 вибрано). <b>/status</b> — що зараз з батареєю, <b>/menu</b> — кнопки «Стан усіх батарей» і «Що надсилати», <b>/stop</b> — більше не надсилати.</span></li>
   </ol>
   <ol class="steps en">
     <li><span><b>Your own bot (2 min, once).</b> In Telegram find <b>@BotFather</b> → "Start" → send <b>/newbot</b>. Name — any ("Home battery"), username — Latin letters, ending in <b>bot</b>. BotFather sends a <b>token</b> — a long line "123456789:AA…"; copy it.</span></li>
     <li><span>On the guard phone: battery → <b>"More"</b> → "Guard (Telegram)" → <span class="btn prim">Set up the guard</span> → paste the token → <span class="btn prim">Check and turn on</span>. "Background recording" for this battery turns on by itself.</span></li>
     <li><span><span class="btn prim">Invite a person</span> → forward the invitation (to yourself too). The person opens the link → "Start" — Telegram sends the code by itself, and they are on the list.</span></li>
-    <li><span>Everyone in the bot chat: <b>/settings</b> — tap the kinds, 🔔 send, 🔕 don't. <b>/status</b> — what the battery is doing now, <b>/stop</b> — stop sending.</span></li>
+    <li><span>Everyone in the bot chat: <b>/settings</b> — tap the kinds, 🔔 send, 🔕 don't, and below — <b>the picture look</b> (🔘 chosen). <b>/status</b> — what the battery is doing now, <b>/menu</b> — the "All batteries" and "What to send" buttons, <b>/stop</b> — stop sending.</span></li>
   </ol>
   <div class="grid2">
     <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/guard.webp" alt="Картка «Сторож (Telegram)»"><figcaption>«Ще» → «Сторож (Telegram)»: бот, код, учасники, «я працюю» щодня.</figcaption></figure>
@@ -893,8 +893,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>Батарея повна</b></td><td>щоб вимкнути генератор, навіть коли тебе нема вдома</td></tr>
       <tr><td class="k"><b>Мало заряду, розрядилась</b></td><td>20 %, 10 %, 5 % і «розрядилась» (1 % і нижче)</td></tr>
       <tr><td class="k"><b>Кожні −10 % заряду</b></td><td>під час розряду: 90, 80, 70… — з потужністю й скільки ще вистачить</td></tr>
-      <tr><td class="k"><b>Сторож не бачить батарею</b></td><td>30 хв без даних; і «знову бачу»</td></tr>
-      <tr><td class="k"><b>Щодня «я працюю»</b></td><td>о вибраній годині (7, 9, 12 чи 20): стан кожної батареї. <b>Не прийшло — зі сторожем щось сталося.</b></td></tr>
+      <tr><td class="k"><b>Сторож не бачить батарею</b></td><td>30 хв без даних; і «знову бачу» — скільки не бачив. Щойно сказав «знову бачу» — наступне «не бачу» не раніше, ніж за годину (на межі дальності батарея то зникає, то з'являється)</td></tr>
+      <tr><td class="k"><b>Щодня «я працюю»</b></td><td>о вибраній годині (7, 9, 12 чи 20): стан кожної батареї. Увімкнув сторожа до цієї години (навіть уночі) — перше прийде вже сьогодні. <b>Не прийшло — зі сторожем щось сталося.</b></td></tr>
     </table>
     <table class="en">
       <tr class="hd"><th>What it sends</th><th>When</th></tr>
@@ -906,8 +906,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <tr><td class="k"><b>Battery full</b></td><td>to turn off the generator even when you are away</td></tr>
       <tr><td class="k"><b>Low charge, empty</b></td><td>20 %, 10 %, 5 % and "empty" (1 % and below)</td></tr>
       <tr><td class="k"><b>Every −10 % of charge</b></td><td>while discharging: 90, 80, 70… — with power and how long it will last</td></tr>
-      <tr><td class="k"><b>Guard cannot see the battery</b></td><td>30 min without data; and "I can see it again"</td></tr>
-      <tr><td class="k"><b>Daily "I am working"</b></td><td>at the chosen hour (7, 9, 12 or 20): the state of each battery. <b>If it does not come, something happened to the guard.</b></td></tr>
+      <tr><td class="k"><b>Guard cannot see the battery</b></td><td>30 min without data; and "I can see it again" — for how long it was not seen. Right after "I can see it again", the next "cannot see" comes no sooner than an hour later (at the edge of range the battery comes and goes)</td></tr>
+      <tr><td class="k"><b>Daily "I am working"</b></td><td>at the chosen hour (7, 9, 12 or 20): the state of each battery. Turned the guard on before that hour (even at night) — the first one comes today. <b>If it does not come, something happened to the guard.</b></td></tr>
     </table>
   </div>
   <div class="grid2">
@@ -924,6 +924,30 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <span class="n-txt en">🔋 Aolithium: 87 % · idle · 13.31 V · 15.2 °C · at 08:57</span>
     </div>
   </div>
+  <h3 class="uk">Керування ботом у Telegram</h3><h3 class="en">Controlling the bot in Telegram</h3>
+  <div class="tbl kv">
+    <table class="uk">
+      <tr class="hd"><th>Що написати боту</th><th>Що буде</th></tr>
+      <tr><td class="k"><b>/status</b></td><td>стан батареї зараз — картинкою й текстом</td></tr>
+      <tr><td class="k"><b>/menu</b></td><td>кнопки «📊 Стан усіх батарей» і «⚙️ Що надсилати й вигляд»</td></tr>
+      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — що надсилати; 🔘 — вигляд картинки; «Готово»</td></tr>
+      <tr><td class="k"><b>/stop</b></td><td>більше не писати в цей чат (інші чати й група — як були). Повернутись — знову надіслати код</td></tr>
+      <tr><td class="k"><b>/help</b></td><td>коротко, як це працює</td></tr>
+    </table>
+    <table class="en">
+      <tr class="hd"><th>What to send the bot</th><th>What happens</th></tr>
+      <tr><td class="k"><b>/status</b></td><td>the battery state now — as a picture and text</td></tr>
+      <tr><td class="k"><b>/menu</b></td><td>the "📊 All batteries" and "⚙️ What to send and look" buttons</td></tr>
+      <tr><td class="k"><b>/settings</b></td><td>🔔 / 🔕 — what to send; 🔘 — picture look; "Done"</td></tr>
+      <tr><td class="k"><b>/stop</b></td><td>stop writing to this chat (other chats and the group stay as they were). To come back, send the code again</td></tr>
+      <tr><td class="k"><b>/help</b></td><td>briefly, how it works</td></tr>
+    </table>
+  </div>
+  <p class="uk"><b>Усі боти в одній групі, а особисто — ні.</b> Спершу в групі «Меню» → /status для кожного бота: відповів станом — група підключена. Тоді в особистому чаті з кожним ботом — <b>/stop</b>. У групі команди — лише через «Меню» (там вони з іменем бота).</p>
+  <p class="en"><b>All bots in one group, nothing in private.</b> First, in the group, "Menu" → /status for each bot: if it answers with the state, the group is connected. Then send <b>/stop</b> in the private chat with each bot. In a group, use commands only via "Menu" (they carry the bot name there).</p>
+  <h3 class="uk">Картинка батареї в Telegram</h3><h3 class="en">Battery picture in Telegram</h3>
+  <p class="uk">До кожного повідомлення сторож додає <b>картинку батареї</b> — як у застосунку. Вигляд кожен вибирає сам у <b>/settings</b>: <b>як спідометр</b> (вкладка «Зараз»), <b>як віджет</b>, <b>віджет + комірки</b> або <b>без картинки</b>. Текст той самий — підписом під картинкою. <b>/menu</b> → «📊 Стан усіх батарей» — одна картинка з усіма батареями цього сторожа.</p>
+  <p class="en">The guard adds <b>a battery picture</b> to every message — like in the app. Everyone picks the look in <b>/settings</b>: <b>like the gauge</b> (the "Now" tab), <b>like the widget</b>, <b>widget + cells</b> or <b>no picture</b>. The text is the same — as the caption under the picture. <b>/menu</b> → "📊 All batteries" — one picture with all batteries of this guard.</p>
   <ul class="dots uk">
     <li><b>Потрібен інтернет на сторожі.</b> Коли зникає світло, роутер вимикається — тоді повідомлення чекають у черзі й підуть, щойно зв'язок повернеться. Щоб ішли одразу: роутер на тій самій батареї / ДБЖ, або SIM з мобільним інтернетом у сторожі.</li>
     <li><b>Сторож — додатковий, не замість плати.</b> Батарею захищає сама плата; сторож лише розповідає. Читає раз на ~5 хв і лише поки Bluetooth дістає.</li>
@@ -931,6 +955,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>Приватність:</b> токен — лише на телефоні-сторожі. Без коду до бота не під'єднатись; 5 хибних кодів — година паузи. <span class="btn norm">Новий код</span> — для нових людей, ті, хто вже є, лишаються. Прибрати людину — <span class="btn norm">Учасники</span>.</li>
     <li>Тримай сторожа на зарядці й дозволь «Не обмежувати у фоні» (картка «Запис у фоні») — тоді Android його не приспить.</li>
     <li><b>Кілька сторожів в одній групі (за бажанням).</b> <span class="btn norm">Запросити в групу Telegram</span> → відкрий посилання → вибери групу (ти маєш бути її адміном). Так у одну групу «Батареї родини» можна звести свого сторожа, мамин, братів — кожне повідомлення підписане назвою батареї 🔋. Вибір у /settings тоді спільний для всієї групи; команди в групі — через кнопку «Меню».</li>
+    <li><b>Додав бота в групу вручну («Додати учасника») — він мовчить?</b> Без коду група не стає учасником. Бот сам підкаже в групі, що робити: надіслати туди <b>/start@ім'я_бота КОД</b> (код — у картці сторожа). Або одразу <span class="btn norm">Запросити в групу Telegram</span> — посилання додає бота вже з кодом. Боти різних сторожів одне одного в групі не бачать — кожен шле свою картинку.</li>
+    <li><b>Копія сторожа.</b> <span class="btn norm">Зберегти копію сторожа</span> — один текст (бот, люди, код), збережи собі (наприклад, у Telegram «Збережене»). Сторож працює далі. Якщо застосунок колись доведеться поставити заново: «Налаштувати сторожа» → встав увесь текст → «Перевірити й увімкнути» — усе повернеться. Сам токен бота завжди є й у @BotFather → /mybots → бот → «API Token».</li>
     <li><b>Передати сторожа на інший телефон (за бажанням).</b> <span class="btn quiet">Передати сторожа на інший телефон</span> → «Передати»: тут сторож вимикається, а текст передачі (бот, люди, код) пересилаєш тій людині. На її телефоні: «Налаштувати сторожа» → встав увесь текст → «Перевірити й увімкнути». Людям під'єднуватись заново не треба. Текст — як ключ від бота: лише тій людині.</li>
   </ul>
   <ul class="dots en">
@@ -940,6 +966,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>Privacy:</b> the token stays on the guard phone only. Nobody joins the bot without the code; 5 wrong codes — an hour's pause. <span class="btn norm">New code</span> — for new people, those already there stay. Remove a person — <span class="btn norm">Members</span>.</li>
     <li>Keep the guard on charge and allow "Don't restrict in background" (the "Background recording" card) — then Android will not put it to sleep.</li>
     <li><b>Several guards in one group (optional).</b> <span class="btn norm">Invite to a Telegram group</span> → open the link → pick the group (you must be its admin). This way your guard, mom's and your brother's can share one "Family batteries" group — each message is signed with the battery name 🔋. The /settings choice is then shared by the whole group; in a group, use the "Menu" button for commands.</li>
+    <li><b>Added the bot to a group by hand ("Add member") and it is silent?</b> Without the code the group does not become a member. The bot itself tells the group what to do: send <b>/start@bot_name CODE</b> there (the code is on the guard card). Or use <span class="btn norm">Invite to a Telegram group</span> right away — the link adds the bot with the code. Bots of different guards do not see each other in a group — each sends its own picture.</li>
+    <li><b>Guard backup.</b> <span class="btn norm">Save a guard backup</span> — one text (bot, members, code); keep it for yourself (for example, in Telegram "Saved Messages"). The guard keeps working. If the app ever has to be installed again: "Set up the guard" → paste the whole text → "Check and turn on" — everything comes back. The bot token itself is always in @BotFather → /mybots → the bot → "API Token" too.</li>
     <li><b>Move the guard to another phone (optional).</b> <span class="btn quiet">Move the guard to another phone</span> → "Move": the guard turns off here, and you send the transfer text (bot, members, code) to that person. On their phone: "Set up the guard" → paste the whole text → "Check and turn on". People do not need to join again. The text is like a key to the bot: only for that person.</li>
   </ul>
 </section>
@@ -1153,8 +1181,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.13 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.13.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.13 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.13.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.14 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.14.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.14 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.14.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->

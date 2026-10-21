@@ -29,7 +29,8 @@ class GuardBotTest {
         assertEquals(listOf(7L), a.members.map { it.chatId })
         assertEquals(Guard.Kind.ALL, a.members[0].kinds)
         assertEquals("Олег під'єднався", a.note)
-        assertTrue(sends(a).last().keyboard!!.size == Guard.Kind.entries.size + 1)
+        // 10 видів + 2 ряди вигляду картинки (T59) + «Готово»
+        assertEquals(Guard.Kind.entries.size + 2 + 1, sends(a).last().keyboard!!.size)
         val b = GuardBot.handle(text(8, "482 913", "Саня"), GuardBot.Input(code, a.members, { "" }, now))
         assertEquals(listOf(7L, 8L), b.members.map { it.chatId })
     }
@@ -62,21 +63,73 @@ class GuardBotTest {
         assertTrue(r.actions.any { it is GuardBot.Action.Answer && it.text.startsWith("Вимкнено") })
     }
 
+    private fun statuses(r: GuardBot.Result) = r.actions.filterIsInstance<GuardBot.Action.Status>()
+
     @Test fun status_and_stop() {
-        val members = listOf(GuardBot.Member(7, "Олег"))
-        assertEquals("87 % · стоїть", sends(GuardBot.handle(text(7, "/status"), input(members))).single().text)
-        assertEquals("87 % · стоїть", sends(GuardBot.handle(text(7, "стан"), input(members))).single().text)
+        val members = listOf(GuardBot.Member(7, "Олег", look = GuardPicture.Look.CELLS))
+        val st = statuses(GuardBot.handle(text(7, "/status"), input(members))).single()
+        assertEquals("87 % · стоїть", st.text)
+        assertEquals("картинка — у вигляді учасника (T59)", GuardPicture.Look.CELLS, st.look)
+        assertEquals(false, st.grid)
+        assertEquals("87 % · стоїть", statuses(GuardBot.handle(text(7, "стан"), input(members))).single().text)
         val r = GuardBot.handle(text(7, "/stop"), input(members))
         assertTrue(r.members.isEmpty())
     }
 
+    @Test fun picture_look_is_chosen_per_member() {
+        val members = listOf(GuardBot.Member(7, "Олег"), GuardBot.Member(8, "Саня"))
+        assertEquals(GuardPicture.DEFAULT, members[0].look)
+        val tap = Telegram.Update(2, 8, "Саня", true, callbackId = "cb", callbackData = "l:widget", messageId = 56)
+        val r = GuardBot.handle(tap, input(members))
+        assertEquals(GuardPicture.Look.WIDGET, r.members.first { it.chatId == 8L }.look)
+        assertEquals(GuardPicture.DEFAULT, r.members.first { it.chatId == 7L }.look)
+        assertTrue(r.actions.any { it is GuardBot.Action.Answer && it.text == "Картинка: Як віджет" })
+        val edit = r.actions.filterIsInstance<GuardBot.Action.Edit>().single()
+        assertTrue(edit.keyboard!!.flatten().any { it.text == "🔘 Як віджет" })
+        assertTrue(edit.keyboard!!.flatten().any { it.text == "⚪ Як спідометр" })
+    }
+
+    @Test fun menu_gives_all_batteries_picture() {
+        val members = listOf(GuardBot.Member(7, "Олег"))
+        val menu = sends(GuardBot.handle(text(7, "/menu"), input(members))).single()
+        assertTrue(menu.keyboard!!.flatten().map { it.data }.containsAll(listOf("all", "set")))
+        val all = GuardBot.handle(Telegram.Update(3, 7, "Олег", true, callbackId = "cb", callbackData = "all", messageId = 9), input(members))
+        assertTrue(statuses(all).single().grid)
+        val stranger = GuardBot.handle(Telegram.Update(4, 99, "Хтось", true, callbackId = "cb", callbackData = "all"), input(members))
+        assertTrue("чужим стану не показуємо", statuses(stranger).isEmpty())
+    }
+
+    @Test fun bot_added_to_group_by_hand_explains_how_to_start() {
+        // T58 (faric 21.10 17:51): бота додали в групу вручну — раніше мовчав.
+        val added = Telegram.Update(5, -100777, "Батареї", false, added = listOf("@AolithiumLive_bot"))
+        val r = GuardBot.handle(added, GuardBot.Input(code, emptyList(), { "" }, now, botName = "@AolithiumLive_bot"))
+        val hint = sends(r).single().text
+        assertTrue(hint, hint.contains("/start@AolithiumLive_bot КОД"))
+        assertTrue("код у групу не пишемо", !hint.contains(code))
+        assertTrue(r.members.isEmpty())
+        // додали іншого бота (мамин) — наш мовчить
+        val other = Telegram.Update(6, -100777, "Батареї", false, added = listOf("@Aolithium_mom_bot"))
+        assertTrue(GuardBot.handle(other, GuardBot.Input(code, emptyList(), { "" }, now, botName = "@AolithiumLive_bot")).actions.isEmpty())
+        // група вже учасник — підказка не потрібна
+        val member = GuardBot.handle(added, GuardBot.Input(code, listOf(GuardBot.Member(-100777, "Батареї")), { "" }, now, botName = "@AolithiumLive_bot"))
+        assertTrue(member.actions.isEmpty())
+        // потім у групі — команда з кодом: група стає учасником
+        val join = GuardBot.handle(Telegram.Update(7, -100777, "Батареї", false, text = "/start@AolithiumLive_bot $code"),
+            GuardBot.Input(code, emptyList(), { "" }, now, botName = "@AolithiumLive_bot"))
+        assertEquals(listOf(-100777L), join.members.map { it.chatId })
+    }
+
     @Test fun members_survive_save_and_load() {
-        val m = listOf(GuardBot.Member(7, "Олег\tК", Guard.Kind.ALL - Guard.Kind.STEP, now), GuardBot.Member(-100123, "Сім'я", setOf(Guard.Kind.OUTAGE)))
+        val m = listOf(GuardBot.Member(7, "Олег\tК", Guard.Kind.ALL - Guard.Kind.STEP, now, GuardPicture.Look.CELLS),
+            GuardBot.Member(-100123, "Сім'я", setOf(Guard.Kind.OUTAGE)))
         val back = GuardBot.decode(GuardBot.encode(m))
         assertEquals(listOf(7L, -100123L), back.map { it.chatId })
         assertEquals("Олег К", back[0].name)
         assertEquals(m[0].kinds, back[0].kinds)
         assertEquals(setOf(Guard.Kind.OUTAGE), back[1].kinds)
+        assertEquals(GuardPicture.Look.CELLS, back[0].look)
+        // учасники з 0.4.13 (без вигляду) — вигляд за замовчуванням
+        assertEquals(GuardPicture.DEFAULT, GuardBot.decode("7\tОлег\tprot,temp\t0").single().look)
     }
 
     @Test fun new_code_is_six_digits() {

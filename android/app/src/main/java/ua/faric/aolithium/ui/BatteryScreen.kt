@@ -30,7 +30,10 @@ import ua.faric.aolithium.core.CellTrend
 import ua.faric.aolithium.core.ChargerCheck
 import ua.faric.aolithium.core.DailyMin
 import ua.faric.aolithium.core.Fmt
+import ua.faric.aolithium.guard.GuardArt
 import ua.faric.aolithium.core.Glossary
+import ua.faric.aolithium.core.Guard
+import ua.faric.aolithium.core.GuardPicture
 import ua.faric.aolithium.core.Health
 import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
@@ -39,6 +42,7 @@ import ua.faric.aolithium.core.JbdParser
 import ua.faric.aolithium.core.Laggard
 import ua.faric.aolithium.core.Lang
 import ua.faric.aolithium.core.LinkLine
+import ua.faric.aolithium.core.LogBook
 import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.SteadyCurrent
@@ -245,6 +249,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             key == DLG_CLEAR -> showClearHistory()
             key.startsWith(DLG_INFO) -> showInfo(key.removePrefix(DLG_INFO))
             key == DLG_WIDGETS -> showWidgetPreview()
+            // CI, лише демо (T59): картинки, які шле бот сторожа — «botpics:gauge|widget|cells|grid».
+            key.startsWith("botpics:") && demo != null -> showBotPicture(key.removePrefix("botpics:"))
             // CI, лише демо: «status:LOST» — заморозити стан зв'язку, щоб зняти всі стани (T25: спідометр не їздить)
             key.startsWith("status:") && demo != null -> {
                 val p = LinkStatus.Phase.entries.firstOrNull { it.name == key.removePrefix("status:") } ?: return false
@@ -1654,6 +1660,34 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         host.overlay.show(DLG_WIDGETS, dlg)
     }
 
+    /** T59, лише CI на демо: як виглядатиме картинка в Telegram (той самий `GuardArt`, що й у сторожа). */
+    private fun showBotPicture(look: String, tries: Int = 0) {
+        if (snapshot == null && tries < 10) {
+            handler.postDelayed({ showBotPicture(look, tries + 1) }, 1_000)
+            return
+        }
+        val now = System.currentTimeMillis()
+        val s = snapshot ?: stale?.first
+        val at = if (snapshot != null) snapshotAt else stale?.second
+        val bmp = if (look == "grid") {
+            GuardArt.grid(host, listOf(Guard.Seen(title, s, at), Guard.Seen(tr("Дача", "Cottage"), s, (at ?: now) - 3 * 3_600_000L),
+                Guard.Seen("Logic Power", null, null)), now)
+        } else {
+            GuardArt.battery(host, GuardPicture.Look.of(look) ?: GuardPicture.DEFAULT, title, s, at, now)
+        } ?: return
+        val img = ImageView(host).apply {
+            setImageBitmap(bmp)
+            adjustViewBounds = true
+        }
+        val dlg = host.overlay.dialog(
+            tr("Картинка в Telegram", "Picture in Telegram"), "",
+            actions = listOf(tr("Закрити", "Close") to Ui.Kind.QUIET),
+            onAction = { host.overlay.dismiss() },
+            extra = img,
+        )
+        host.overlay.show("botpics:$look", dlg)
+    }
+
     private fun showInfo(id: String) {
         val e = Glossary.get(id) ?: return
         val box = ui.column(10)
@@ -1740,14 +1774,27 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             typeface = android.graphics.Typeface.MONOSPACE
             setTextIsSelectable(true)
         }
+        // T57: «Поділитися» — останні рядки (як у вікні); «Зберегти все» — усі частини з диска одним файлом.
+        val parts = LinkLog.partCount()
         val box = host.overlay.dialog(
             tr("Журнал зв'язку", "Connection log"),
-            tr("Свіжіші записи — зверху. Що відправили (→) і що прийшло (←). Можна переслати Claude, якщо щось не так.",
-                    "Newest entries on top. What was sent (→) and what came back (←). You can send it to Claude if something is wrong."),
-            actions = listOf(tr("Поділитися", "Share") to Ui.Kind.PRIMARY, tr("Закрити", "Close") to Ui.Kind.QUIET),
+            tr("Свіжіші записи — зверху. Що відправили (→) і що прийшло (←). Можна переслати Claude, якщо щось не так. " +
+                    "«Поділитися» — останні записи; «Зберегти все» — увесь журнал ($parts част.) одним файлом.",
+                    "Newest entries on top. What was sent (→) and what came back (←). You can send it to Claude if something is wrong. " +
+                    "\"Share\" — the latest entries; \"Save all\" — the whole log ($parts parts) as one file."),
+            actions = listOf(tr("Поділитися", "Share") to Ui.Kind.PRIMARY, tr("Зберегти все", "Save all") to Ui.Kind.NORMAL,
+                    tr("Закрити", "Close") to Ui.Kind.QUIET),
             onAction = { i ->
-                if (i == 0) host.shareText(tr("Aolithium Live — журнал зв'язку", "Aolithium Live — connection log"),
-                        host.versionLine + "\n" + text)
+                when (i) {
+                    0 -> host.shareText(tr("Aolithium Live — журнал зв'язку", "Aolithium Live — connection log"),
+                            host.versionLine + "\n" + text)
+                    1 -> {
+                        val ver = host.versionLine
+                        host.saveFile(LogBook.fileName(System.currentTimeMillis()), "text/plain") { out ->
+                            out.write((ver + "\n" + LinkLog.allNewestFirst() + "\n").toByteArray(Charsets.UTF_8))
+                        }
+                    }
+                }
                 host.overlay.dismiss()
             },
             extra = body,

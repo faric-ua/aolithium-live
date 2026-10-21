@@ -33,6 +33,33 @@ class TelegramTest {
         assertEquals(102L, ups[2].updateId)
     }
 
+    @Test fun bot_added_to_group_or_group_created() {
+        // T58: службові повідомлення — «додали учасників» і «групу створено» (тексту нема).
+        val json = """{"ok":true,"result":[
+          {"update_id":200,"message":{"message_id":3,"from":{"id":42,"first_name":"Олег"},"chat":{"id":-100777,"type":"supergroup","title":"Батареї"},"date":1,
+            "new_chat_members":[{"id":7001,"is_bot":true,"first_name":"Aolithium","username":"AolithiumLive_bot"},{"id":7002,"is_bot":true,"username":"Aolithium_mom_bot"}]}},
+          {"update_id":201,"message":{"message_id":1,"from":{"id":42,"first_name":"Олег"},"chat":{"id":-555,"type":"group","title":"Дім"},"date":1,"group_chat_created":true}}
+        ]}"""
+        val ups = Telegram.updates(Telegram.reply(json))
+        assertEquals(listOf("@AolithiumLive_bot", "@Aolithium_mom_bot"), ups[0].added)
+        assertEquals("Батареї", ups[0].name)
+        assertFalse(ups[0].private)
+        assertEquals(null, ups[0].text)
+        assertTrue(ups[1].groupCreated)
+    }
+
+    @Test fun photo_multipart() {
+        val fields = Telegram.photoFields(42, "🔌 Світло зникло\n🔋 Aolithium", listOf(listOf(Telegram.Button("📊", "all"))))
+        assertEquals(listOf("chat_id", "caption", "reply_markup"), fields.map { it.first })
+        assertTrue(Telegram.photoFields(1, "я".repeat(3000))[1].second.length <= GuardPicture.CAPTION_MAX)
+        val png = byteArrayOf(0x89.toByte(), 'P'.code.toByte(), 'N'.code.toByte(), 'G'.code.toByte())
+        val body = Telegram.multipart("BOUND", fields, "photo", "a.png", png)
+        val text = String(body, Charsets.ISO_8859_1)
+        assertTrue(text.startsWith("--BOUND\r\nContent-Disposition: form-data; name=\"chat_id\"\r\n\r\n42\r\n"))
+        assertTrue(text.contains("name=\"photo\"; filename=\"a.png\"\r\nContent-Type: image/png\r\n\r\n\u0089PNG\r\n--BOUND--\r\n"))
+        assertTrue("підпис — UTF-8", String(body, Charsets.UTF_8).contains("Світло зникло"))
+    }
+
     @Test fun errors() {
         val r = Telegram.reply("""{"ok":false,"error_code":403,"description":"Forbidden: bot was blocked by the user"}""")
         assertFalse(r.ok)
