@@ -30,6 +30,10 @@ EOF
   echo "  object drawable {"
   for f in "$ROOT"/android/app/src/main/res/drawable/*.xml; do echo "    const val $(basename "$f" .xml) = 0"; done
   echo "  }"
+  # T63 (v0.4.17): значки на вибір — R.mipmap з res/mipmap-anydpi-v26.
+  echo "  object mipmap {"
+  for f in "$ROOT"/android/app/src/main/res/mipmap-anydpi-v26/*.xml; do echo "    const val $(basename "$f" .xml) = 0"; done
+  echo "  }"
   # Віджет (v0.3.1): R.layout і R.id з res/layout.
   echo "  object layout {"
   for f in "$ROOT"/android/app/src/main/res/layout/*.xml; do [ -e "$f" ] && echo "    const val $(basename "$f" .xml) = 0"; done

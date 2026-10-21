@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import android.widget.ScrollView
 import android.widget.TextView
 import ua.faric.aolithium.bg.Notifier
@@ -22,6 +23,7 @@ import ua.faric.aolithium.ble.DemoLink
 import ua.faric.aolithium.ble.LinkHolder
 import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.ble.LinkStatus
+import ua.faric.aolithium.core.AppIcon
 import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.BatterySnapshot
@@ -249,6 +251,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
             key == DLG_LINK -> showLinkInfo()
             key == DLG_FORGET -> showForget()
+            key.startsWith(DLG_ICON) -> AppIcon.Variant.of(key.removePrefix(DLG_ICON))?.let { showIconConfirm(it) } ?: return false
             key == DLG_CLEAR -> showClearHistory()
             key.startsWith(DLG_INFO) -> showInfo(key.removePrefix(DLG_INFO))
             key == DLG_WIDGETS -> showWidgetPreview()
@@ -1424,7 +1427,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         help.addView(ui.iconButton(LineIcon.HELP, tr("Відкрити інструкцію", "Open the guide"), Ui.Kind.NORMAL) { host.openHelp("home") },
                 ui.matchWrap())
 
-        columns(listOf(backgroundCard(), alertsCard(), guardUi().card().also { guardCard = it }, langCard(), actions, hist, help), listOf(dict))
+        columns(listOf(backgroundCard(), alertsCard(), guardUi().card().also { guardCard = it }, langCard(), iconCard(), actions, hist, help), listOf(dict))
     }
 
     /** T12: «Мова / Language» — обидві назви, щоб картку знайшов і той, хто не читає поточною мовою. */
@@ -1438,6 +1441,53 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         card.addView(ui.muted(tr("Сповіщення й віджет теж перейдуть на вибрану мову.",
                 "Notifications and the widget switch language too."), 12.5f))
         return card
+    }
+
+    /**
+     * T63 (faric 22.10 00:11): «Значок застосунку» — чотири варіанти плитками, вибраний — зелена рамка. Торкнувся іншого —
+     * вікно з попередженням (застосунок може закритися, значок на головному екрані — перетягнути заново), потім перемикання.
+     */
+    private fun iconCard(): View {
+        val card = ui.card()
+        card.addView(labelRow(tr("Значок застосунку", "App icon"), LineIcon.BOLT, null))
+        val now = AppIconUi.current(host)
+        val tiles = AppIcon.Variant.entries.map { v ->
+            AppIconUi.tile(ui, v, v == now) { if (v != now && demo == null) showIconConfirm(v) }
+        }
+        card.addView(ui.grid(tiles), ui.matchWrap())
+        card.addView(ui.muted(
+            if (demo != null) tr("У демо лише показ — міняти значок можна на справжній батареї.", "Demo shows only — change the icon on a real battery.")
+            else tr("Однаковий для всіх батарей. Віджети й бот не міняються.", "The same for all batteries. Widgets and the bot stay as they are."),
+            12.5f,
+        ))
+        return card
+    }
+
+    private fun showIconConfirm(v: AppIcon.Variant) {
+        val img = ImageView(host).apply { setImageResource(AppIconUi.mipmap(v)) }
+        val extra = ui.row().apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            addView(img, LinearLayout.LayoutParams(ui.dp(72), ui.dp(72)))
+        }
+        val box = host.overlay.dialog(
+            tr("Поміняти значок на «${v.mark} — ${v.title}»?", "Change the icon to \"${v.mark} — ${v.title}\"?"),
+            tr("Застосунок може на мить закритися — так Android міняє значок; просто відкрий його знову, нічого не губиться. " +
+                    "Якщо значок стояв на головному екрані й зник — перетягни його ще раз зі списку застосунків.",
+                    "The app may close for a moment — this is how Android changes the icon; just open it again, nothing is lost. " +
+                    "If the icon was on the home screen and disappeared, drag it there again from the app list."),
+            actions = listOf(tr("Поміняти", "Change") to Ui.Kind.PRIMARY, tr("Скасувати", "Cancel") to Ui.Kind.QUIET),
+            onAction = { i ->
+                host.overlay.dismiss()
+                if (i == 0) {
+                    val ok = AppIconUi.apply(host, v)
+                    Toast.makeText(host, if (ok) tr("Значок змінено", "Icon changed") else tr("Не вдалося поміняти значок", "Could not change the icon"),
+                        Toast.LENGTH_SHORT).show()
+                    render()
+                }
+            },
+            extra = extra,
+        )
+        host.overlay.show(DLG_ICON + v.key, box)
     }
 
     /**
@@ -1863,6 +1913,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         const val LINK_STRIP_DP = 64
         /** Як виглядатиме віджет (debug/CI: знімки емулятора; на домашньому екрані емулятора віджет не поставиш). */
         const val DLG_WIDGETS = "widgets"
+        const val DLG_ICON = "icon:"
         const val DLG_FORGET = "forget"
         const val LOG_SHOW_CHARS = 6_000
         const val INSIGHT_DAYS = 14L

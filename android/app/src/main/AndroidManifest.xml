@@ -42,12 +42,67 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- T63 (v0.4.17): значок на вибір. Вхід у список застосунків — не саме вікно, а чотири псевдоніми з різними
+             значками; увімкнений лише один (вибір — «Ще» → «Значок застосунку», core/AppIcon.kt). MainActivity лишається
+             exported — його відкривають віджети, сповіщення й знімки CI (am start -n …/.ui.MainActivity). -->
+        <activity-alias
+            android:name="ua.faric.aolithium.IconClassic"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="Aolithium Live"
+            android:targetActivity=".ui.MainActivity">
+            <!-- А — батарея з блискавкою (як до 0.4.17), увімкнений з коробки -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
+        <activity-alias
+            android:name="ua.faric.aolithium.IconRing"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_ring"
+            android:roundIcon="@mipmap/ic_launcher_ring"
+            android:label="Aolithium Live"
+            android:targetActivity=".ui.MainActivity">
+            <!-- Б — кільце заряду -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="ua.faric.aolithium.IconLevel"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_level"
+            android:roundIcon="@mipmap/ic_launcher_level"
+            android:label="Aolithium Live"
+            android:targetActivity=".ui.MainActivity">
+            <!-- В — рівень заряду -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name="ua.faric.aolithium.IconPulse"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_pulse"
+            android:roundIcon="@mipmap/ic_launcher_pulse"
+            android:label="Aolithium Live"
+            android:targetActivity=".ui.MainActivity">
+            <!-- Г — батарея з пульсом -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- T37: перевірений APK оновлення (cache/updates/) — вікну встановлення Android. Свій провайдер замість
              androidx FileProvider (бібліотек у застосунку нема): лише читання, лише цей файл. -->

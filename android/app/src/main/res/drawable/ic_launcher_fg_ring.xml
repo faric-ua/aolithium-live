@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T63, значок «Б — кільце заряду»: як кільце на віджеті (3/4) з блискавкою. Безпечна зона — середні 66 dp з 108. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF262E3A"
+        android:strokeWidth="7"
+        android:pathData="M54,28a26,26 0 1 1 0,52a26,26 0 1 1 0,-52z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF5EC8F2"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M54,28A26,26 0 1 1 28,54" />
+    <path android:fillColor="#FFF2F5F8" android:pathData="M57,39l-12,16h8l-3,13l12,-17h-8z" />
+</vector>
