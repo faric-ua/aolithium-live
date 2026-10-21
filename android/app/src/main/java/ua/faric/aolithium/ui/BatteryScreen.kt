@@ -26,6 +26,7 @@ import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
+import ua.faric.aolithium.core.CellRole
 import ua.faric.aolithium.core.CellTrend
 import ua.faric.aolithium.core.ChargerCheck
 import ua.faric.aolithium.core.DailyMin
@@ -39,6 +40,8 @@ import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.HistoryPoint
 import ua.faric.aolithium.core.JbdParser
+import ua.faric.aolithium.core.JkSettings
+import ua.faric.aolithium.core.JkSettingsView
 import ua.faric.aolithium.core.Laggard
 import ua.faric.aolithium.core.Lang
 import ua.faric.aolithium.core.LinkLine
@@ -761,12 +764,15 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             // Якщо хоч одна вирівнюється — місце під мітку є в кожній плитці, щоб усі були однієї висоти.
             val anyBalancing = s.cellsMv.indices.any { (it + 1) in s.balancingCells }
             val tiles = s.cellsMv.mapIndexed { i, mv ->
-                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i in hi, isLo = i in lo, balancing = (i + 1) in s.balancingCells, anyBalancing = anyBalancing)
+                cellTile(i, mv, dev[i], trend?.getOrNull(i), isHi = i in hi, isLo = i in lo, balancing = (i + 1) in s.balancingCells,
+                        anyBalancing = anyBalancing, role = CellRole.of(s, i + 1))
             }
             card.addView(ui.grid(tiles, perRow = if (ui.twoPane && tiles.size > 2) 4 else 2), ui.matchWrap())
             s.deltaMv?.let { d -> card.addView(fact(tr("Різниця", "Difference"), "${Fmt.millivolts(d)} — ${s.deltaVerdict!!.title}",
                     "delta", verdictColor(s))) }
             s.averageCellV?.let { card.addView(fact(tr("Середня", "Average"), Fmt.volts(it, 3), "avgcell")) }
+            if (s.jk != null) card.addView(ui.muted(tr("Балансир JK: ▲ червона мітка — комірка віддає, ▼ зелена — бере.",
+                "JK balancer: ▲ red label — the cell gives, ▼ green — it takes."), 12f))
             card.addView(ui.muted(tr("Рамка: блакитна — найвища, помаранчева — найнижча; фіолетова мітка — вирівнюється. " +
                 "За 1 хв: ▲ зелене — напруга росте, ▼ червоне — падає. Смужка — від 2,5 В (порожня) до 3,65 В (повна).",
                 "Frame: blue — highest, orange — lowest; violet label — balancing. " +
@@ -789,8 +795,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                     s.deltaMv?.let { bal.addView(ui.muted(tr("Різниця ${Fmt.millivolts(it)}. Балансир вмикається сам, коли комірки розійдуться більше за поріг у налаштуваннях плати.",
                         "Difference ${Fmt.millivolts(it)}. The balancer turns on by itself when cells drift apart more than the BMS setting allows."), 13.5f)) }
                 }
-                bal.addView(ui.muted(tr("Активний: бере енергію з найвищої комірки й віддає найнижчій — без нагріву. На плитках — фіолетова мітка «вирівнюється».",
-                    "Active: takes energy from the highest cell and gives it to the lowest — no heat. Tiles show a violet \"balancing\" label."), 12.5f))
+                bal.addView(ui.muted(tr("Активний: бере енергію з найвищої комірки й віддає найнижчій — без нагріву. На плитках — «▲ віддає» і «▼ бере».",
+                    "Active: takes energy from the highest cell and gives it to the lowest — no heat. Tiles show \"▲ gives\" and \"▼ takes\"."), 12.5f))
                 cards += bal
             } else {
             bal.addView(labelRow(tr("Як плата вирівнює комірки", "How the BMS balances cells"), LineIcon.CELLS, "balance"))
@@ -875,7 +881,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
      * T19 (відео 19.10 13:57 — плитки «пливли»): кожна плитка однієї висоти, що б не показувала — рядок «№ + мітка»
      * завжди однієї висоти й в один рядок, «від середньої» — завжди два рядки, числа праворуч — однакової ширини.
      */
-    private fun cellTile(i: Int, mv: Int, dev: Int, perMin: Int?, isHi: Boolean, isLo: Boolean, balancing: Boolean, anyBalancing: Boolean): View {
+    private fun cellTile(i: Int, mv: Int, dev: Int, perMin: Int?, isHi: Boolean, isLo: Boolean, balancing: Boolean, anyBalancing: Boolean,
+                         role: CellRole.Role = CellRole.Role.NONE): View {
         val stroke = when {
             isHi -> Palette.accent
             isLo -> Palette.warning
@@ -929,7 +936,13 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         tile.addView(miniRow(tr("за 1 хв", "per min"), t, c))
         if (anyBalancing) {
-            val pill = ui.pill(tr("≈ вирівнюється", "≈ balancing"), Ui.Tone.VIOLET).apply {
+            // T23 (як у Logic Power): у JK видно напрям — з якої комірки балансир бере (▲ віддає, червоне) і в яку
+            // віддає (▼ бере, зелене). JBD напряму не каже — «вирівнюється».
+            val pill = when (role) {
+                CellRole.Role.GIVES -> ui.pill(tr("▲ віддає", "▲ gives"), Ui.Tone.BAD)
+                CellRole.Role.TAKES -> ui.pill(tr("▼ бере", "▼ takes"), Ui.Tone.GOOD)
+                CellRole.Role.NONE -> ui.pill(tr("≈ вирівнюється", "≈ balancing"), Ui.Tone.VIOLET)
+            }.apply {
                 textSize = 11.5f
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
@@ -1320,6 +1333,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
         val right = ArrayList<View>()
         if (s.hasProblem) right += problemCard(s)
+        // T28: налаштування JK — лише показ (плата сама шле їх кадром 0x01; у плату нічого не пишемо).
+        s.jk?.settings?.let { st -> right += jkSettingsCard(st) }
         if (s.errorCounts == null && s.jk == null) {
             val c = ui.card(8)
             c.addView(labelRow(tr("Захисти за весь час", "Protections, all time"), LineIcon.LIST, "counters"))
@@ -1344,6 +1359,18 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             right += c
         }
         columns(listOf(health, board), right)
+    }
+
+    private fun jkSettingsCard(st: JkSettings): View {
+        val c = ui.card(8)
+        c.addView(labelRow(tr("Налаштування плати", "BMS settings"), LineIcon.SLIDERS, "jksettings"))
+        c.addView(ui.muted(tr("Лише показ — як налаштовано в самій платі. Застосунок нічого в ній не змінює.",
+                "Display only — as set in the BMS itself. The app changes nothing in it."), 12.5f))
+        for (g in JkSettingsView.groups(st)) {
+            c.addView(ui.text(g.title, 14f, Palette.text, medium = true))
+            for ((name, value) in g.rows) c.addView(fact(name, value, "jksettings"))
+        }
+        return c
     }
 
     // ---------- «Ще» ----------

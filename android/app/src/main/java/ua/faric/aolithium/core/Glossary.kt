@@ -362,6 +362,15 @@ object Glossary {
                     "The app only reads — it changes nothing in the BMS."),
             "—", "—")
 
+        e("jksettings", Group.BOARD, tr("Налаштування плати JK", "JK BMS settings"), null,
+            tr("Межі, які записані в самій платі: на якій напрузі комірки вона вимикає заряд чи розряд і коли вмикає знову, " +
+                "найбільші струми, температури, коли працює балансир. Плата сама надсилає їх застосунку — застосунок лише " +
+                "показує й нічого не змінює. Змінювати їх — лише свідомо, у рідному застосунку JK: неправильні межі шкодять батареї.",
+                "Limits stored in the BMS itself: at what cell voltage it stops charge or discharge and when it allows them again, " +
+                    "maximum currents, temperatures, when the balancer works. The BMS sends them to the app by itself — the app only " +
+                    "shows them and changes nothing. Change them only deliberately, in the native JK app: wrong limits harm the battery."),
+            "—", "—")
+
         e("board", Group.BOARD, tr("Тип плати: JBD (Jiabaida)", "BMS type: JBD (Jiabaida)"), null,
             tr("Усередині Aolithium — стандартна плата JBD («Xiaoxiang»). Її протокол відкритий, тому цей застосунок може її читати. " +
                 "Застосунок лише читає — нічого в платі не змінює.",

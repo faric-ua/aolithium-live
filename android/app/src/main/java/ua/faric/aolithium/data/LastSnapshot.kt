@@ -7,6 +7,7 @@ import org.json.JSONObject
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.JbdParser
 import ua.faric.aolithium.core.JkExtra
+import ua.faric.aolithium.core.JkSettings
 import ua.faric.aolithium.core.Protection
 import ua.faric.aolithium.core.Ymd
 
@@ -51,6 +52,7 @@ class LastSnapshot(context: Context) {
         .put("mos", j.mosTemp ?: JSONObject.NULL).put("soh", j.soh).put("cap", j.cycleCapacityAh).put("run", j.runtimeSec)
         .put("heat", j.heatingOn).put("hi", j.heatingCurrent).put("plug", j.chargerPlugged).put("stage", j.chargeStage ?: -1)
         .put("hw", j.hw ?: "").put("sn", j.serial ?: "")
+        .apply { j.settings?.let { put("set", it.encode()) } }
 
     private fun decodeJk(o: JSONObject): JkExtra = JkExtra(
         layout = o.optString("lay"), balanceCurrent = o.optDouble("bi", 0.0), balancerAction = o.optInt("ba"),
@@ -59,6 +61,7 @@ class LastSnapshot(context: Context) {
         runtimeSec = o.optLong("run"), heatingOn = o.optBoolean("heat"), heatingCurrent = o.optDouble("hi", 0.0),
         chargerPlugged = o.optBoolean("plug"), chargeStage = o.optInt("stage", -1).takeIf { it >= 0 },
         hw = o.optString("hw").ifBlank { null }, serial = o.optString("sn").ifBlank { null },
+        settings = JkSettings.decode(o.optString("set").ifBlank { null }),
     )
 
     private fun decode(o: JSONObject): BatterySnapshot {

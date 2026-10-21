@@ -354,7 +354,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.14 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.15 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -1024,13 +1024,15 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <div class="panel stack-s">
       <h3 class="uk">Що є понад Aolithium</h3><h3 class="en">Extra compared to Aolithium</h3>
       <ul class="dots uk">
-        <li><b>Балансир JK</b> — активний: з якої комірки в яку переливає і скільки ампер.</li>
+        <li><b>Балансир JK</b> — активний: з якої комірки в яку переливає і скільки ампер. На плитках комірок — <b style="color:var(--bad)">▲ віддає</b> і <b style="color:var(--ok)">▼ бере</b>, як у застосунку Logic Power.</li>
+        <li><b>Налаштування плати</b> («Плата»): на якій напрузі комірки плата вимикає заряд і розряд, найбільші струми, температури, коли працює балансир. <b>Лише показ</b> — застосунок нічого в платі не змінює.</li>
         <li><b>Опір дроту</b> кожної комірки.</li>
         <li><b>Ключі плати (MOS)</b> — температура; підігрів.</li>
         <li>Здоров'я й «пройдено всього» від самої плати, час роботи плати, етап заряду (на нових платах).</li>
       </ul>
       <ul class="dots en">
-        <li><b>JK balancer</b> — active: from which cell to which it moves charge, and how many amps.</li>
+        <li><b>JK balancer</b> — active: from which cell to which it moves charge, and how many amps. Cell tiles show <b style="color:var(--bad)">▲ gives</b> and <b style="color:var(--ok)">▼ takes</b>, like the Logic Power app.</li>
+        <li><b>BMS settings</b> ("BMS"): at what cell voltage the BMS stops charge and discharge, maximum currents, temperatures, when the balancer works. <b>Display only</b> — the app changes nothing in the BMS.</li>
         <li><b>Wire resistance</b> of each cell.</li>
         <li><b>BMS switches (MOS)</b> — temperature; heater.</li>
         <li>Health and "total passed" from the BMS itself, BMS run time, charge stage (on new boards).</li>
@@ -1038,8 +1040,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </div>
     <div class="panel stack-s">
       <h3 class="uk">Стан перевірки</h3><h3 class="en">Testing status</h3>
-      <p class="uk">Показ перевірено на демо (ті самі кадри, що шле плата JK). На справжній батареї Logic Power — перевірка попереду; якщо щось не так — «Журнал зв'язку» → «Поділитися» → Claude.</p>
-      <p class="en">The screens are checked on the demo (the same frames a JK BMS sends). On the real Logic Power battery the check is still ahead; if something is wrong — "Connection log" → "Share" → Claude.</p>
+      <p class="uk">Розбір перевірено на <b>справжніх кадрах</b> чотирьох плат JK (програми 10, 14, 15, 19 — записи з відкритого проєкту esphome-jk-bms): напруга, струм, комірки, температури, %, ємність, цикли, налаштування — збігаються. Звірка з застосунком Logic Power на батареї в мами — ще попереду; якщо щось не так — «Журнал зв'язку» → «Поділитися» → Claude.</p>
+      <p class="en">The parsing is checked on <b>real frames</b> of four JK boards (firmware 10, 14, 15, 19 — recordings from the open esphome-jk-bms project): voltage, current, cells, temperatures, %, capacity, cycles, settings all match. The comparison with the Logic Power app on the battery at mom's is still ahead; if something is wrong — "Connection log" → "Share" → Claude.</p>
     </div>
   </div>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/jk-cells.webp" alt="Комірки JK з балансиром"><figcaption>Демо Logic Power: комірки JK під час заряду; картка балансира — нижче.</figcaption></figure>
@@ -1181,8 +1183,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.14 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.14.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.14 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.14.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.15 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.15.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.15 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.15.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->

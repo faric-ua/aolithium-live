@@ -101,7 +101,7 @@ data class BatterySnapshot(
          * Зібрати з кадрів JK BMS (v0.4). [device] — якщо плата відповіла «хто ти».
          * «Вирівнюються» — найвища й найнижча комірки: активний балансир JK переливає з найвищої в найнижчу.
          */
-        fun fromJk(c: JkCells, device: JkDevice?): BatterySnapshot {
+        fun fromJk(c: JkCells, device: JkDevice?, settings: JkSettings? = null): BatterySnapshot {
             val hi = c.cellsMv.withIndex().maxByOrNull { it.value }?.index
             val lo = c.cellsMv.withIndex().minByOrNull { it.value }?.index
             return BatterySnapshot(
@@ -138,6 +138,7 @@ data class BatterySnapshot(
                     chargeStage = c.chargeStage,
                     hw = device?.hw?.takeIf { it.isNotBlank() },
                     serial = device?.serial?.takeIf { it.isNotBlank() },
+                    settings = settings,
                 ),
             )
         }
