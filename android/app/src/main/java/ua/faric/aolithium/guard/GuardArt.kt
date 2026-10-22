@@ -20,6 +20,7 @@ import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.Fmt
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardPicture
+import ua.faric.aolithium.core.StaleShow
 import ua.faric.aolithium.core.WidgetModel
 import ua.faric.aolithium.core.Zones
 import ua.faric.aolithium.core.tr
@@ -92,6 +93,9 @@ object GuardArt {
             voltage = s.voltage
             caption = Fmt.num(s.remainAh, 1) + tr(" з ", " of ") + Fmt.num(s.fullAh, 1) + " " + Fmt.AH
             temperature = s.temperatures.maxOrNull() // T67: над «NN %», як у застосунку
+            // T69: сторож давно не бачив батарею — останні дані сірим з «дані від …», без живої стрілки струму
+            blink = false
+            staleLabel = if (now - at > WidgetModel.STALE_MS) StaleShow.label(at, now) else null
         }
         view.measure(View.MeasureSpec.makeMeasureSpec(inner, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         val gh = view.measuredHeight.coerceAtLeast(1)

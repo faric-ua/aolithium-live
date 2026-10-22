@@ -457,14 +457,14 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>Батарею вже тримає інший телефон</b> (Aolithium 1.3 чи цей застосунок) — тоді її не видно в пошуку. Закрий там.</li>
     <li><b>Android 8–11:</b> без дозволу на місцезнаходження й увімкненої геолокації пошук нічого не знайде.</li>
     <li><b>Bluetooth вимкнено</b> — на головній буде кнопка <span class="btn norm">Увімкнути Bluetooth</span>.</li>
-    <li><b>Батарея далеко, а подивитись хочеться:</b> її все одно можна відкрити з «Моїх батарей» — усі вкладки покажуть останні прочитані дані з часом (або прочерки, якщо зв'язку ще не було).</li>
+    <li><b>Батарея далеко, а подивитись хочеться:</b> її все одно можна відкрити з «Моїх батарей» — усі вкладки покажуть останні прочитані дані з часом (або прочерки, якщо зв'язку ще не було). Спідометр тоді кожні 3 секунди міняє «— % · немає зв'язку» і останні дані сірим з «дані від …»; струм, вати, «вистачить на» і стан ключів — прочерк: що там зараз, без зв'язку не знаємо.</li>
   </ul>
   <ul class="dots en">
     <li><b>Signal next to the name:</b> "strong", "medium", "weak". Weak (−88 dBm or less) — move closer, within 1–3 m: with such a signal the connection drops.</li>
     <li><b>Another phone already holds the battery</b> (Aolithium 1.3 or this app) — then search cannot see it. Close it there.</li>
     <li><b>Android 8–11:</b> without the location permission and location turned on, search finds nothing.</li>
     <li><b>Bluetooth is off</b> — the home screen shows <span class="btn norm">Turn on Bluetooth</span>.</li>
-    <li><b>The battery is far away, but you want to look:</b> you can still open it from "My batteries" — all tabs show the last data read, with the time (or dashes if there was no connection yet).</li>
+    <li><b>The battery is far away, but you want to look:</b> you can still open it from "My batteries" — all tabs show the last data read, with the time (or dashes if there was no connection yet). The gauge then switches every 3 seconds between "— % · no connection" and the last data in grey with "data from …"; current, watts, "lasts for" and switch states are dashes: without a connection we do not know what is happening now.</li>
   </ul>
   <div class="panel stack-s">
     <h3 class="uk">Рядок «Зв'язок» угорі</h3><h3 class="en">The "Connection" line at the top</h3>
@@ -1344,6 +1344,14 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.21</b> · 22.10.2026</td><td>без зв'язку спідометр кожні 3 с міняє «немає зв'язку» і останні дані сірим з «дані від …»; струм, вати, «вистачить на» і стан ключів — прочерк; зрозуміліший текст «Сторож працює»</td></tr>
+      <tr><td class="k"><b>0.4.20</b> · 22.10.2026</td><td>температура над відсотками в спідометрі (і на картинці бота); файл «Дані для перевірки» приходить за кілька секунд</td></tr>
+      <tr><td class="k"><b>0.4.19</b> · 22.10.2026</td><td>температура на картинці бота; у файлі «Дані для перевірки» — найсвіжіший знімок</td></tr>
+      <tr><td class="k"><b>0.4.18</b> · 22.10.2026</td><td>сторож: /diag — файл «Дані для перевірки» на відстані (паролі плати затерто); «Подзвонити 101 / своєму» при перегріві, струмі, замиканні</td></tr>
+      <tr><td class="k"><b>0.4.17</b> · 22.10.2026</td><td>значок застосунку на вибір — 4 варіанти («Ще» → «Значок застосунку»)</td></tr>
+      <tr><td class="k"><b>0.4.16</b> · 21.10.2026</td><td>кожен віджет — свою батарею; коротші кнопки вигляду в боті, вибране 🔵</td></tr>
+      <tr><td class="k"><b>0.4.15</b> · 21.10.2026</td><td>Logic Power: «Налаштування плати» (лише показ), «віддає / бере» на комірках</td></tr>
+      <tr><td class="k"><b>0.4.14</b> · 21.10.2026</td><td>сторож: картинка батареї до кожного повідомлення (3 вигляди), «Стан усіх батарей», копія сторожа; журнал зв'язку частинами («Зберегти все»)</td></tr>
       <tr><td class="k"><b>0.4.13</b> · 21.10.2026</td><td>з'єднання з батареєю коротше на ~2,5 с (плата Aolithium не губить першу команду); на краю дальності фон пробує ще раз через 2 хв</td></tr>
       <tr><td class="k"><b>0.4.12</b> · 21.10.2026</td><td>сторож: за бажанням — у групу Telegram (кілька сторожів в одному чаті) і передача на інший телефон разом з людьми й кодом; ім'я бота не ламається</td></tr>
       <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>сторож у Telegram: телефон удома пише тобі й рідним — світло, заряд, захист, кожні −10 %, щоранку «я працюю»; кожен сам вибирає, що отримувати; версія «0.4.10 · збірка 26» більше не переноситься</td></tr>
@@ -1376,6 +1384,14 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.21</b> · 22.10.2026</td><td>without a connection the gauge switches every 3 s between "no connection" and the last data in grey with "data from …"; current, watts, "lasts for" and switch states are dashes; clearer "The guard is working" text</td></tr>
+      <tr><td class="k"><b>0.4.20</b> · 22.10.2026</td><td>temperature above the percent in the gauge (and on the bot picture); the "Check data" file arrives within seconds</td></tr>
+      <tr><td class="k"><b>0.4.19</b> · 22.10.2026</td><td>temperature on the bot picture; the "Check data" file has the freshest snapshot</td></tr>
+      <tr><td class="k"><b>0.4.18</b> · 22.10.2026</td><td>guard: /diag — a "Check data" file from afar (BMS passwords blanked); "Call 101 / your contact" on overheating, current, short circuit</td></tr>
+      <tr><td class="k"><b>0.4.17</b> · 22.10.2026</td><td>choose the app icon — 4 options ("More" → "App icon")</td></tr>
+      <tr><td class="k"><b>0.4.16</b> · 21.10.2026</td><td>each widget shows its own battery; shorter look buttons in the bot, the chosen one 🔵</td></tr>
+      <tr><td class="k"><b>0.4.15</b> · 21.10.2026</td><td>Logic Power: "BMS settings" (view only), "giving / taking" on cells</td></tr>
+      <tr><td class="k"><b>0.4.14</b> · 21.10.2026</td><td>guard: a battery picture with every message (3 looks), "All batteries", guard backup; connection log in parts ("Save all")</td></tr>
       <tr><td class="k"><b>0.4.13</b> · 21.10.2026</td><td>connecting to the battery is ~2.5 s shorter (the Aolithium BMS no longer loses the first command); at the edge of range, background tries again in 2 min</td></tr>
       <tr><td class="k"><b>0.4.12</b> · 21.10.2026</td><td>guard: optionally into a Telegram group (several guards in one chat) and moving to another phone together with members and code; the bot name no longer breaks</td></tr>
       <tr><td class="k"><b>0.4.11</b> · 21.10.2026</td><td>guard in Telegram: a phone at home writes to you and your family — power, charge, protection, every −10 %, "I am working" every morning; everyone picks what to get; the version "0.4.10 · build 26" no longer wraps</td></tr>
