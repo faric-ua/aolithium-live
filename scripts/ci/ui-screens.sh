@@ -129,6 +129,10 @@ for st in CONNECTING READING LOST FAILED LIVE; do
 done
 start --es demo DISCHARGING --es dialog link
 shot p18-link-info 3
+# T69: без зв'язку спідометр кожні 3 с міняє «немає зв'язку» ↔ останні дані сірим — дві фази підряд
+start --es demo DISCHARGING --es dialog status:FAILED
+shot p18c-stale-phase-a 4
+shot p18c-stale-phase-b 3
 # Без зв'язку й без збережених даних (faric 18.10 21:48): усі вкладки з прочерками.
 start --es demo OFFLINE
 shot p14-offline-now 6

@@ -10,6 +10,7 @@ import android.view.View
 import kotlin.math.cos
 import kotlin.math.sin
 import ua.faric.aolithium.core.Fmt
+import ua.faric.aolithium.core.StaleShow
 import ua.faric.aolithium.core.Zones
 import ua.faric.aolithium.core.tr
 
@@ -61,6 +62,18 @@ class GaugeView(context: Context) : View(context) {
             field = value
             invalidate()
         }
+    /**
+     * T69: немає зв'язку — підпис «дані від HH:MM». Тоді спідометр кожні 3 с міняє «— % · немає зв'язку» ↔ останні дані
+     * сірим, без стрілки струму ([blink] = false — лише останні дані сірим, для картинки в Telegram). null — дані живі.
+     */
+    var staleLabel: String? = null
+        set(value) {
+            field = value
+            describe()
+            invalidate()
+        }
+    var blink: Boolean = true
+
     /** T67 (faric 22.10 03:18): температура (найвища з датчиків) — дрібним рядком над «NN %»; null — рядка нема. */
     var temperature: Double? = null
         set(value) {
@@ -95,7 +108,10 @@ class GaugeView(context: Context) : View(context) {
             else -> tr("струму майже нема", "almost no current")
         }
         val zone = Zones.of(soc).title.lowercase()
-        contentDescription = tr("Заряд $soc %, $zone, $dir", "Charge $soc percent, $zone, $dir")
+        val old = staleLabel
+        contentDescription = if (old != null) tr("Немає зв'язку з батареєю. Останні дані: заряд $soc %, $old",
+            "No connection to the battery. Last data: charge $soc percent, $old")
+            else tr("Заряд $soc %, $zone, $dir", "Charge $soc percent, $zone, $dir")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -127,12 +143,17 @@ class GaugeView(context: Context) : View(context) {
             canvas.drawArc(box, from + 0.6f, to - from - 1.2f, false, zonePaint)
         }
 
+        // T69: без зв'язку — фаза «немає зв'язку» (як без даних) чи «останні дані» (сірим)
+        val old = staleLabel
+        val blank = old != null && blink && !StaleShow.showOld(android.os.SystemClock.uptimeMillis())
+        if (old != null && blink && isShown) postInvalidateDelayed(StaleShow.msToSwitch(android.os.SystemClock.uptimeMillis()) + 20)
+
         // заповнення
         box.set(cx - rFill, cy - rFill, cx + rFill, cy + rFill)
         canvas.drawArc(box, START, SWEEP, false, track)
         // Заповнення — блакитне; лише внизу шкали (мало / глибокий розряд) фарбується кольором зони як попередження.
-        fill.color = if (soc < 20) toneColor(Zones.of(soc).tone) else Palette.accent
-        if (soc > 0 && !noData) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
+        fill.color = if (old != null) Palette.faint else if (soc < 20) toneColor(Zones.of(soc).tone) else Palette.accent
+        if (soc > 0 && !noData && !blank) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
 
         // поділки 0 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення. Центр підпису відсуваємо від дуги на
         // половину його ширини/висоти в напрямку дуги — інакше широке «100» торкалось дуги (скрін faric 19.10 04:41, T18).
@@ -146,9 +167,16 @@ class GaugeView(context: Context) : View(context) {
             canvas.drawText("$v", cx + (r * cos(a)).toFloat(), cy + (r * sin(a)).toFloat() + halfH, tick)
         }
 
-        if (noData) {
+        if (noData || blank) {
             big.textSize = sp(44f)
+            big.color = Palette.text
             canvas.drawText("— %", cx, cy + big.textSize * 0.15f, big)
+            if (blank) {
+                small.textSize = sp(15f)
+                small.color = Palette.warning
+                canvas.drawText(tr("немає зв'язку", "no connection"), cx, cy + big.textSize * 0.15f + small.textSize * 2f, small)
+                small.color = Palette.muted
+            }
             return
         }
 
@@ -162,6 +190,7 @@ class GaugeView(context: Context) : View(context) {
         path.lineTo(cx + (baseR * cos(a - half)).toFloat(), cy + (baseR * sin(a - half)).toFloat())
         path.lineTo(cx + (baseR * cos(a + half)).toFloat(), cy + (baseR * sin(a + half)).toFloat())
         path.close()
+        needle.color = if (old != null) Palette.muted else Palette.text
         canvas.drawPath(path, needle)
         canvas.drawPath(path, needleEdge)
 
@@ -178,24 +207,26 @@ class GaugeView(context: Context) : View(context) {
             current < -IDLE -> -1
             else -> 0
         }
-        val color = when (flow) {
-            1 -> Palette.success
-            -1 -> Palette.danger
+        val color = when {
+            old != null -> Palette.muted // T69: старе — сірим, без зеленого / червоного
+            flow == 1 -> Palette.success
+            flow == -1 -> Palette.danger
             else -> Palette.muted
         }
+        big.color = if (old != null) Palette.muted else Palette.text
         amp.color = color
         amp.textSize = sp(24f)
         val absA = kotlin.math.abs(current)
         val absW = kotlin.math.abs(power)
         val mainText = if (showAmps) Fmt.amps(absA) else Fmt.watts(absW)
-        val arrowW = if (flow != 0) 22 * dp else 0f
+        val arrowW = if (flow != 0 && old == null) 22 * dp else 0f
         fit(amp, mainText, inner * 0.78f - arrowW)
         var yAmp = yBig + amp.textSize * 1.3f
 
         // 3-й рядок — друге число, напруга й напрям
         small.textSize = sp(13f)
         val other = if (showAmps) Fmt.watts(absW) else Fmt.amps(absA)
-        val line3 = when (flow) {
+        val line3 = if (old != null) old else when (flow) {
             1 -> "$other · " + tr("бере заряд", "charging")
             -1 -> "$other · " + tr("віддає", "discharging")
             else -> if (voltage > 0) Fmt.volts(voltage) + " · " + tr("стоїть", "idle") else tr("стоїть", "idle")
@@ -227,16 +258,18 @@ class GaugeView(context: Context) : View(context) {
         temperature?.let { t ->
             // над «NN %»: між великим числом і поділкою «50» вільно (верх цифр ≈ 0,75 розміру шрифту над рядком)
             small.textSize = sp(14f)
-            small.color = tempColor(t)
+            small.color = if (old != null) Palette.muted else tempColor(t)
             canvas.drawText(Fmt.celsius(t), cx, yBig - big.textSize * 1.02f, small)
             small.color = Palette.muted
         }
         val textW = amp.measureText(mainText)
         val xText = cx - arrowW / 2
         canvas.drawText(mainText, xText, yAmp, amp)
-        if (flow != 0) drawFlowArrow(canvas, xText + textW / 2 + 13 * dp, yAmp - amp.textSize * 0.36f, flow, color)
+        if (flow != 0 && old == null) drawFlowArrow(canvas, xText + textW / 2 + 13 * dp, yAmp - amp.textSize * 0.36f, flow, color)
         small.textSize = size3
+        if (old != null) small.color = Palette.warning
         canvas.drawText(line3, cx, y3, small)
+        small.color = Palette.muted
         if (caption.isNotEmpty()) canvas.drawText(caption, cx, yCap, capPaint)
     }
 

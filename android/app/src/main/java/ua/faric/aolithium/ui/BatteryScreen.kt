@@ -51,6 +51,7 @@ import ua.faric.aolithium.core.LinkLine
 import ua.faric.aolithium.core.LogBook
 import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.Signal
+import ua.faric.aolithium.core.StaleShow
 import ua.faric.aolithium.core.SteadyCurrent
 import ua.faric.aolithium.core.TextFit
 import ua.faric.aolithium.core.TimeLeft
@@ -132,12 +133,19 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     /** Що показуємо: живі числа, останні збережені чи порожньо (прочерки). */
     private enum class Data { LIVE, STALE, NONE }
 
+    /**
+     * T69 (faric 22.10 05:36): «наживо» — лише коли зв'язок справді є. Раніше останній знімок цього сеансу лишався «живим»,
+     * поки застосунок перепідключався («Читаю плату…», «Не вдалось»), і спідометр показував струм десятихвилинної давнини.
+     */
     private val data: Data
         get() = when {
-            snapshot != null -> Data.LIVE
-            stale != null -> Data.STALE
+            snapshot != null && status.phase == LinkStatus.Phase.LIVE -> Data.LIVE
+            snapshot != null || stale != null -> Data.STALE
             else -> Data.NONE
         }
+
+    /** Коли прочитано те, що зараз на екрані. */
+    private val shownAt: Long get() = if (snapshot != null) snapshotAt else stale?.second ?: 0L
     private var remembered = false
     private var renameDraft = state?.getString(KEY_DRAFT)
     private var tab = state?.getString(KEY_TAB)?.let { n -> Tab.entries.firstOrNull { it.name == n } } ?: Tab.NOW
@@ -581,6 +589,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             showAmps = marks.gaugeAmps
             caption = Fmt.num(s.remainAh, 1) + tr(" з ", " of ") + Fmt.num(s.fullAh, 1) + " " + Fmt.AH
             temperature = s.temperatures.maxOrNull() // T67
+            staleLabel = if (data == Data.STALE) StaleShow.label(shownAt, System.currentTimeMillis()) else null // T69
             noData = data == Data.NONE
             setOnClickListener { showInfo("zones") }
         }, ui.matchWrap())
@@ -604,13 +613,14 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         now.addView(labelRow(tr("Зараз", "Now"), LineIcon.PULSE, null))
         now.addView(fact(tr("Напруга", "Voltage"), Fmt.volts(s.voltage), "voltage"))
         // Стрілки як на спідометрі: віддає — ▲ червоне (енергія йде з батареї), заряджається — ▼ зелене.
-        val (curText, curColor) = when (s.flow) {
+        // T69: без зв'язку струм і вати — прочерк (це миттєві числа, старі вводять в оману).
+        val (curText, curColor) = if (data == Data.STALE) DASH to Palette.muted else when (s.flow) {
             BatterySnapshot.Flow.CHARGING -> Fmt.amps(s.current) + tr(" ▼ бере", " ▼ in") to Palette.success
             BatterySnapshot.Flow.DISCHARGING -> Fmt.amps(-s.current) + tr(" ▲ віддає", " ▲ out") to Palette.danger
             BatterySnapshot.Flow.IDLE -> Fmt.amps(s.current) to Palette.text
         }
         now.addView(fact(tr("Струм", "Current"), curText, "current", curColor))
-        now.addView(fact(tr("Потужність", "Power"), Fmt.watts(kotlin.math.abs(s.power)), "power", curColor))
+        now.addView(fact(tr("Потужність", "Power"), if (data == Data.STALE) DASH else Fmt.watts(kotlin.math.abs(s.power)), "power", curColor))
         if (s.temperatures.isNotEmpty()) {
             val hot = s.temperatures.max()
             val tName = if (s.temperatures.size == 1) tr("Температура", "Temperature") else tr("Температура (макс.)", "Temperature (max)")
@@ -626,13 +636,18 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val state = ui.card()
         state.addView(labelRow(tr("Стан плати", "BMS state"), LineIcon.SHIELD, "protState"))
         val row = FlowLayout(host, ui.dp(8), ui.dp(8))
-        if (data == Data.NONE) {
+        if (data == Data.NONE || data == Data.STALE) { // T69: стан ключів і захисту без зв'язку невідомий
             row.addView(pillInfo(tr("Заряд: $DASH", "Charge: $DASH"), Ui.Tone.NEUTRAL, "chargeSw"))
             row.addView(pillInfo(tr("Розряд: $DASH", "Discharge: $DASH"), Ui.Tone.NEUTRAL, "dischargeSw"))
             row.addView(pillInfo(tr("Балансування: $DASH", "Balancing: $DASH"), Ui.Tone.NEUTRAL, "balance"))
             row.addView(pillInfo(tr("Захист: $DASH", "Protection: $DASH"), Ui.Tone.NEUTRAL, "protState"))
             state.addView(row, ui.matchWrap())
-            columns(listOf(gaugeCard), listOf(now, state))
+            // T69: останнє відоме «захист спрацював» — не ховати й без зв'язку (картка сама каже «дані від…» у шапці)
+            val right = mutableListOf<View>()
+            if (data == Data.STALE && s.hasProblem) right += problemCard(s)
+            right += now
+            right += state
+            columns(listOf(gaugeCard), right)
             return
         }
         row.addView(pillInfo(if (s.chargeOn) tr("Заряд: дозволено", "Charge: allowed") else tr("Заряд: заборонено", "Charge: off"),
@@ -663,7 +678,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
      * натомість «за 1 / 2 год такого заряду +N %» — щоб вирішити, скільки ганяти генератор.
      */
     private fun timeCard(s: BatterySnapshot): View? {
-        if (data == Data.NONE) return null
+        if (data != Data.LIVE) return null // T69: «вистачить на» рахується зі струму — без зв'язку не знаємо
         val amps = if (data == Data.LIVE) steady.shown ?: s.current else s.current
         val card = ui.card(8)
         TimeLeft.discharge(s.remainAh, s.fullAh, amps)?.let { d ->
