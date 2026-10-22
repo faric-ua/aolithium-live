@@ -42,6 +42,13 @@ object GuardBot {
     /** Новий код доступу з [random] (0 ≤ x < 1) — шість цифр, не з нуля, щоб не губився при копіюванні. */
     fun newCode(random: () -> Double): String = (100_000 + (random() * 900_000).toInt().coerceIn(0, 899_999)).toString()
 
+    /**
+     * T75 (faric 23.10 01:44): код доступу на екрані схований — лише крапки групами по три («••• •••»), без цифр з країв
+     * (у коді 6 цифр — краї видали б 4 з 6). Торкнутись — показати / сховати, утримати — скопіювати повністю.
+     * Пробіл нерозривний — крапки не ламаються на два рядки.
+     */
+    fun hiddenCode(code: String): String = "\u2022".repeat(code.length.coerceAtLeast(1)).chunked(3).joinToString("\u00A0")
+
     sealed class Action {
         data class Send(val chatId: Long, val text: String, val keyboard: List<List<Telegram.Button>>? = null) : Action()
         data class Edit(val chatId: Long, val messageId: Long, val text: String, val keyboard: List<List<Telegram.Button>>?) : Action()

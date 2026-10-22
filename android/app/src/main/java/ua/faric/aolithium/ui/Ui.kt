@@ -272,6 +272,60 @@ class Ui(val ctx: Context) {
     }
 
     /**
+     * T75 (faric 23.10 01:45: «кнопку — глазик відкрити, закрити; а як на нього клацаєш — він копіює»): секрет у рядку
+     * «назва — значення». Спершу схований ([hidden]); значок-око праворуч — показати / сховати; торкнутись самого
+     * значення — [onCopy] (скопіювати повністю). Щоразу, як картку малюють наново, — знову схований.
+     */
+    fun secretFact(name: String, full: String, hidden: String, onCopy: () -> Unit): LinearLayout = row(4).apply {
+        gravity = Gravity.CENTER_VERTICAL
+        var open = false
+        addView(muted(name, 14f), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        val value = numbers(text(hidden, 15f, Palette.text, medium = true)).apply {
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            minHeight = dp(MIN_TOUCH_DP)
+            minimumHeight = dp(MIN_TOUCH_DP)
+            setPadding(dp(8), 0, dp(8), 0)
+            background = pressable(rounded(Palette.transparent, radiusDp = 10), radiusDp = 10)
+            isClickable = true
+            isFocusable = true
+            contentDescription = tr("$name. Торкнись — скопіювати", "$name. Tap to copy")
+            setOnClickListener { onCopy() }
+        }
+        addView(value, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f))
+        val eye = android.widget.ImageView(ctx).apply {
+            val size = dp(LineIcon.BUTTON_DP)
+            val pad = dp(MIN_TOUCH_DP - LineIcon.BUTTON_DP) / 2
+            setPadding(pad, pad, pad, pad)
+            background = pressable(rounded(Palette.transparent, radiusDp = 12), radiusDp = 12)
+            isClickable = true
+            isFocusable = true
+            fun paint() {
+                setImageDrawable((if (open) LineIcon.EYE_OFF else LineIcon.EYE).drawable(Palette.accent, size))
+                contentDescription = if (open) tr("Сховати $name", "Hide $name") else tr("Показати $name", "Show $name")
+            }
+            paint()
+            setOnClickListener {
+                open = !open
+                value.text = if (open) full else hidden
+                paint()
+            }
+        }
+        addView(eye, LinearLayout.LayoutParams(dp(MIN_TOUCH_DP), dp(MIN_TOUCH_DP)))
+    }
+
+    /** Текст у буфер обміну. Android 13+ сам показує, що скопійовано; раніше — наше коротке [done]. */
+    fun copyText(label: String, value: String, done: String) {
+        val ok = runCatching {
+            val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(label, value))
+        }.isSuccess
+        if (!ok || android.os.Build.VERSION.SDK_INT < 33) {
+            android.widget.Toast.makeText(ctx, if (ok) done else tr("Не вдалося скопіювати", "Could not copy"),
+                android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
      * T51: рядок «назва — значення», де значення ніколи не розривається (версія «0.4.10 · збірка 26»).
      * Значення бере свою ширину, назва — решту; разом не влазять — назва стає над значенням ([VersionLine.stacked]).
      */

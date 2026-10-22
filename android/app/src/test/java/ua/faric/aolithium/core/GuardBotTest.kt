@@ -147,4 +147,12 @@ class GuardBotTest {
         assertTrue(stranger.actions.none { it is GuardBot.Action.Diag })
         assertTrue(GuardBot.commands.any { it.first == "diag" })
     }
+
+    @Test fun hidden_code_shows_no_digits() {
+        // T75: на екрані — лише крапки, жодної цифри коду; нерозривний пробіл між трійками
+        val h = GuardBot.hiddenCode(code)
+        assertEquals("\u2022\u2022\u2022\u00A0\u2022\u2022\u2022", h)
+        assertTrue(h.none { it.isDigit() })
+        assertTrue(GuardBot.hiddenCode("").isNotEmpty())
+    }
 }
