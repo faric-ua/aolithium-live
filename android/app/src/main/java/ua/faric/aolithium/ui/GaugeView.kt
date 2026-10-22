@@ -228,7 +228,7 @@ class GaugeView(context: Context) : View(context) {
             // над «NN %»: між великим числом і поділкою «50» вільно (верх цифр ≈ 0,75 розміру шрифту над рядком)
             small.textSize = sp(14f)
             small.color = tempColor(t)
-            canvas.drawText(Fmt.celsius(t), cx, yBig - big.textSize * 0.82f, small)
+            canvas.drawText(Fmt.celsius(t), cx, yBig - big.textSize * 1.02f, small)
             small.color = Palette.muted
         }
         val textW = amp.measureText(mainText)
