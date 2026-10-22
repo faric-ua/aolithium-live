@@ -580,6 +580,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             voltage = s.voltage
             showAmps = marks.gaugeAmps
             caption = Fmt.num(s.remainAh, 1) + tr(" з ", " of ") + Fmt.num(s.fullAh, 1) + " " + Fmt.AH
+            temperature = s.temperatures.maxOrNull() // T67
             noData = data == Data.NONE
             setOnClickListener { showInfo("zones") }
         }, ui.matchWrap())
@@ -1787,11 +1788,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         v.setOnClickListener { showInfo(id) }
     }
 
-    private fun tempColor(t: Double) = when {
-        t < 0 || t > 50 -> Palette.danger
-        t < 10 || t > 40 -> Palette.warning
-        else -> Palette.text
-    }
+    private fun tempColor(t: Double) = GaugeView.tempColor(t)
 
     private fun verdictColor(s: BatterySnapshot) = when (s.deltaVerdict) {
         BatterySnapshot.Verdict.GOOD -> Palette.success

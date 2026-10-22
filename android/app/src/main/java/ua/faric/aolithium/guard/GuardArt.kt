@@ -91,6 +91,7 @@ object GuardArt {
             power = s.power
             voltage = s.voltage
             caption = Fmt.num(s.remainAh, 1) + tr(" з ", " of ") + Fmt.num(s.fullAh, 1) + " " + Fmt.AH
+            temperature = s.temperatures.maxOrNull() // T67: над «NN %», як у застосунку
         }
         view.measure(View.MeasureSpec.makeMeasureSpec(inner, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         val gh = view.measuredHeight.coerceAtLeast(1)
@@ -98,8 +99,8 @@ object GuardArt {
         val model = WidgetModel.of(name, s, at, now)
         val zone = Zones.of(s.soc)
         val head = 30 * d
-        val lines = listOf(zone.title to GaugeView.toneColor(zone.tone), model.status to statusColor(model.tone), model.line1 to Palette.muted,
-            GuardPicture.tempLine(s.temperatures).orEmpty() to Palette.muted) // T65
+        val lines = listOf(zone.title to GaugeView.toneColor(zone.tone), model.status to statusColor(model.tone), model.line1 to Palette.muted)
+            // T65 рядок «температура …» тут не потрібен: з T67 вона над «NN %» у самому спідометрі
             .filter { it.first.isNotBlank() }
         val lineH = 22 * d
         val h = (pad + head + gh + 8 * d + lines.size * lineH + pad).toInt()
