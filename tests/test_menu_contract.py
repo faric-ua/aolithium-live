@@ -17,6 +17,14 @@ def git(cwd, *args):
 
 
 class MenuContract(unittest.TestCase):
+    def test_local_build_stops_gradle_daemon(self):
+        # faric 23.10: після збірки Gradle і Kotlin не мають лишатись у пам'яті телефона.
+        b = (ROOT / "tools/termux/al-local-build.sh").read_text(encoding="utf-8")
+        stop = b.index('"$gradle" --stop')
+        self.assertLess(b.index('wait "$pid"'), stop)
+        self.assertLess(stop, b.index('if [ "$rc" = 0 ]'))  # і після вдалої, і після невдалої збірки
+        self.assertIn("KotlinCompileDaemon", b)
+
     def test_numbers_are_stable(self):
         shown = set(re.findall(r'echo "\s*(\d+) — ', MENU))
         handled = set(re.findall(r"^\s+(\d+)(?:\s*\|[^)]*)?\)", MENU, re.M))
