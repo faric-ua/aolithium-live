@@ -276,7 +276,7 @@ class Ui(val ctx: Context) {
      * «назва — значення». Спершу схований ([hidden]); значок-око праворуч — показати / сховати; торкнутись самого
      * значення — [onCopy] (скопіювати повністю). Щоразу, як картку малюють наново, — знову схований.
      */
-    fun secretFact(name: String, full: String, hidden: String, onCopy: () -> Unit): LinearLayout = row(4).apply {
+    fun secretFact(name: String, full: String, hidden: String, onCopy: () -> Unit): LinearLayout = row(0).apply {
         gravity = Gravity.CENTER_VERTICAL
         var open = false
         addView(muted(name, 14f), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
@@ -294,8 +294,10 @@ class Ui(val ctx: Context) {
         addView(value, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f))
         val eye = android.widget.ImageView(ctx).apply {
             val size = dp(LineIcon.BUTTON_DP)
-            val pad = dp(MIN_TOUCH_DP - LineIcon.BUTTON_DP) / 2
-            setPadding(pad, pad, pad, pad)
+            // faric 02:18: око — праворуч, впритул до краю картки, на одній лінії з іншими значеннями (і в коді, і в номері)
+            val pad = dp(MIN_TOUCH_DP - LineIcon.BUTTON_DP)
+            setPadding(pad, pad / 2, 0, pad / 2)
+            scaleType = android.widget.ImageView.ScaleType.FIT_END
             background = pressable(rounded(Palette.transparent, radiusDp = 12), radiusDp = 12)
             isClickable = true
             isFocusable = true
