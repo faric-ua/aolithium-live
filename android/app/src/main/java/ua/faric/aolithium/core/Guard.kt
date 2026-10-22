@@ -302,7 +302,7 @@ object Guard {
 
     fun daily(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault()): Msg =
         Msg(Kind.DAILY, tr("Сторож працює · ${Background.hhmm(now, tz)}", "The guard is working · ${Background.hhmm(now, tz)}"),
-            status(batteries, now, tz) + "\n" + tr("Не прийшло завтра — зі сторожем щось сталося (вимкнувся, нема інтернету).",
+            status(batteries, now, tz) + "\n" + tr("Якщо завтра цього повідомлення не буде — зі сторожем щось сталося (вимкнувся, нема інтернету).", // T70
                 "If this does not come tomorrow, something happened to the guard (off, no internet)."))
 
     fun status(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault()): String {
