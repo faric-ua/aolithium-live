@@ -8,6 +8,14 @@ import org.junit.Test
 
 /** T59: картинка батареї в боті — вигляди, підпис, черга з картинками. */
 class GuardPictureTest {
+    @Test fun temperature_line_under_the_picture() {
+        // T65: як у файлі /diag 22.10 — три датчики по 18,5 °C
+        assertEquals("температура 18,5 °C", GuardPicture.tempLine(listOf(18.5, 18.5, 18.5)))
+        assertEquals("розходяться на 1 °C і більше — від і до", "температура 18,5…21,0 °C", GuardPicture.tempLine(listOf(21.0, 18.5, 19.0)))
+        assertEquals("менше градуса — лише найвища", "температура 19,0 °C", GuardPicture.tempLine(listOf(18.5, 19.0)))
+        assertNull("нема датчиків — нема рядка", GuardPicture.tempLine(emptyList()))
+    }
+
     @Test fun outbox_with_and_without_picture() {
         val items = listOf(
             GuardPicture.Out(7, "🔌 Світло зникло\n🔋 Aolithium\tтаб", "g-1792558800000-0-gauge.png"),

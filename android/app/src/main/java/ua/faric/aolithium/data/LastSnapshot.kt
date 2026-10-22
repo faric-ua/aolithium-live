@@ -18,11 +18,15 @@ import ua.faric.aolithium.core.Ymd
 class LastSnapshot(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("last_snapshot", Context.MODE_PRIVATE)
 
-    /** Зберігаємо не частіше ніж раз на 30 с (кожні 2 с — зайве для пам'яті телефона). */
-    fun save(address: String, s: BatterySnapshot, atMs: Long) {
+    /**
+     * Зберігаємо не частіше ніж раз на 30 с (кожні 2 с з екрана — зайве для пам'яті телефона).
+     * [always] — для фону (раз на 5 хв або на прохання /diag): його знімок не можна відкидати (T66, 22.10: фон прочитав через
+     * 29 с після екрана — і у файлі /diag лишився старіший знімок екрана).
+     */
+    fun save(address: String, s: BatterySnapshot, atMs: Long, always: Boolean = false) {
         if (address.startsWith("demo:")) return
         val prev = prefs.getLong("$address.at", 0)
-        if (atMs - prev < SAVE_EVERY_MS) return
+        if (!always && atMs - prev < SAVE_EVERY_MS) return
         prefs.edit().putString(address, encode(s).toString()).putLong("$address.at", atMs).apply()
     }
 

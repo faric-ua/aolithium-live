@@ -54,7 +54,7 @@ class RecordService : Service() {
     private val queue = ArrayDeque<String>()
     private var link: BatteryLink? = null
     private var linkAddress: String? = null
-    private var busy = false
+    @Volatile private var busy = false
     private val fallbackTick = Runnable { tick() }
     private val readTimeout = Runnable { finishRead(null, Background.Skip.NO_ANSWER.name) }
 
@@ -309,7 +309,7 @@ class RecordService : Service() {
         linkAddress = null
         if (s != null) {
             HistoryStore.get(this).record(addr, s, atMs)
-            LastSnapshot(this).save(addr, s, atMs)
+            LastSnapshot(this).save(addr, s, atMs, always = true) // T66
             settings.saveResult(addr, Background.Result(atMs, ok = true, soc = s.soc, current = s.current))
             val short = BmsMatch.shortAddress(addr)
             LinkLog.add(tr("фон $short: записано ${s.soc} %, ${Background.flow(s.current)}",
@@ -418,6 +418,9 @@ class RecordService : Service() {
             }
             return true
         }
+
+        /** T66: фон зараз читає батарею (для /diag — чи вже можна складати файл). */
+        val reading: Boolean get() = instance?.busy == true
 
         /** Кличе `LinkHolder`, коли відкривають екран батареї. Головний потік. */
         fun yieldTo(address: String) {

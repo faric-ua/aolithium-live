@@ -94,4 +94,12 @@ class DiagTest {
         snapshot = snap(13.31, listOf(3328, 3327, 3329, 3326)), snapshotAt = 1_792_620_290_000, frames = frames, log = log,
         requestedBy = "Aolithium_room", freshRead = true,
     )
+
+    @Test fun send_as_soon_as_the_background_has_read() {
+        // T66: файл 22.10 02:47 прийшов через ~50 с, хоча фон дочитав за 4 с
+        assertFalse("ще нема свіжих кадрів", Diag.readyToSend(4_000, freshFrames = false, stillReading = true))
+        assertFalse("кадри є, але фон ще читає", Diag.readyToSend(4_000, freshFrames = true, stillReading = true))
+        assertTrue("кадри є і фон дочитав — одразу", Diag.readyToSend(6_000, freshFrames = true, stillReading = false))
+        assertTrue("батарея далеко — не довше за 45 с", Diag.readyToSend(Diag.WAIT_MS, freshFrames = false, stillReading = true))
+    }
 }

@@ -378,7 +378,8 @@ object GuardRunner {
             "Читаю батарею й збираю дані для перевірки — до хвилини.", "Reading the battery and collecting check data — up to a minute.")
             else tr("«Запис у фоні» не працює — надішлю те, що є з останнього читання.",
                 "\"Background recording\" is not running — I will send what I have from the last read.")))
-        h?.postDelayed({
+        val started = System.currentTimeMillis()
+        fun send() {
             val fresh = DiagFrames.lastAt() > before
             val text = DiagReport.build(ctx, a.by, fresh)
             val r = TelegramHttp.sendDocument(token, a.chatId, Diag.fileName(System.currentTimeMillis()), text, tr(
@@ -388,7 +389,17 @@ object GuardRunner {
                     Telegram.explain(r)))
             }
             LinkLog.add(tr("сторож: дані для перевірки — ", "guard: check data — ") + if (r.ok) "OK" else Telegram.explain(r))
-        }, if (reading) Diag.WAIT_MS else 0L)
+        }
+        // T66: надіслати, щойно фон дочитав (а не через усі 45 с); фон не працює — одразу з останнього читання
+        if (!reading) { h?.post { send() }; return }
+        val poll = object : Runnable {
+            override fun run() {
+                val elapsed = System.currentTimeMillis() - started
+                if (Diag.readyToSend(elapsed, DiagFrames.lastAt() > before, RecordService.reading)) send()
+                else h?.postDelayed(this, Diag.POLL_MS)
+            }
+        }
+        h?.postDelayed(poll, Diag.POLL_MS)
     }
 
     /** Раз на хвилину: «я працюю», якщо пора. («Не бачу батарею» кличе фон через [onNoData].) */
