@@ -279,7 +279,9 @@ class Ui(val ctx: Context) {
     fun secretFact(name: String, full: String, hidden: String, onCopy: () -> Unit): LinearLayout = row(0).apply {
         gravity = Gravity.CENTER_VERTICAL
         var open = false
-        addView(muted(name, 14f), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        // Скрін емулятора (вузький екран, шрифт 1.3): з оком колонка значення звузилась і номер розірвався «+3 / 80».
+        // Назва бере лише свою ширину, решта — значенню.
+        addView(muted(name, 14f), LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         val value = numbers(text(hidden, 15f, Palette.text, medium = true)).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             minHeight = dp(MIN_TOUCH_DP)
@@ -291,7 +293,7 @@ class Ui(val ctx: Context) {
             contentDescription = tr("$name. Торкнись — скопіювати", "$name. Tap to copy")
             setOnClickListener { onCopy() }
         }
-        addView(value, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f))
+        addView(value, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         val eye = android.widget.ImageView(ctx).apply {
             val size = dp(LineIcon.BUTTON_DP)
             // faric 02:18: око — праворуч, впритул до краю картки, на одній лінії з іншими значеннями (і в коді, і в номері)
