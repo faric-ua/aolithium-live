@@ -40,6 +40,22 @@ object Emergency {
         return if (t.startsWith("+")) "+$digits" else digits
     }
 
+    /**
+     * T74 (faric 23.10 00:21, скрін «Номери»: свій номер видно повністю — «на всякий случай»): на екрані — лише перші
+     * три й останні три цифри, середина — крапками групами по три: «+380503080725» → «+380 ••• ••• 725». Короткі
+     * (6 цифр і менше, як «101») — як є. Пробіли нерозривні — номер не ламається на два рядки. Повний номер лишається
+     * в пам'яті телефона: для набору, шторки й Telegram, і копіюється торканням.
+     */
+    fun masked(number: String): String {
+        val c = clean(number)
+        val d = c.filter { it.isDigit() }
+        if (d.length <= 6) return c
+        val dots = "•".repeat(d.length - 6).chunked(3).joinToString(NBSP)
+        return (if (c.startsWith("+")) "+" else "") + d.take(3) + NBSP + dots + NBSP + d.takeLast(3)
+    }
+
+    private const val NBSP = "\u00A0"
+
     /** Номер схожий на справжній: 3–15 цифр («101» — теж). */
     fun valid(number: String): Boolean = clean(number).count { it.isDigit() } in 3..15
 
