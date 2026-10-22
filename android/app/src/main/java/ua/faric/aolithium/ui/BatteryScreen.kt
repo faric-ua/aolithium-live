@@ -1625,17 +1625,39 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
      * T50: «Дзвінок при серйозній тривозі» — кому (101 і свій номер), і «Перевірка тривоги»: шторка з кнопками
      * «Подзвонити» на цьому телефоні та (якщо сторож увімкнено) зразок у Telegram усім учасникам.
      */
+    /** T74: повний номер — у буфер обміну. Android 13+ сам показує, що скопійовано; раніше — наше коротке «Скопійовано». */
+    private fun copyNumber(number: String) {
+        val ok = runCatching {
+            val cm = host.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText(tr("Номер", "Number"), number))
+        }.isSuccess
+        if (!ok || android.os.Build.VERSION.SDK_INT < 33) {
+            Toast.makeText(host, if (ok) tr("Номер скопійовано", "Number copied") else tr("Не вдалося скопіювати", "Could not copy"),
+                Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun callSection(): View {
         val box = ui.column(8).apply { setPadding(0, ui.dp(6), 0, 0) }
         box.addView(ui.divider(), ui.matchWrap())
         box.addView(ui.text(tr("Дзвінок при серйозній тривозі", "Call on a serious alarm"), 15f, Palette.text, medium = true))
         val plan = alertPrefs.callPlan
-        val who = plan.contacts.joinToString(" · ") { if (it.number == Emergency.RESCUE) "101" else "${it.name.ifBlank { "" }} ${Emergency.clean(it.number)}".trim() }
+        // T74: на екрані — номер з крапками посередині; торкнутись рядка — повний номер у буфер.
+        val who = plan.contacts.joinToString(" · ") { if (it.number == Emergency.RESCUE) "101" else "${it.name.ifBlank { "" }} ${Emergency.masked(it.number)}".trim() }
+        val own = plan.contact?.takeIf { Emergency.valid(it.number) }
         box.addView(ui.muted(tr(
             "Перегрів, струм, коротке замикання — у шторці кнопки «Подзвонити», у Telegram — номери. Застосунок сам не дзвонить: лише відкриває набір номера.",
             "Overheating, current, short circuit — \"Call\" buttons in the shade, numbers in Telegram. The app never calls by itself: it only opens the dialer.",
         ), 13f))
-        box.addView(ui.fact(tr("Номери", "Numbers"), who.ifBlank { tr("не вибрано", "none") }), ui.matchWrap())
+        box.addView(ui.fact(tr("Номери", "Numbers"), who.ifBlank { tr("не вибрано", "none") }).apply {
+            if (own != null) {
+                isClickable = true
+                isFocusable = true
+                contentDescription = tr("Номери. Торкнись — скопіювати повний номер", "Numbers. Tap to copy the full number")
+                setOnClickListener { copyNumber(Emergency.clean(own.number)) }
+            }
+        }, ui.matchWrap())
+        if (own != null) box.addView(ui.muted(tr("Торкнись номера — скопіюється повністю.", "Tap the number to copy it in full."), 12.5f))
         val buttons = listOf(
             ui.button(tr("Номери для тривоги", "Alarm numbers"), Ui.Kind.NORMAL) { showCallNumbers() },
             ui.button(tr("Перевірка тривоги", "Test alarm"), Ui.Kind.NORMAL) {

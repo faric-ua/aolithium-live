@@ -75,4 +75,14 @@ class EmergencyTest {
         assertTrue(m.title.startsWith("ПЕРЕВІРКА"))
         assertTrue(m.render(Emergency.Plan()).contains("101"))
     }
+
+    @Test fun the_number_on_screen_shows_only_its_ends() {
+        // T74: середина номера — крапками, видно перші три й останні три цифри; повний — лише в пам'яті
+        val nb = "\u00A0"
+        assertEquals("+380${nb}•••${nb}•••${nb}123", Emergency.masked("+38 (050) 000-01-23"))
+        assertEquals("050${nb}•••${nb}•${nb}456", Emergency.masked("0501112456"))
+        assertEquals("101", Emergency.masked("101"))
+        assertEquals("123456", Emergency.masked("123456"))
+        assertFalse(Emergency.masked("+380500000123").contains("50000"))
+    }
 }
