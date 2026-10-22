@@ -97,13 +97,20 @@ class GuardUi(
         )), ui.matchWrap())
         card.addView(ui.text(tr("Щодня «я працюю» о:", "Daily \"I am working\" at:"), 14f, Palette.text, medium = true))
         val hour = if (sample) Guard.DAILY_HOUR_DEFAULT else st.dailyHour
+        // T72 (відео faric 22.10 19:25): «12:00» і «20:00» ламались на два рядки («12:0 / 0») — чотири кнопки в ряд
+        // з бічними відступами по 14 dp на A26 з великим шрифтом не вміщали чотири цифри. Тепер відступи менші, а час —
+        // рівно в один рядок (не влазить — шрифт дрібнішає, не нижче 11 sp).
         card.addView(ui.grid(HOURS.map { hh ->
-            ui.choice("$hh:00", hh == hour) {
+            ui.fitOneLine(ui.numbers(ui.choice("$hh:00", hh == hour) {
                 if (!sample) {
                     st.dailyHour = hh
                     onChange()
                 }
-            }
+            }).apply {
+                minWidth = 0
+                minimumWidth = 0
+                setPadding(ui.dp(4), paddingTop, ui.dp(4), paddingBottom)
+            }, 11f)
         }, perRow = HOURS.size), ui.matchWrap())
         card.addView(ui.grid(listOf(
             ui.button(tr("Новий код", "New code"), Ui.Kind.NORMAL) {

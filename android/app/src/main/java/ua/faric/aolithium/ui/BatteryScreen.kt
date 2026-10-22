@@ -1986,7 +1986,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                     }
                     // T64: той самий файл, що надсилає бот на «/diag» — останні відповіді плати, розбір, самоперевірки.
                     2 -> {
-                        val report = DiagReport.build(host, tr("кнопка в журналі", "log button"), fresh = false)
+                        val report = DiagReport.build(host, tr("кнопка в журналі", "log button"), Diag.Fresh.LAST)
                         host.saveFile(Diag.fileName(System.currentTimeMillis()), "text/plain") { out ->
                             out.write(report.toByteArray(Charsets.UTF_8))
                         }

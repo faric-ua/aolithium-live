@@ -159,12 +159,17 @@ class GaugeView(context: Context) : View(context) {
         // половину його ширини/висоти в напрямку дуги — інакше широке «100» торкалось дуги (скрін faric 19.10 04:41, T18).
         val rTick = rFill - fillStroke / 2 - 12 * dp
         val rEdge = rFill - fillStroke / 2 - 5 * dp
+        var zeroRight = cx - rTick // T71: правий край підпису «0» і лівий край «100» — між ними місце для «немає зв'язку»
+        var hundredLeft = cx + rTick
         for (v in TICKS) {
             val a = Math.toRadians(angleOf(v.toFloat()).toDouble())
             val halfW = tick.measureText("$v") / 2
             val halfH = tick.textSize * 0.38f
             val r = minOf(rTick, rEdge - halfW * kotlin.math.abs(cos(a)).toFloat() - halfH * kotlin.math.abs(sin(a)).toFloat())
-            canvas.drawText("$v", cx + (r * cos(a)).toFloat(), cy + (r * sin(a)).toFloat() + halfH, tick)
+            val x = cx + (r * cos(a)).toFloat()
+            canvas.drawText("$v", x, cy + (r * sin(a)).toFloat() + halfH, tick)
+            if (v == TICKS.first()) zeroRight = x + halfW
+            if (v == TICKS.last()) hundredLeft = x - halfW
         }
 
         if (noData || blank) {
@@ -172,9 +177,14 @@ class GaugeView(context: Context) : View(context) {
             big.color = Palette.text
             canvas.drawText("— %", cx, cy + big.textSize * 0.15f, big)
             if (blank) {
+                // T71 (відео faric 22.10 19:25, A26, великий шрифт): напис налазив на поділки «0» і «100» («0немає
+                // зв'язку00») — стояв на їхній висоті й був ширший за проміжок між ними. Тепер він вужчий за проміжок
+                // з повітрям по 8 dp з кожного боку (не влазить — шрифт дрібнішає) і стоїть ближче до «— %».
+                val label = tr("немає зв'язку", "no connection")
                 small.textSize = sp(15f)
+                fit(small, label, hundredLeft - zeroRight - 16 * dp)
                 small.color = Palette.warning
-                canvas.drawText(tr("немає зв'язку", "no connection"), cx, cy + big.textSize * 0.15f + small.textSize * 2f, small)
+                canvas.drawText(label, cx, cy + big.textSize * 0.15f + small.textSize * 1.6f, small)
                 small.color = Palette.muted
             }
             return
