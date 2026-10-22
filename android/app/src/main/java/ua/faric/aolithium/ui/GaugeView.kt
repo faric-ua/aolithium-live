@@ -61,6 +61,12 @@ class GaugeView(context: Context) : View(context) {
             field = value
             invalidate()
         }
+    /** T67 (faric 22.10 03:18): температура (найвища з датчиків) — дрібним рядком над «NN %»; null — рядка нема. */
+    var temperature: Double? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     private val dp = resources.displayMetrics.density
     private val zoneStroke = 9 * dp
@@ -218,6 +224,13 @@ class GaugeView(context: Context) : View(context) {
         }
 
         canvas.drawText("$soc %", cx, yBig, big)
+        temperature?.let { t ->
+            // над «NN %»: між великим числом і поділкою «50» вільно (верх цифр ≈ 0,75 розміру шрифту над рядком)
+            small.textSize = sp(14f)
+            small.color = tempColor(t)
+            canvas.drawText(Fmt.celsius(t), cx, yBig - big.textSize * 0.82f, small)
+            small.color = Palette.muted
+        }
         val textW = amp.measureText(mainText)
         val xText = cx - arrowW / 2
         canvas.drawText(mainText, xText, yAmp, amp)
@@ -271,6 +284,13 @@ class GaugeView(context: Context) : View(context) {
         private const val START = 150f
         private const val SWEEP = 240f
         private val TICKS = listOf(0, 20, 50, 90, 100)
+
+        /** Колір температури — як у картці «Температура» на «Зараз». */
+        fun tempColor(t: Double) = when {
+            t < 0 || t > 50 -> Palette.danger
+            t < 10 || t > 40 -> Palette.warning
+            else -> Palette.text
+        }
 
         fun toneColor(t: Zones.Tone) = when (t) {
             Zones.Tone.RED -> Palette.danger

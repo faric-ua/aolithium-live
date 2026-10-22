@@ -390,16 +390,23 @@ object GuardRunner {
             }
             LinkLog.add(tr("сторож: дані для перевірки — ", "guard: check data — ") + if (r.ok) "OK" else Telegram.explain(r))
         }
-        // T66: надіслати, щойно фон дочитав (а не через усі 45 с); фон не працює — одразу з останнього читання
-        if (!reading) { h?.post { send() }; return }
-        val poll = object : Runnable {
-            override fun run() {
-                val elapsed = System.currentTimeMillis() - started
-                if (Diag.readyToSend(elapsed, DiagFrames.lastAt() > before, RecordService.reading)) send()
-                else h?.postDelayed(this, Diag.POLL_MS)
+        // T66: надіслати, щойно фон дочитав (а не через усі 45 с); фон не працює — одразу з останнього читання.
+        // T68 (файл 22.10 03:20 — 25 с): чекати й слати в **окремому потоці** — потік сторожа більшу частину часу стоїть
+        // у довгому опитуванні Telegram (до 25 с), і перевірка в його черзі чекала б, поки опитування повернеться.
+        Thread({
+            try {
+                if (reading) {
+                    while (!Diag.readyToSend(System.currentTimeMillis() - started, DiagFrames.lastAt() > before, RecordService.reading)) {
+                        Thread.sleep(Diag.POLL_MS)
+                    }
+                }
+                send()
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+            } catch (e: RuntimeException) {
+                LinkLog.add(tr("сторож: дані для перевірки — помилка ", "guard: check data — error ") + e.javaClass.simpleName)
             }
-        }
-        h?.postDelayed(poll, Diag.POLL_MS)
+        }, "guard-diag").start()
     }
 
     /** Раз на хвилину: «я працюю», якщо пора. («Не бачу батарею» кличе фон через [onNoData].) */
