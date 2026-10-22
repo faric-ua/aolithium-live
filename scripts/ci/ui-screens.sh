@@ -323,6 +323,16 @@ start --es lang uk --es page HOME
 scroll_down
 scroll_down
 shot n07-home-uk-narrow-font130-update 4
+# T71 (відео faric 22.10 19:25): «немає зв'язку» не налазить на «0» і «100» — вузький екран і шрифт 1.3, як A26.
+start --es demo DISCHARGING --es dialog status:FAILED
+shot n08-stale-narrow-font130-a 4
+shot n08b-stale-narrow-font130-b 3
+shot n08c-stale-narrow-font130-c 3
+# T72: кнопки «Щодня "я працюю" о:» — «12:00» і «20:00» в один рядок.
+start --es demo IDLE --es dialog guard:card
+shot n09-guard-narrow-font130 5
+scroll_down
+shot n09b-guard-narrow-font130-scrolled 2
 adb shell settings put system font_scale 1.0
 sleep 2
 adb shell am force-stop "$PKG"

@@ -255,6 +255,7 @@ class RecordService : Service() {
         val addr = queue.removeFirstOrNull()
         if (addr == null) {
             busy = false
+            finishedReads++ // T73: /diag бачить, що читання на його запит скінчилось (вдало чи ні)
             // T55: не дістали — наступна спроба раніше (до двох разів поспіль), дістали — знову раз на 5 хв.
             failStreak = if (tickFailed) failStreak + 1 else 0
             if (Background.retrySoon(failStreak)) {
@@ -418,6 +419,13 @@ class RecordService : Service() {
             }
             return true
         }
+
+        /**
+         * T73: скільки разів фон закінчив читання (вдало чи ні) з запуску застосунку. /diag запам'ятовує число до
+         * запиту — більше стало, отже фон уже спробував і далі чекати нема чого.
+         */
+        @Volatile var finishedReads = 0L
+            private set
 
         /** T66: фон зараз читає батарею (для /diag — чи вже можна складати файл). */
         val reading: Boolean get() = instance?.busy == true

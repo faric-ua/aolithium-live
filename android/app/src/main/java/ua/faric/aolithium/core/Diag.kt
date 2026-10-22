@@ -48,8 +48,33 @@ object Diag {
      * T66 (файл faric 22.10 02:47 прийшов через ~50 с, хоча фон дочитав за 4 с): складати файл, щойно фон дочитав —
      * є свіжі кадри від плати і фон більше не читає; інакше — не довше за [WAIT_MS].
      */
-    fun readyToSend(elapsedMs: Long, freshFrames: Boolean, stillReading: Boolean): Boolean =
-        elapsedMs >= WAIT_MS || (freshFrames && !stillReading)
+    fun readyToSend(elapsedMs: Long, freshFrames: Boolean, stillReading: Boolean, readFinished: Boolean = false): Boolean =
+        elapsedMs >= WAIT_MS || (!stillReading && (freshFrames || readFinished))
+
+    /*
+     * T73 (файл faric 22.10 21:54, перевірка 61): телефон на межі дальності — фон тричі «код 133» і здався за 19 с, а файл
+     * прийшов лише через 45 с. Умова T66 думала тільки про вдачу («є свіжі кадри»); невдача — теж кінець роботи фону, але
+     * свіжих кадрів по ній нема. Тепер [readyToSend] знає й про це: `readFinished` — фон **почав і закінчив** читання
+     * після запиту (лічильник закінчених читань у службі виріс), вдало чи ні. Лічильник, а не «фон зараз не читає»:
+     * одразу після запиту фон ще може не встигнути почати — тоді «не читає» було б хибним «уже все».
+     */
+
+    /** Чи свіже читання у файлі і чому ні — щоб Claude одразу бачив, звідки дані. */
+    enum class Fresh { YES, NOT_REACHED, TIMEOUT, LAST }
+
+    /** Що сталося з читанням на запит: свіжі кадри є — так; фон закінчив без них — не дістав; інакше — не встиг. */
+    fun freshness(freshFrames: Boolean, readFinished: Boolean): Fresh = when {
+        freshFrames -> Fresh.YES
+        readFinished -> Fresh.NOT_REACHED
+        else -> Fresh.TIMEOUT
+    }
+
+    fun freshText(f: Fresh): String = when (f) { // uk-only: файл для Claude
+        Fresh.YES -> "так" // uk-only: файл для Claude
+        Fresh.NOT_REACHED -> "ні — фон не дістав батарею (далеко чи зайнята іншим телефоном), нижче останні дані" // uk-only: файл для Claude
+        Fresh.TIMEOUT -> "ні — фон не дочитав за ${WAIT_MS / 1000} с, нижче останні дані" // uk-only: файл для Claude
+        Fresh.LAST -> "ні — нижче останні дані" // uk-only: файл для Claude
+    }
 
     /** Рядків журналу зв'язку у файлі. */
     const val LOG_LINES = 150
@@ -113,7 +138,7 @@ object Diag {
         val frames: List<Raw>,
         val log: List<String>,
         val requestedBy: String,
-        val freshRead: Boolean,
+        val fresh: Fresh,
     )
 
     /**
@@ -126,7 +151,7 @@ object Diag {
         appendLine("# Aolithium Live — дані для перевірки (T64)") // uk-only: файл для Claude
         appendLine("Складено: ${time(i.now)} · застосунок ${i.app} · Android ${i.android}") // uk-only: файл для Claude
         appendLine("Батарея: ${i.battery} · плата ${i.board}") // uk-only: файл для Claude
-        appendLine("Попросив: ${i.requestedBy} · свіже читання: ${if (i.freshRead) "так" else "ні — нижче останні дані"}") // uk-only: файл для Claude
+        appendLine("Попросив: ${i.requestedBy} · свіже читання: ${freshText(i.fresh)}") // uk-only: файл для Claude
         appendLine("Паролі плати й серійний номер у кадрах затерто нулями.") // uk-only: файл для Claude
         appendLine()
         appendLine("## Що порахував застосунок") // uk-only: файл для Claude

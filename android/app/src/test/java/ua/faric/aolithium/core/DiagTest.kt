@@ -92,7 +92,7 @@ class DiagTest {
     private fun input(frames: List<Diag.Raw> = emptyList(), log: List<String> = emptyList()) = Diag.Input(
         now = 1_792_620_300_000, app = "0.4.18 · збірка 34", android = "15 (API 35)", battery = "Logic Power", board = "JK BMS",
         snapshot = snap(13.31, listOf(3328, 3327, 3329, 3326)), snapshotAt = 1_792_620_290_000, frames = frames, log = log,
-        requestedBy = "Aolithium_room", freshRead = true,
+        requestedBy = "Aolithium_room", fresh = Diag.Fresh.YES,
     )
 
     @Test fun send_as_soon_as_the_background_has_read() {
@@ -101,5 +101,18 @@ class DiagTest {
         assertFalse("кадри є, але фон ще читає", Diag.readyToSend(4_000, freshFrames = true, stillReading = true))
         assertTrue("кадри є і фон дочитав — одразу", Diag.readyToSend(6_000, freshFrames = true, stillReading = false))
         assertTrue("батарея далеко — не довше за 45 с", Diag.readyToSend(Diag.WAIT_MS, freshFrames = false, stillReading = true))
+    }
+
+    @Test fun do_not_wait_45_s_when_the_background_gave_up() {
+        // T73: файл 22.10 21:54 — фон тричі «код 133» і здався за 19 с, а файл прийшов лише через 45 с
+        assertTrue("фон закінчив без кадрів — одразу", Diag.readyToSend(19_000, freshFrames = false, stillReading = false, readFinished = true))
+        assertFalse("фон ще не почав (лічильник не виріс) — чекати", Diag.readyToSend(500, freshFrames = false, stillReading = false, readFinished = false))
+        assertFalse("наступна спроба вже йде — чекати", Diag.readyToSend(19_000, freshFrames = false, stillReading = true, readFinished = true))
+        assertEquals(Diag.Fresh.YES, Diag.freshness(freshFrames = true, readFinished = true))
+        assertEquals(Diag.Fresh.NOT_REACHED, Diag.freshness(freshFrames = false, readFinished = true))
+        assertEquals(Diag.Fresh.TIMEOUT, Diag.freshness(freshFrames = false, readFinished = false))
+        val text = Diag.report(input().copy(fresh = Diag.Fresh.NOT_REACHED), kyiv)
+        assertTrue(text, text.contains("свіже читання: ні — фон не дістав батарею"))
+        assertTrue(Diag.report(input(), kyiv).contains("свіже читання: так"))
     }
 }

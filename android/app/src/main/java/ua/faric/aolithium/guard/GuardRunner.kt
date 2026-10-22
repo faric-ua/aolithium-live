@@ -373,14 +373,16 @@ object GuardRunner {
         }
         lastDiagAt = now
         val before = DiagFrames.lastAt()
+        val doneBefore = RecordService.finishedReads // T73
         val reading = RecordService.requestRead()
         TelegramHttp.call(token, "sendMessage", Telegram.sendBody(a.chatId, if (reading) tr(
             "Читаю батарею й збираю дані для перевірки — до хвилини.", "Reading the battery and collecting check data — up to a minute.")
             else tr("«Запис у фоні» не працює — надішлю те, що є з останнього читання.",
                 "\"Background recording\" is not running — I will send what I have from the last read.")))
         val started = System.currentTimeMillis()
+        fun finished() = RecordService.finishedReads > doneBefore
         fun send() {
-            val fresh = DiagFrames.lastAt() > before
+            val fresh = if (reading) Diag.freshness(DiagFrames.lastAt() > before, finished()) else Diag.Fresh.LAST
             val text = DiagReport.build(ctx, a.by, fresh)
             val r = TelegramHttp.sendDocument(token, a.chatId, Diag.fileName(System.currentTimeMillis()), text, tr(
                 "📎 Дані для перевірки. Перешли цей файл Claude.", "📎 Check data. Forward this file to Claude."))
@@ -396,7 +398,9 @@ object GuardRunner {
         Thread({
             try {
                 if (reading) {
-                    while (!Diag.readyToSend(System.currentTimeMillis() - started, DiagFrames.lastAt() > before, RecordService.reading)) {
+                    // T73: фон закінчив і невдало (батарея далеко) — теж одразу, а не через 45 с.
+                    while (!Diag.readyToSend(System.currentTimeMillis() - started, DiagFrames.lastAt() > before,
+                            RecordService.reading, finished())) {
                         Thread.sleep(Diag.POLL_MS)
                     }
                 }

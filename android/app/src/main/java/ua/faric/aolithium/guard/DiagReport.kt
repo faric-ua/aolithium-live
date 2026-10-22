@@ -16,7 +16,7 @@ import ua.faric.aolithium.data.LastSnapshot
  * Текст складає `core/Diag.report` (без Android); тут лише що підставити: версії, батарея, знімок, кадри, журнал.
  */
 object DiagReport {
-    fun build(ctx: Context, requestedBy: String, fresh: Boolean, now: Long = System.currentTimeMillis()): String {
+    fun build(ctx: Context, requestedBy: String, fresh: Diag.Fresh, now: Long = System.currentTimeMillis()): String {
         val app = ctx.applicationContext
         val b = battery(app)
         val last = b?.let { LastSnapshot(app).load(it.address) }
@@ -36,7 +36,7 @@ object DiagReport {
                 frames = DiagFrames.all(),
                 log = LinkLog.text().lines().takeLast(Diag.LOG_LINES),
                 requestedBy = requestedBy,
-                freshRead = fresh,
+                fresh = fresh,
             ),
         )
     }
