@@ -5,10 +5,12 @@ import android.os.Build
 import ua.faric.aolithium.BuildConfig
 import ua.faric.aolithium.ble.DiagFrames
 import ua.faric.aolithium.ble.LinkLog
+import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
+import ua.faric.aolithium.data.GuardSettings
 import ua.faric.aolithium.data.LastSnapshot
 
 /**
@@ -37,6 +39,7 @@ object DiagReport {
                 log = LinkLog.text().lines().takeLast(Diag.LOG_LINES),
                 requestedBy = requestedBy,
                 fresh = fresh,
+                outage = b?.let { Alerts.describe(GuardSettings(app).state(it.address).alerts, now) },
             ),
         )
     }

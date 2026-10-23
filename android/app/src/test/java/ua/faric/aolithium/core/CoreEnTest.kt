@@ -93,7 +93,7 @@ class CoreEnTest {
         val ev = events(*pts.toTypedArray())
         assertEquals(listOf("Power outage", "Power restored"), ev.map { it.title })
         assertTrue(ev[0].text, ev[0].text.startsWith("Battery discharging at 319 W · 84 %"))
-        assertTrue(ev[1].text, ev[1].text.startsWith("Gone for 1 h 5 min · used 85 → 70 % · battery is charging"))
+        assertTrue(ev[1].text, ev[1].text.startsWith("At 20:45 · gone for 1 h 5 min (since 19:40) · charge 85 → 70 % · battery is charging"))
         for (e in ev) noCyr(e.title, e.text)
     }
 
