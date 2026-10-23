@@ -106,6 +106,9 @@
 - Python: `python3 -m unittest discover -s tests`, `python3 scripts/audit_ui.py`, `python3 scripts/audit_repo.py`.
 - Логи Actions недоступні — усе важливе CI виводить анотаціями: `gh api repos/faric-ua/aolithium-live/check-runs/<id>/annotations`.
 - Знімки екранів без телефона: пуш у `diag/ui-screens` → емулятор (демо-режим) → PNG у гілці `diag/ui-screens-out`.
+  **Правило faric 23.10 04:36:** дрібні зміни вигляду (відступ, вирівнювання, підпис, значок) — **одразу реліз, без
+  знімків емулятора** (кожен прогін ~20 хв); faric сам дивиться на телефоні й шле скрін. Знімки — лише для нового екрана
+  чи великої переробки, для картинок інструкції (`g-*`) або якщо Claude хоче щось перевірити заздалегідь сам.
 - **Інструкція (T7, як у Track Catcher):** текст — лише в `docs/guide/guide.html`, кожен шматок парою `class="uk"` / `class="en"`
   (тест стереже пари й відсутність кирилиці в англійській). Після правки — `python3 scripts/build_guide.py`. Новий екран чи
   змінився вигляд — свіжі знімки: пуш у `diag/ui-screens*` → `python3 scripts/guide_images.py <ui-screens>` (набір `g-uk-*`,
