@@ -82,6 +82,8 @@ object Alerts {
     const val COLD_RESET_C = 2.0
     const val HOT_C = 50.0
     const val HOT_RESET_C = 45.0
+    /** T78: довший пропуск у даних під час відключення — не знаємо, що було, старе відключення забуваємо. */
+    const val OUTAGE_FORGET_MS = 2 * 3_600_000L
     /** Стільки без жодного знімка — «Нема даних». */
     const val NO_DATA_MS = 3_600_000L
 
@@ -101,6 +103,13 @@ object Alerts {
         /** Коли вперше побачили протилежне (почала / перестала віддавати), 0 — ні; підтверджуємо через [Outages.MIN_MS]. */
         val cand: Long = 0L,
         val candSoc: Int = 0,
+        /**
+         * T78: розряд помітили одразу після довгого пропуску (телефон був далеко) — коли саме зникло світло, не знаємо.
+         * [candLost] — останній знімок перед пропуском (для кандидата), [outLostAt] — те саме для підтвердженого відключення.
+         */
+        val candLost: Long = 0L,
+        val outLate: Boolean = false,
+        val outLostAt: Long = 0L,
         /** Найнижчий поріг «мало заряду», про який уже сказали; 0 — ні про який. */
         val low: Int = 0,
         val full: Boolean = false,
@@ -116,6 +125,7 @@ object Alerts {
             "osoc" to "$outSoc", "og" to (if (outGap) "1" else "0"), "c" to "$cand", "csoc" to "$candSoc", "low" to "$low",
             "full" to (if (full) "1" else "0"), "prot" to prot.sorted().joinToString(","), "cells" to (if (cells) "1" else "0"),
             "cold" to (if (cold) "1" else "0"), "hot" to (if (hot) "1" else "0"), "nd" to (if (noData) "1" else "0"),
+            "cl" to "$candLost", "ol" to (if (outLate) "1" else "0"), "olt" to "$outLostAt",
         ).joinToString(";") { "${it.first}=${it.second}" }
 
         companion object {
@@ -131,6 +141,7 @@ object Alerts {
                     cand = l("c"), candSoc = i("csoc"), low = i("low"), full = b("full"),
                     prot = m["prot"].orEmpty().split(',').filter { it.isNotBlank() }.toSet(),
                     cells = b("cells"), cold = b("cold"), hot = b("hot"), noData = b("nd"),
+                    candLost = l("cl"), outLate = b("ol"), outLostAt = l("olt"),
                 )
             }
         }
@@ -172,35 +183,82 @@ object Alerts {
 
     // ---------- світло ----------
 
+    /**
+     * T78 (скріни faric 23.10 18:55, мамин сторож): «Відключення почалось о 17:03» прийшло о 15:11 — стан «світла нема»
+     * лишився з попереднього дня, поки телефон був далеко, а дати в тексті не було. Тепер: (1) довший за [OUTAGE_FORGET_MS]
+     * пропуск під час відключення — не знаємо, що було: старе відключення забуваємо й дивимось заново, як `Outages.find`;
+     * (2) розряд, помічений одразу після пропуску, — «помітив о …, до того телефон не бачив батарею з …»;
+     * (3) час не сьогодні — з датою ([at]); (4) у тексті «повернулось» — коли саме повернулось і з якого часу не було.
+     */
     private fun outage(st: State, s: BatterySnapshot, t: Long, tz: TimeZone, ev: MutableList<Event>): State {
         var n = st
-        val gap = st.seen && t - st.lastT > Outages.MAX_GAP_MS
-        if (gap) n = n.copy(cand = 0L, outGap = n.outGap || n.outage)
+        val gapMs = if (st.seen) t - st.lastT else 0L
+        val gap = st.seen && gapMs > Outages.MAX_GAP_MS
+        if (gap) n = n.copy(cand = 0L, candLost = 0L, outGap = n.outGap || n.outage)
+        if (n.outage && gap && gapMs > OUTAGE_FORGET_MS) {
+            n = n.copy(outage = false, outGap = false, outLate = false, outLostAt = 0L)
+        }
         if (!n.outage) {
-            if (s.current > -Outages.START_A) return n.copy(cand = 0L)
-            if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc)
+            if (s.current > -Outages.START_A) return n.copy(cand = 0L, candLost = 0L)
+            if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc, candLost = if (gap) st.lastT else 0L)
             if (t - n.cand < Outages.MIN_MS) return n
-            ev += Event(Kind.OUTAGE, tr("Світло зникло", "Power outage"), outageStartText(s))
-            return n.copy(outage = true, outStart = n.cand, outSoc = n.candSoc, outGap = false, cand = 0L)
+            val late = n.candLost > 0L
+            val note = if (late) tr(
+                " · помітив о ${at(n.cand, t, tz)}; до того телефон не бачив батарею з ${at(n.candLost, t, tz)}",
+                " · noticed at ${at(n.cand, t, tz)}; before that the phone had not seen the battery since ${at(n.candLost, t, tz)}",
+            ) else ""
+            ev += Event(Kind.OUTAGE, tr("Світло зникло", "Power outage"), outageStartText(s) + note)
+            return n.copy(outage = true, outStart = n.cand, outSoc = n.candSoc, outGap = false, outLate = late,
+                outLostAt = n.candLost, cand = 0L, candLost = 0L)
         }
         if (s.current <= Outages.END_A) return n.copy(cand = 0L)
         if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc)
         if (t - n.cand < Outages.MIN_MS) return n
-        val used = tr("витрачено ${n.outSoc} → ${n.candSoc} %", "used ${n.outSoc} → ${n.candSoc} %")
+        val back = at(n.cand, t, tz)
+        val start = at(n.outStart, t, tz)
+        val long = Fmt.duration((n.cand - n.outStart) / 3_600_000.0)
+        val soc = tr("заряд ${n.outSoc} → ${n.candSoc} %", "charge ${n.outSoc} → ${n.candSoc} %")
         val now = if (s.flow == BatterySnapshot.Flow.CHARGING) tr("батарея заряджається", "battery is charging")
             else tr("батарея стоїть", "battery is idle")
-        val text = if (n.outGap) {
-            val start = Background.hhmm(n.outStart, tz)
-            tr(
-                "Відключення почалось о $start; поки телефон був далеко, даних нема · $used · $now",
-                "The outage started at $start; no data while the phone was far · $used · $now",
+        val text = when {
+            n.outLate -> tr(
+                "О $back · не було щонайменше $long (помітив о $start; раніше телефон був далеко) · $soc · $now",
+                "At $back · gone for at least $long (noticed at $start; the phone was far before that) · $soc · $now",
             )
-        } else {
-            val long = Fmt.duration((n.cand - n.outStart) / 3_600_000.0)
-            tr("Не було $long · $used · $now", "Gone for $long · $used · $now")
+            n.outGap -> tr(
+                "О $back · зникло о $start; поки телефон був далеко, даних нема — тривалість приблизно $long · $soc · $now",
+                "At $back · went out at $start; no data while the phone was far — about $long · $soc · $now",
+            )
+            else -> tr("О $back · не було $long (з $start) · $soc · $now", "At $back · gone for $long (since $start) · $soc · $now")
         }
         ev += Event(Kind.OUTAGE, tr("Світло повернулось", "Power restored"), text)
-        return n.copy(outage = false, outGap = false, cand = 0L)
+        return n.copy(outage = false, outGap = false, outLate = false, outLostAt = 0L, cand = 0L)
+    }
+
+    /** T78: час події — «13:00», якщо той самий день, що й [now], інакше з датою «22.10, 17:03». */
+    fun at(ms: Long, now: Long, tz: TimeZone = TimeZone.getDefault()): String {
+        val day = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.ROOT).apply { timeZone = tz }
+        val hm = Background.hhmm(ms, tz)
+        if (day.format(java.util.Date(ms)) == day.format(java.util.Date(now))) return hm
+        return java.text.SimpleDateFormat("dd.MM", java.util.Locale.ROOT).apply { timeZone = tz }.format(java.util.Date(ms)) + ", " + hm
+    }
+
+    /**
+     * T78: стан «світла нема» людською мовою — для файлу «Дані для перевірки» (/diag), щоб на відстані було видно,
+     * що «думає» сторож. Українською навмисно: файл читає Claude.
+     */
+    fun describe(st: State, now: Long, tz: TimeZone = TimeZone.getDefault()): String = buildString { // uk-only: файл для Claude
+        if (!st.seen) return "ще не бачив жодного знімка" // uk-only: файл для Claude
+        append("останній знімок ${at(st.lastT, now, tz)} · ") // uk-only: файл для Claude
+        if (st.outage) {
+            append("світла нема з ${at(st.outStart, now, tz)} (заряд тоді ${st.outSoc} %)") // uk-only: файл для Claude
+            if (st.outGap) append(" · був пропуск у даних") // uk-only: файл для Claude
+            if (st.outLate) append(" · помічено після пропуску з ${at(st.outLostAt, now, tz)}") // uk-only: файл для Claude
+            if (st.cand > 0) append(" · з ${at(st.cand, now, tz)} схоже, що світло повернулось (чекаю 3 хв)") // uk-only: файл для Claude
+        } else {
+            append("світло є") // uk-only: файл для Claude
+            if (st.cand > 0) append(" · з ${at(st.cand, now, tz)} батарея віддає (чекаю 3 хв)") // uk-only: файл для Claude
+        }
     }
 
     fun outageStartText(s: BatterySnapshot): String {

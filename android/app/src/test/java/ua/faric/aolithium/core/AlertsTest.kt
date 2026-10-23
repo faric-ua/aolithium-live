@@ -83,7 +83,7 @@ class AlertsTest {
         )
         assertEquals(listOf(Alerts.Kind.OUTAGE, Alerts.Kind.OUTAGE), kinds(ev))
         assertEquals("Світло повернулось", ev[1].title)
-        assertEquals("Не було 2 год 20 хв · витрачено 85 → 62 % · батарея заряджається", ev[1].text)
+        assertEquals("О 22:00 · не було 2 год 20 хв (з 19:40) · заряд 85 → 62 % · батарея заряджається", ev[1].text)
         assertFalse(st.outage)
     }
 
@@ -92,13 +92,58 @@ class AlertsTest {
         val (_, ev) = run(
             t0 to snap(current = -24.0, soc = 85),
             t0 + 5 * min to snap(current = -24.0, soc = 84),
-            // телефон пішов далеко на 3 години
-            t0 + 185 * min to snap(current = 0.0, soc = 40),
-            t0 + 190 * min to snap(current = 0.0, soc = 40),
+            // телефон пішов далеко на 1,5 години (менше за OUTAGE_FORGET_MS — відключення пам'ятаємо)
+            t0 + 95 * min to snap(current = 0.0, soc = 40),
+            t0 + 100 * min to snap(current = 0.0, soc = 40),
         )
         assertEquals("Світло повернулось", ev.last().title)
-        assertTrue(ev.last().text, ev.last().text.startsWith("Відключення почалось о 19:40; поки телефон був далеко"))
-        assertTrue(ev.last().text.endsWith("витрачено 85 → 40 % · батарея стоїть"))
+        assertEquals("О 21:15 · зникло о 19:40; поки телефон був далеко, даних нема — тривалість приблизно 1 год 35 хв · " +
+            "заряд 85 → 40 % · батарея стоїть", ev.last().text)
+    }
+
+    /**
+     * T78 (мамин сторож 23.10): «світла нема» з учорашніх 17:03, телефон далеко всю ніч, сьогодні о 14:40 бачить розряд,
+     * о 15:10 — заряд. Раніше: «Відключення почалось о 17:03…» о 15:11. Тепер: старе забули, «Світло зникло · помітив о
+     * 14:40», «Світло повернулось · О 15:10 · не було щонайменше 30 хв».
+     */
+    @Test
+    fun longGapForgetsOldOutageAndSaysWhenNoticed() {
+        // 22.10.2026 17:03 за Києвом
+        val y = t0 + (3 * 24 * 60 - 2 * 60 - 37) * min
+        val (st1, ev1) = run(
+            y to snap(current = -24.0, soc = 100),
+            y + 5 * min to snap(current = -24.0, soc = 100),
+        )
+        assertEquals(listOf("Світло зникло"), ev1.map { it.title })
+        // телефон далеко до завтра; 23.10 14:40 — знову бачить розряд
+        val d = y + (21 * 60 + 37) * min
+        val (st2, ev2) = run(
+            d to snap(current = -4.7, soc = 98),
+            *(1..5).map { k -> d + k * 5 * min to snap(current = -5.2, soc = 98) }.toTypedArray(),
+            d + 30 * min to snap(current = 12.8, soc = 98),
+            d + 35 * min to snap(current = 12.8, soc = 98),
+            from = st1,
+        )
+        assertEquals(listOf("Світло зникло", "Світло повернулось"), ev2.map { it.title })
+        assertTrue(ev2[0].text, ev2[0].text.endsWith(" · помітив о 14:40; до того телефон не бачив батарею з 22.10, 17:08"))
+        assertEquals("О 15:10 · не було щонайменше 30 хв (помітив о 14:40; раніше телефон був далеко) · заряд 98 → 98 % · " +
+            "батарея заряджається", ev2[1].text)
+        assertFalse(st2.outage)
+        assertFalse(ev2.any { it.text.contains("17:03") })
+    }
+
+    @Test
+    fun timeOfAnotherDayHasDate() {
+        assertEquals("19:40", Alerts.at(t0, t0 + 60 * min, kyiv))
+        assertEquals("19.10, 19:40", Alerts.at(t0, t0 + 24 * 60 * min, kyiv))
+    }
+
+    @Test
+    fun describeTellsWhatTheGuardThinks() {
+        val st = Alerts.State(seen = true, lastT = t0 + 60 * min, outage = true, outStart = t0, outSoc = 85, outGap = true)
+        assertEquals("останній знімок 20:40 · світла нема з 19:40 (заряд тоді 85 %) · був пропуск у даних",
+            Alerts.describe(st, t0 + 61 * min, kyiv))
+        assertEquals("ще не бачив жодного знімка", Alerts.describe(Alerts.State(), t0, kyiv))
     }
 
     @Test
@@ -281,6 +326,7 @@ class AlertsTest {
         val st = Alerts.State(
             seen = true, lastT = t0, outage = true, outStart = t0 - 5 * min, outSoc = 85, outGap = true, cand = t0, candSoc = 60,
             low = 10, full = true, prot = setOf("CHARGE_COLD", Alerts.CHG_OFF), cells = true, cold = true, hot = false, noData = true,
+            candLost = t0 - 60 * min, outLate = true, outLostAt = t0 - 90 * min,
         )
         assertEquals(st, Alerts.State.decode(st.encode()))
         assertEquals(Alerts.State(), Alerts.State.decode(null))

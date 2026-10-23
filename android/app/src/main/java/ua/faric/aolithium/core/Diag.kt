@@ -139,6 +139,8 @@ object Diag {
         val log: List<String>,
         val requestedBy: String,
         val fresh: Fresh,
+        /** T78: що «думає» сторож про світло ([Alerts.describe]); null — сторожа нема. */
+        val outage: String? = null,
     )
 
     /**
@@ -175,6 +177,11 @@ object Diag {
             s.jk?.let { appendLine("JK: $it") }
         }
         appendLine()
+        i.outage?.let {
+            appendLine("## Світло (стан сторожа)") // uk-only: файл для Claude
+            appendLine(it)
+            appendLine()
+        }
         appendLine("## Самоперевірки") // uk-only: файл для Claude
         val c = checks(s)
         if (c.isEmpty()) appendLine("— (нема знімка)") else c.forEach { appendLine(it) } // uk-only: файл для Claude
