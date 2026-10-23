@@ -276,24 +276,38 @@ class Ui(val ctx: Context) {
      * «назва — значення». Спершу схований ([hidden]); значок-око праворуч — показати / сховати; торкнутись самого
      * значення — [onCopy] (скопіювати повністю). Щоразу, як картку малюють наново, — знову схований.
      */
-    fun secretFact(name: String, full: String, hidden: String, onCopy: () -> Unit): LinearLayout = row(0).apply {
+    fun secretFact(name: String, full: String, hidden: String, onCopy: () -> Unit): LinearLayout =
+        tableRow(name, full, hidden, onCopy)
+
+    /**
+     * T76 (faric 23.10 03:09): рядок таблички «хто — номер». Значення — до правого краю; праворуч завжди місце під око,
+     * тож значення всіх рядків закінчуються на одній лінії. [hidden] = null — не секрет (як «101»): ока нема, місце
+     * лишається порожнім. [onCopy] = null — торкання нічого не робить.
+     */
+    fun tableRow(name: String, full: String, hidden: String?, onCopy: (() -> Unit)?): LinearLayout = row(0).apply {
         gravity = Gravity.CENTER_VERTICAL
         var open = false
         // Скрін емулятора (вузький екран, шрифт 1.3): з оком колонка значення звузилась і номер розірвався «+3 / 80».
         // Назва бере лише свою ширину, решта — значенню.
         addView(muted(name, 14f), LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        val value = numbers(text(hidden, 15f, Palette.text, medium = true)).apply {
+        val value = numbers(text(hidden ?: full, 15f, Palette.text, medium = true)).apply {
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
             minHeight = dp(MIN_TOUCH_DP)
             minimumHeight = dp(MIN_TOUCH_DP)
             setPadding(dp(8), 0, dp(8), 0)
-            background = pressable(rounded(Palette.transparent, radiusDp = 10), radiusDp = 10)
-            isClickable = true
-            isFocusable = true
-            contentDescription = tr("$name. Торкнись — скопіювати", "$name. Tap to copy")
-            setOnClickListener { onCopy() }
+            if (onCopy != null) {
+                background = pressable(rounded(Palette.transparent, radiusDp = 10), radiusDp = 10)
+                isClickable = true
+                isFocusable = true
+                contentDescription = tr("$name. Торкнись — скопіювати", "$name. Tap to copy")
+                setOnClickListener { onCopy() }
+            }
         }
         addView(value, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        if (hidden == null) {
+            addView(View(ctx), LinearLayout.LayoutParams(dp(MIN_TOUCH_DP), dp(MIN_TOUCH_DP)))
+            return@apply
+        }
         val eye = android.widget.ImageView(ctx).apply {
             val size = dp(LineIcon.BUTTON_DP)
             // faric 02:18: око — праворуч, впритул до краю картки, на одній лінії з іншими значеннями (і в коді, і в номері)
