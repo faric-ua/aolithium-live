@@ -1639,11 +1639,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private fun numbersTable(plan: Emergency.Plan): View {
         val table = ui.column(0).apply {
             background = ui.rounded(Palette.transparent, stroke = Palette.border, radiusDp = 12)
-            setPadding(ui.dp(12), ui.dp(6), 0, ui.dp(2))
+            // знімок n10: з відступом 0 око торкалось рамки — 6 dp праворуч
+            setPadding(ui.dp(12), ui.dp(6), ui.dp(6), ui.dp(2))
         }
         table.addView(ui.text(tr("Номери", "Numbers"), 14f, Palette.muted, medium = true).apply {
             gravity = android.view.Gravity.CENTER_HORIZONTAL
-            setPadding(0, 0, ui.dp(12), ui.dp(6))
+            setPadding(0, 0, ui.dp(6), ui.dp(6))
         }, ui.matchWrap())
         table.addView(ui.divider())
         val rows = plan.contacts.filter { it.number == Emergency.RESCUE || Emergency.valid(it.number) }
