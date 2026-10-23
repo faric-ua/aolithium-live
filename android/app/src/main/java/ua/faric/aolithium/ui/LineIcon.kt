@@ -49,6 +49,9 @@ enum class LineIcon(vararg val parts: Part) {
     BELL(Part("M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"), Part("M10 21a2 2 0 0 0 4 0")),
     /** T37: оновлення з Google Диска — хмара зі стрілкою вниз (той самий, що в Track Catcher і в інструкції `i-cloud`). */
     CLOUD(Part("M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.5 1.5A3.8 3.8 0 0 1 17.5 18z"), Part("M12 11v6M9.5 14.5L12 17l2.5-2.5")),
+    /** T75: око — показати схований код; перекреслене — сховати. */
+    EYE(Part("M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"), Part(SvgPath.circle(12f, 12f, 3f))),
+    EYE_OFF(Part("M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"), Part(SvgPath.circle(12f, 12f, 3f)), Part("M4 4l16 16")),
     LIST(
         Part("M8 6h12M8 12h12M8 18h12"),
         Part(SvgPath.circle(4f, 6f, 1f)), Part(SvgPath.circle(4f, 12f, 1f)), Part(SvgPath.circle(4f, 18f, 1f)),

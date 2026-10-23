@@ -354,7 +354,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.23 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.24 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -825,12 +825,12 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <ol class="steps uk">
     <li><span>«Ще» → «Сповіщення» → <span class="btn">Номери для тривоги</span> → 101 так / ні, ім'я й номер → «Зберегти».</span></li>
     <li><span><span class="btn">Перевірка тривоги</span> — у шторці зразок «ПЕРЕВІРКА тривоги» з кнопками, і (якщо сторож увімкнено) такий самий зразок у Telegram.</span></li>
-    <li><span>У рядку «Номери» твій номер видно лише з країв (<b>+380 ••• ••• 123</b>) — щоб не світити його на скрінах. Торкнись рядка — повний номер скопіюється.</span></li>
+    <li><span>У рядку «Номери» твій номер видно лише з країв (<b>+380 ••• ••• 123</b>) — щоб не світити його на скрінах. Око праворуч показує номер повністю (ще раз — сховає), торкнись номера — скопіюється.</span></li>
   </ol>
   <ol class="steps en">
     <li><span>"More" → "Notifications" → <span class="btn">Alarm numbers</span> → 101 yes / no, a name and a number → "Save".</span></li>
     <li><span><span class="btn">Test alarm</span> — a "TEST alarm" sample with the buttons in the shade, and (if the guard is on) the same sample in Telegram.</span></li>
-    <li><span>In the "Numbers" row your number shows only its ends (<b>+380 ••• ••• 123</b>) — so it does not show up on screenshots. Tap the row and the full number is copied.</span></li>
+    <li><span>In the "Numbers" row your number shows only its ends (<b>+380 ••• ••• 123</b>) — so it does not show up on screenshots. The eye on the right shows the full number (again — hides it), tap the number to copy it.</span></li>
   </ol>
   <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/alerts.webp" alt="Перемикачі сповіщень"><figcaption>«Ще» → «Сповіщення»: вісім перемикачів.</figcaption></figure>
   <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/alerts.webp" alt="Notification switches"><figcaption>"More" → "Notifications": eight switches.</figcaption></figure>
@@ -969,10 +969,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>Потрібен інтернет на сторожі.</b> Коли зникає світло, роутер вимикається — тоді повідомлення чекають у черзі й підуть, щойно зв'язок повернеться. Щоб ішли одразу: роутер на тій самій батареї / ДБЖ, або SIM з мобільним інтернетом у сторожі.</li>
     <li><b>Сторож — додатковий, не замість плати.</b> Батарею захищає сама плата; сторож лише розповідає. Читає раз на ~5 хв і лише поки Bluetooth дістає.</li>
     <li><b>Один бот — один сторож.</b> Для другого сторожа (наприклад, у мами) — свій бот.</li>
-    <li><b>Приватність:</b> токен — лише на телефоні-сторожі. Без коду до бота не під'єднатись; 5 хибних кодів — година паузи. <span class="btn norm">Новий код</span> — для нових людей, ті, хто вже є, лишаються. Прибрати людину — <span class="btn norm">Учасники</span>.</li>
+    <li><b>Приватність:</b> токен — лише на телефоні-сторожі. Без коду до бота не під'єднатись; 5 хибних кодів — година паузи. У картці код схований крапками — його не видно на скріні чи відео. <span class="btn norm">Новий код</span> — для нових людей, ті, хто вже є, лишаються. Прибрати людину — <span class="btn norm">Учасники</span>.</li>
     <li>Тримай сторожа на зарядці й дозволь «Не обмежувати у фоні» (картка «Запис у фоні») — тоді Android його не приспить.</li>
     <li><b>Кілька сторожів в одній групі (за бажанням).</b> <span class="btn norm">Запросити в групу Telegram</span> → відкрий посилання → вибери групу (ти маєш бути її адміном). Так у одну групу «Батареї родини» можна звести свого сторожа, мамин, братів — кожне повідомлення підписане назвою батареї 🔋. Вибір у /settings тоді спільний для всієї групи; команди в групі — через кнопку «Меню».</li>
-    <li><b>Додав бота в групу вручну («Додати учасника») — він мовчить?</b> Без коду група не стає учасником. Бот сам підкаже в групі, що робити: надіслати туди <b>/start@ім'я_бота КОД</b> (код — у картці сторожа). Або одразу <span class="btn norm">Запросити в групу Telegram</span> — посилання додає бота вже з кодом. Боти різних сторожів одне одного в групі не бачать — кожен шле свою картинку.</li>
+    <li><b>Додав бота в групу вручну («Додати учасника») — він мовчить?</b> Без коду група не стає учасником. Бот сам підкаже в групі, що робити: надіслати туди <b>/start@ім'я_бота КОД</b> (код — у картці сторожа: він схований крапками, око праворуч показує його, а торкнутись коду — скопіюється). Або одразу <span class="btn norm">Запросити в групу Telegram</span> — посилання додає бота вже з кодом. Боти різних сторожів одне одного в групі не бачать — кожен шле свою картинку.</li>
     <li><b>Копія сторожа.</b> <span class="btn norm">Зберегти копію сторожа</span> — один текст (бот, люди, код), збережи собі (наприклад, у Telegram «Збережене»). Сторож працює далі. Якщо застосунок колись доведеться поставити заново: «Налаштувати сторожа» → встав увесь текст → «Перевірити й увімкнути» — усе повернеться. Сам токен бота завжди є й у @BotFather → /mybots → бот → «API Token».</li>
     <li><b>Передати сторожа на інший телефон (за бажанням).</b> <span class="btn quiet">Передати сторожа на інший телефон</span> → «Передати»: тут сторож вимикається, а текст передачі (бот, люди, код) пересилаєш тій людині. На її телефоні: «Налаштувати сторожа» → встав увесь текст → «Перевірити й увімкнути». Людям під'єднуватись заново не треба. Текст — як ключ від бота: лише тій людині.</li>
   </ul>
@@ -980,10 +980,10 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>The guard needs internet.</b> When the power goes out, the router turns off — then messages wait in a queue and go as soon as the connection returns. To send right away: the router on the same battery / UPS, or a SIM with mobile data in the guard.</li>
     <li><b>The guard is extra, not instead of the BMS.</b> The BMS itself protects the battery; the guard only tells. It reads every ~5 min and only while Bluetooth reaches.</li>
     <li><b>One bot — one guard.</b> For a second guard (for example, at mom's) — its own bot.</li>
-    <li><b>Privacy:</b> the token stays on the guard phone only. Nobody joins the bot without the code; 5 wrong codes — an hour's pause. <span class="btn norm">New code</span> — for new people, those already there stay. Remove a person — <span class="btn norm">Members</span>.</li>
+    <li><b>Privacy:</b> the token stays on the guard phone only. Nobody joins the bot without the code; 5 wrong codes — an hour's pause. On the card the code is hidden with dots — it does not show on a screenshot or video. <span class="btn norm">New code</span> — for new people, those already there stay. Remove a person — <span class="btn norm">Members</span>.</li>
     <li>Keep the guard on charge and allow "Don't restrict in background" (the "Background recording" card) — then Android will not put it to sleep.</li>
     <li><b>Several guards in one group (optional).</b> <span class="btn norm">Invite to a Telegram group</span> → open the link → pick the group (you must be its admin). This way your guard, mom's and your brother's can share one "Family batteries" group — each message is signed with the battery name 🔋. The /settings choice is then shared by the whole group; in a group, use the "Menu" button for commands.</li>
-    <li><b>Added the bot to a group by hand ("Add member") and it is silent?</b> Without the code the group does not become a member. The bot itself tells the group what to do: send <b>/start@bot_name CODE</b> there (the code is on the guard card). Or use <span class="btn norm">Invite to a Telegram group</span> right away — the link adds the bot with the code. Bots of different guards do not see each other in a group — each sends its own picture.</li>
+    <li><b>Added the bot to a group by hand ("Add member") and it is silent?</b> Without the code the group does not become a member. The bot itself tells the group what to do: send <b>/start@bot_name CODE</b> there (the code is on the guard card: it is hidden with dots, the eye on the right shows it, and tapping the code copies it). Or use <span class="btn norm">Invite to a Telegram group</span> right away — the link adds the bot with the code. Bots of different guards do not see each other in a group — each sends its own picture.</li>
     <li><b>Guard backup.</b> <span class="btn norm">Save a guard backup</span> — one text (bot, members, code); keep it for yourself (for example, in Telegram "Saved Messages"). The guard keeps working. If the app ever has to be installed again: "Set up the guard" → paste the whole text → "Check and turn on" — everything comes back. The bot token itself is always in @BotFather → /mybots → the bot → "API Token" too.</li>
     <li><b>Move the guard to another phone (optional).</b> <span class="btn quiet">Move the guard to another phone</span> → "Move": the guard turns off here, and you send the transfer text (bot, members, code) to that person. On their phone: "Set up the guard" → paste the whole text → "Check and turn on". People do not need to join again. The text is like a key to the bot: only for that person.</li>
   </ul>
@@ -1204,8 +1204,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.23 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.23.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.23 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.23.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.24 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.24.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.24 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.24.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
@@ -1353,6 +1353,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.24</b> · 23.10.2026</td><td>код доступу сторожа схований крапками; око праворуч показує код і номер, торкнись — скопіюється</td></tr>
       <tr><td class="k"><b>0.4.23</b> · 23.10.2026</td><td>твій номер у «Номерах» видно лише з країв, торкнись — скопіюється повністю</td></tr>
       <tr><td class="k"><b>0.4.22</b> · 22.10.2026</td><td>напис «немає зв'язку» на спідометрі не налазить на «0» і «100»; кнопки годин сторожа — в один рядок; /diag, коли батарея далеко, надсилає файл одразу, щойно фон спробував, а не через 45 с</td></tr>
       <tr><td class="k"><b>0.4.21</b> · 22.10.2026</td><td>без зв'язку спідометр кожні 3 с міняє «немає зв'язку» і останні дані сірим з «дані від …»; струм, вати, «вистачить на» і стан ключів — прочерк; зрозуміліший текст «Сторож працює»</td></tr>
@@ -1395,6 +1396,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.24</b> · 23.10.2026</td><td>the guard access code is hidden with dots; the eye on the right shows the code and the number, tap to copy</td></tr>
       <tr><td class="k"><b>0.4.23</b> · 23.10.2026</td><td>your number in "Numbers" shows only its ends, tap it to copy it in full</td></tr>
       <tr><td class="k"><b>0.4.22</b> · 22.10.2026</td><td>"no connection" on the gauge no longer overlaps "0" and "100"; the guard hour buttons stay on one line; /diag with the battery out of reach sends the file as soon as the background has tried, not after 45 s</td></tr>
       <tr><td class="k"><b>0.4.21</b> · 22.10.2026</td><td>without a connection the gauge switches every 3 s between "no connection" and the last data in grey with "data from …"; current, watts, "lasts for" and switch states are dashes; clearer "The guard is working" text</td></tr>

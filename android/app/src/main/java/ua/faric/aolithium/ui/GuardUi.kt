@@ -61,7 +61,10 @@ class GuardUi(
         }
         // T53 (скрін faric 21.10 03:04): ім'я бота — цілим (не влазить — під підписом), підписи — короткі, в один рядок.
         card.addView(ui.factOneLine(tr("Бот", "Bot"), bot.replace(" ", "\u00A0")))
-        card.addView(ui.fact(tr("Код доступу", "Access code"), code))
+        // T75: код доступу схований — око показує / ховає, торкнутись коду — скопіювати.
+        card.addView(ui.secretFact(tr("Код доступу", "Access code"), code, GuardBot.hiddenCode(code)) {
+            ui.copyText(tr("Код доступу", "Access code"), code, tr("Код скопійовано", "Code copied"))
+        }, ui.matchWrap())
         val groups = members.count { GuardBot.isGroup(it) }
         card.addView(ui.fact(tr("Учасники", "Members"), if (groups > 0) tr("${members.size} (груп: $groups)", "${members.size} ($groups groups)") else "${members.size}"))
         val watched = if (sample) 1 else BgSettings(host).enabled().count { !it.startsWith("demo:") }

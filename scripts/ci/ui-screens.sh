@@ -333,6 +333,9 @@ start --es demo IDLE --es dialog guard:card
 shot n09-guard-narrow-font130 5
 scroll_down
 shot n09b-guard-narrow-font130-scrolled 2
+# T75: око праворуч, впритул до краю — і в коді сторожа (n09), і в номері (вигаданий, лише CI-демо).
+start --es demo IDLE --es dialog call:sample
+shot n10-call-eye-narrow-font130 5
 adb shell settings put system font_scale 1.0
 sleep 2
 adb shell am force-stop "$PKG"
