@@ -1635,32 +1635,54 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
      * T50: «Дзвінок при серйозній тривозі» — кому (101 і свій номер), і «Перевірка тривоги»: шторка з кнопками
      * «Подзвонити» на цьому телефоні та (якщо сторож увімкнено) зразок у Telegram усім учасникам.
      */
+    /** T76: табличка «Номери» — шапка по центру, рядки «хто — номер», номери до правого краю, око в рядку свого. */
+    private fun numbersTable(plan: Emergency.Plan): View {
+        val table = ui.column(0).apply {
+            background = ui.rounded(Palette.transparent, stroke = Palette.border, radiusDp = 12)
+            setPadding(ui.dp(12), ui.dp(6), 0, ui.dp(2))
+        }
+        table.addView(ui.text(tr("Номери", "Numbers"), 14f, Palette.muted, medium = true).apply {
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
+            setPadding(0, 0, ui.dp(12), ui.dp(6))
+        }, ui.matchWrap())
+        table.addView(ui.divider())
+        val rows = plan.contacts.filter { it.number == Emergency.RESCUE || Emergency.valid(it.number) }
+        if (rows.isEmpty()) {
+            table.addView(ui.tableRow(tr("не вибрано", "none"), "", null, null), ui.matchWrap())
+        }
+        rows.forEachIndexed { i, c ->
+            if (i > 0) table.addView(ui.divider())
+            val row = if (c.number == Emergency.RESCUE) {
+                ui.tableRow(c.name, Emergency.RESCUE, null, null)
+            } else {
+                val clean = Emergency.clean(c.number)
+                ui.tableRow(c.name.ifBlank { tr("Мій номер", "My number") }, clean, Emergency.masked(c.number)) {
+                    ui.copyText(tr("Номер", "Number"), clean, tr("Номер скопійовано", "Number copied"))
+                }
+            }
+            table.addView(row, ui.matchWrap())
+        }
+        return table
+    }
+
     private fun callSection(): View {
         val box = ui.column(8).apply { setPadding(0, ui.dp(6), 0, 0) }
         box.addView(ui.divider(), ui.matchWrap())
         box.addView(ui.text(tr("Дзвінок при серйозній тривозі", "Call on a serious alarm"), 15f, Palette.text, medium = true))
         val plan = if (sampleCall) Emergency.Plan(true, Emergency.Contact(tr("Фарік", "Faric"), "+380000000123")) else alertPrefs.callPlan
         callBox = box
-        // T74: на екрані — номер з крапками посередині. T75 (faric 23.10 02:18 «хай буде однаково»): як код сторожа —
-        // око праворуч показує / ховає повний номер, торкнутись номера — скопіювати повністю.
-        val label: (Emergency.Contact, (String) -> String) -> String = { c, show ->
-            if (c.number == Emergency.RESCUE) "101" else "${c.name.ifBlank { "" }} ${show(c.number)}".trim()
-        }
-        val who = plan.contacts.joinToString(" · ") { label(it, Emergency::masked) }
-        val full = plan.contacts.joinToString(" · ") { label(it, Emergency::clean) }
-        val own = plan.contact?.takeIf { Emergency.valid(it.number) }
+        // T74: свій номер на екрані — з крапками посередині. T75: око праворуч показує / ховає, торкнутись — копія.
+        // T76 (faric 23.10 03:07–03:09, скрін «101 · Му +380 ••• ••• 725» — «не стикується»): табличка — шапка «Номери»
+        // по центру, кожен номер своїм рядком: зліва хто, справа номер (до правого краю, в один стовпчик), око — лише
+        // в рядку свого номера.
         box.addView(ui.muted(tr(
             "Перегрів, струм, коротке замикання — у шторці кнопки «Подзвонити», у Telegram — номери. Застосунок сам не дзвонить: лише відкриває набір номера.",
             "Overheating, current, short circuit — \"Call\" buttons in the shade, numbers in Telegram. The app never calls by itself: it only opens the dialer.",
         ), 13f))
-        if (own != null) {
-            box.addView(ui.secretFact(tr("Номери", "Numbers"), full, who) {
-                ui.copyText(tr("Номер", "Number"), Emergency.clean(own.number), tr("Номер скопійовано", "Number copied"))
-            }, ui.matchWrap())
+        box.addView(numbersTable(plan), ui.matchWrap())
+        if (plan.contacts.any { it.number != Emergency.RESCUE && Emergency.valid(it.number) }) {
             box.addView(ui.muted(tr("Око — показати номер; торкнись номера — скопіюється повністю.",
                 "The eye shows the number; tap the number to copy it in full."), 12.5f))
-        } else {
-            box.addView(ui.fact(tr("Номери", "Numbers"), who.ifBlank { tr("не вибрано", "none") }), ui.matchWrap())
         }
         val buttons = listOf(
             ui.button(tr("Номери для тривоги", "Alarm numbers"), Ui.Kind.NORMAL) { showCallNumbers() },
