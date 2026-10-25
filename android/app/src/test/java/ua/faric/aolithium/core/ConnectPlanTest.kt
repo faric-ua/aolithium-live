@@ -26,4 +26,13 @@ class ConnectPlanTest {
         assertEquals(ConnectPlan.AfterScan.DIRECT, ConnectPlan.afterScan(found = false, hasCached = false, quick = true))
         assertEquals(ConnectPlan.AfterScan.FAIL, ConnectPlan.afterScan(found = false, hasCached = false, quick = false))
     }
+
+    @Test fun background_retry_goes_direct_by_address() {
+        // T84 п. 6 (Realme, 19:51): тричі «пристрій з минулого пошуку» → 133; тепер друга й третя — напряму за адресою.
+        assertEquals(ConnectPlan.AfterScan.CACHED, ConnectPlan.afterScan(found = false, hasCached = true, quick = true, retry = false))
+        assertEquals(ConnectPlan.AfterScan.DIRECT, ConnectPlan.afterScan(found = false, hasCached = true, quick = true, retry = true))
+        // екран — як було (без «напряму»)
+        assertEquals(ConnectPlan.AfterScan.CACHED, ConnectPlan.afterScan(found = false, hasCached = true, quick = false, retry = true))
+        assertEquals(ConnectPlan.AfterScan.FOUND, ConnectPlan.afterScan(found = true, hasCached = true, quick = true, retry = true))
+    }
 }

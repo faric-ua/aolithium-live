@@ -151,14 +151,14 @@ object Alerts {
 
     // ---------- новий знімок ----------
 
-    fun onSnapshot(st: State, s: BatterySnapshot, t: Long, tz: TimeZone = TimeZone.getDefault()): Step {
+    fun onSnapshot(st: State, s: BatterySnapshot, t: Long, tz: TimeZone = TimeZone.getDefault(), outageA: Double = Outages.START_A): Step {
         val ev = ArrayList<Event>()
         var n = st
         if (n.noData) {
             ev += Event(Kind.NO_DATA, "", "", cancel = true)
             n = n.copy(noData = false)
         }
-        n = outage(n, s, t, tz, ev)
+        n = outage(n, s, t, tz, ev, outageA)
         n = low(n, s, ev)
         n = full(n, s, ev)
         n = protection(n, s, ev)
@@ -190,7 +190,7 @@ object Alerts {
      * (2) розряд, помічений одразу після пропуску, — «помітив о …, до того телефон не бачив батарею з …»;
      * (3) час не сьогодні — з датою ([at]); (4) у тексті «повернулось» — коли саме повернулось і з якого часу не було.
      */
-    private fun outage(st: State, s: BatterySnapshot, t: Long, tz: TimeZone, ev: MutableList<Event>): State {
+    private fun outage(st: State, s: BatterySnapshot, t: Long, tz: TimeZone, ev: MutableList<Event>, outageA: Double): State {
         var n = st
         val gapMs = if (st.seen) t - st.lastT else 0L
         val gap = st.seen && gapMs > Outages.MAX_GAP_MS
@@ -199,7 +199,8 @@ object Alerts {
             n = n.copy(outage = false, outGap = false, outLate = false, outLostAt = 0L)
         }
         if (!n.outage) {
-            if (s.current > -Outages.START_A) return n.copy(cand = 0L, candLost = 0L)
+            // T85: малий розряд повної батареї (інвертор живиться від неї) — не відключення
+            if (!Outages.isOutageDraw(s.current, s.soc, outageA)) return n.copy(cand = 0L, candLost = 0L)
             if (n.cand == 0L) return n.copy(cand = t, candSoc = s.soc, candLost = if (gap) st.lastT else 0L)
             if (t - n.cand < Outages.MIN_MS) return n
             val late = n.candLost > 0L

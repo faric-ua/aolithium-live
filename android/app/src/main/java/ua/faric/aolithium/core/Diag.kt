@@ -131,6 +131,8 @@ object Diag {
         val now: Long,
         val app: String,
         val android: String,
+        /** T84 п. 5: виробник і модель телефона (мамин — Realme, faric не пам'ятає, який саме). */
+        val device: String = "",
         val battery: String,
         val board: String,
         val snapshot: BatterySnapshot?,
@@ -146,6 +148,21 @@ object Diag {
     )
 
     /**
+     * T83 (/diag мами 25.10 15:54): був сирий `toString` з серійним номером плати, хоч шапка обіцяє «затерто».
+     * Тепер — те саме людською мовою, серійного номера нема.
+     */
+    fun jkLine(j: JkExtra): String = buildString { // uk-only: файл для Claude
+        append("розкладка ${j.layout} · балансир %.2f А (дія ${j.balancerAction})".format(Locale.ROOT, j.balanceCurrent)) // uk-only: файл для Claude
+        if (j.wireMohm.isNotEmpty()) append(" · опір дротів ${j.wireMohm.joinToString(" ")} мОм") // uk-only: файл для Claude
+        j.mosTemp?.let { append(" · MOS %.1f °C".format(Locale.ROOT, it)) }
+        append(" · SOH ${j.soh} %% · пройдено %.0f А·год · працює ${j.runtimeSec / 86_400} діб".format(Locale.ROOT, j.cycleCapacityAh)) // uk-only: файл для Claude
+        append(" · підігрів ${if (j.heatingOn) "увімк" else "вимк"} · зарядний ${if (j.chargerPlugged) "є" else "нема"}") // uk-only: файл для Claude
+        j.chargeStage?.let { append(" · етап заряду $it") } // uk-only: файл для Claude
+        j.hw?.let { append(" · залізо $it") } // uk-only: файл для Claude
+        j.settings?.let { append("\nJK налаштування: $it") } // uk-only: файл для Claude
+    }
+
+    /**
      * Текст файлу. Мова — українська навмисно: читає його Claude і faric, а не користувач застосунку (як журнал CSV).
      * Нічого з цього не впливає на роботу застосунку.
      */
@@ -153,7 +170,8 @@ object Diag {
         val t = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).apply { timeZone = tz }
         fun time(ms: Long) = t.format(Date(ms))
         appendLine("# Aolithium Live — дані для перевірки (T64)") // uk-only: файл для Claude
-        appendLine("Складено: ${time(i.now)} · застосунок ${i.app} · Android ${i.android}") // uk-only: файл для Claude
+        appendLine("Складено: ${time(i.now)} · застосунок ${i.app} · Android ${i.android}" + // uk-only: файл для Claude
+            (if (i.device.isNotBlank()) " · телефон ${i.device}" else "")) // uk-only: файл для Claude
         appendLine("Батарея: ${i.battery} · плата ${i.board}") // uk-only: файл для Claude
         appendLine("Попросив: ${i.requestedBy} · свіже читання: ${freshText(i.fresh)}") // uk-only: файл для Claude
         appendLine("Паролі плати й серійний номер у кадрах затерто нулями.") // uk-only: файл для Claude
@@ -176,7 +194,7 @@ object Diag {
             listOfNotNull(s.model?.let { "модель $it" }, s.firmware?.let { "програма $it" }, s.made?.let { "зроблено $it" }) // uk-only: файл для Claude
                 .takeIf { it.isNotEmpty() }?.let { appendLine(it.joinToString(" · ")) }
             s.errorCounts?.takeIf { it.isNotEmpty() }?.let { e -> appendLine("Лічильники помилок: ${e.joinToString { "${it.first}=${it.second}" }}") } // uk-only: файл для Claude
-            s.jk?.let { appendLine("JK: $it") }
+            s.jk?.let { appendLine("JK: ${jkLine(it)}") } // T83: читабельно й без серійного номера
         }
         appendLine()
         i.outage?.let {

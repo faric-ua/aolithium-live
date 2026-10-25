@@ -40,6 +40,14 @@ class WidgetModelTest {
     }
 
     @Test
+    fun smallDrawOfFullBatteryDoesNotClaimOutage() {
+        // T85: повна батарея віддає 1,3 А — «віддає трохи — світло є?», а не «світла нема».
+        assertEquals("віддає трохи — світло є?", WidgetModel.of("A", snap(-1.3, 100), at, at, kyiv).status)
+        assertEquals("віддає — світла нема", WidgetModel.of("A", snap(-24.0, 100), at, at, kyiv).status)
+        assertEquals("віддає трохи — світло є?", WidgetModel.of("A", snap(-1.5, 60), at, at, kyiv, outageA = 2.0).status)
+    }
+
+    @Test
     fun charging() {
         val m = WidgetModel.of("A", snap(46.0, 42), at, at, kyiv)
         assertEquals(WidgetModel.Tone.CHARGE, m.tone)

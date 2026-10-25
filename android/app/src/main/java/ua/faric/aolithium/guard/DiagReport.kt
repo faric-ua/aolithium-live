@@ -31,6 +31,7 @@ object DiagReport {
                 now = now,
                 app = "${BuildConfig.VERSION_NAME} · збірка ${BuildConfig.VERSION_CODE}", // uk-only: файл для Claude
                 android = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+                device = "${Build.MANUFACTURER} ${Build.MODEL}".trim(), // T84 п. 5
                 battery = b?.title ?: "—",
                 board = when (b?.kind) {
                     BmsMatch.Kind.JK -> "JK BMS"

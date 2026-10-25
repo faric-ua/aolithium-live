@@ -26,9 +26,17 @@ object ConnectPlan {
 
     enum class AfterScan { FOUND, CACHED, DIRECT, FAIL }
 
-    /** Пошук закінчився: [found] — знайшлась у ефірі; [hasCached] — є старий запис; [quick] — фоновий запис. */
-    fun afterScan(found: Boolean, hasCached: Boolean, quick: Boolean): AfterScan = when {
+    /**
+     * Пошук закінчився: [found] — знайшлась у ефірі; [hasCached] — є старий запис; [quick] — фоновий запис; [retry] — це
+     * повторна спроба.
+     *
+     * T84 п. 6 (/diag мами 25.10, Realme, Android 10): за вечір «напряму за адресою» — 6 з 6 вдалих, «пристрій з минулого
+     * пошуку» — 5 з 6 код 133. Але на A26 (T46) свіжий запис з пошуку кращий. Тому у фоні перша спроба — як було, а
+     * повторні після невдачі — напряму за адресою: так кожен телефон пробує обидва шляхи за одне читання.
+     */
+    fun afterScan(found: Boolean, hasCached: Boolean, quick: Boolean, retry: Boolean = false): AfterScan = when {
         found -> AfterScan.FOUND
+        quick && retry -> AfterScan.DIRECT
         hasCached -> AfterScan.CACHED
         quick -> AfterScan.DIRECT
         else -> AfterScan.FAIL

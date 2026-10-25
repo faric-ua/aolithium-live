@@ -39,7 +39,10 @@ object WidgetModel {
         val small: String,
     )
 
-    fun of(name: String, s: BatterySnapshot?, at: Long?, now: Long, tz: TimeZone = TimeZone.getDefault()): Model {
+    fun of(
+        name: String, s: BatterySnapshot?, at: Long?, now: Long, tz: TimeZone = TimeZone.getDefault(),
+        outageA: Double = Outages.START_A,
+    ): Model {
         if (s == null || at == null) {
             return Model(
                 name, Tone.EMPTY, "—", 0f, "", tr("нема даних", "no data"), Arrow.NONE,
@@ -80,7 +83,10 @@ object WidgetModel {
                     ?: tr("віддає", "discharging")
                 Model(
                     name, Tone.DISCHARGE, pct, ring, ah, Fmt.watts(abs(s.power)), Arrow.UP,
-                    tr("віддає — світла нема", "discharging — no power"), left, saved, "$short · $time",
+                    // T85: малий розряд повної батареї — не стверджувати «світла нема» (інвертор може живитися від неї)
+                    if (Outages.isOutageDraw(s.current, s.soc, outageA)) tr("віддає — світла нема", "discharging — no power")
+                    else tr("віддає трохи — світло є?", "small draw — power on?"),
+                    left, saved, "$short · $time",
                 )
             }
             BatterySnapshot.Flow.CHARGING -> {

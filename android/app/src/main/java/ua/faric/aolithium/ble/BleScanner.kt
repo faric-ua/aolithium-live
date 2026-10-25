@@ -209,6 +209,8 @@ class BleScanner(context: Context) {
                 }
 
                 override fun onScanFailed(errorCode: Int) {
+                    // T84 п. 1: раніше мовчали — у журналі це виглядало як «у пошуку не видно»
+                    LinkLog.add(tr("пошук: Android відмовив (код $errorCode)", "search: Android refused (code $errorCode)"))
                     main.post { finish(null) }
                 }
             }

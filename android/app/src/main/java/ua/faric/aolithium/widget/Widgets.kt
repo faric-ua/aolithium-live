@@ -80,7 +80,8 @@ object Widgets {
     fun model(ctx: Context, widgetId: Int, now: Long = System.currentTimeMillis()): Pair<WidgetModel.Model, String?> {
         val b = pickBattery(ctx, widgetId) ?: return WidgetModel.of("Aolithium Live", null, null, now) to null
         val last = LastSnapshot(ctx).load(b.address)
-        return WidgetModel.of(b.title, last?.first, last?.second, now) to b.address
+        val oa = ua.faric.aolithium.data.AlertSettings(ctx).outageA(b.address) // T85
+        return WidgetModel.of(b.title, last?.first, last?.second, now, outageA = oa) to b.address
     }
 
     fun update(ctx: Context, mgr: AppWidgetManager, id: Int, large: Boolean) {
