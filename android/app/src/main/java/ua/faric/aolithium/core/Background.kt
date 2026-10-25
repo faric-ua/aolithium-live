@@ -135,11 +135,18 @@ object Background {
         !busy && rssi >= CATCH_MIN_DBM && now - lastCatchAt >= CATCH_COOLDOWN_MS &&
             (lastOkAt == null || now - lastOkAt >= CATCH_AFTER_MS)
 
-    /** Скільки писати в журнал про «бачу в ефірі»: раз на [SIGHT_LOG_MS] або коли сигнал перейшов в інший рівень. */
+    /**
+     * Скільки писати в журнал про «бачу в ефірі»: раз на [SIGHT_LOG_MS] або коли сигнал зсунувся на [SIGHT_JUMP_DBM]+
+     * (але не частіше за [SIGHT_MIN_MS]). T82 (/diag мами 25.10 15:40): правило «змінився рівень» на межі −70 «сильний /
+     * середній» писало рядок кожні пів секунди — журнал на 150 рядків заповнився за 4 хв.
+     */
     const val SIGHT_LOG_MS = 5 * 60_000L
+    const val SIGHT_MIN_MS = 30_000L
+    const val SIGHT_JUMP_DBM = 10
 
     fun logSighting(now: Long, lastLoggedAt: Long, rssi: Int, lastLoggedRssi: Int?): Boolean =
-        lastLoggedRssi == null || now - lastLoggedAt >= SIGHT_LOG_MS || Signal.level(rssi) != Signal.level(lastLoggedRssi)
+        lastLoggedRssi == null || now - lastLoggedAt >= SIGHT_LOG_MS ||
+            (now - lastLoggedAt >= SIGHT_MIN_MS && kotlin.math.abs(rssi - lastLoggedRssi) >= SIGHT_JUMP_DBM)
 
     /** «віддає 4,10 А» / «бере 8,50 А» / «стоїть». */
     fun flow(current: Double): String = when {

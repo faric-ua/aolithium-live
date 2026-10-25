@@ -136,8 +136,12 @@ class BackgroundTest {
         assertTrue(Background.logSighting(at, 0L, -80, null))
         assertFalse(Background.logSighting(at, at - min, -81, -80))
         assertTrue(Background.logSighting(at, at - 6 * min, -81, -80))
-        // рівень змінився (середній → слабкий) — одразу
+        // T82: на межі −70 (сильний / середній) сигнал скаче щосекунди — не писати
+        assertFalse(Background.logSighting(at, at - 1_000L, -71, -69))
+        assertFalse(Background.logSighting(at, at - min, -71, -69))
+        // зсунувся на 10+ dBm — можна, але не частіше раз на 30 с
         assertTrue(Background.logSighting(at, at - min, -92, -80))
+        assertFalse(Background.logSighting(at, at - 10_000L, -92, -80))
     }
 
     @Test
