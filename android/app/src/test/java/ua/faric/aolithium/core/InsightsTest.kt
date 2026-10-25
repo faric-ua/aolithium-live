@@ -104,6 +104,19 @@ class InsightsTest {
     }
 
     @Test
+    fun outagesIgnoreSmallDrawOfFullBattery() {
+        // T85: 32 хв по 1,2 А при 100 % — не відключення; те саме при 60 % — відключення (поріг 0,5 А), з порогом 2 А — ні.
+        val full = (0 until 200).map { p(it * 10_000L, -1.2, 100) }
+        assertTrue(Outages.find(full).isEmpty())
+        val mid = (0 until 200).map { p(it * 10_000L, -1.2, 60) }
+        assertEquals(1, Outages.find(mid).size)
+        assertTrue(Outages.find(mid, userA = 2.0).isEmpty())
+        assertEquals(2.0, Outages.startA(0.5, 98), 1e-9)
+        assertEquals(0.5, Outages.startA(0.5, 97), 1e-9)
+        assertEquals(3.0, Outages.startA(3.0, 100), 1e-9)
+    }
+
+    @Test
     fun dailyMinAndLaggard() {
         val day = DailyMin.DAY_MS
         val pts = listOf(p(1_000, 0.0, 70), p(5_000, 0.0, 40), p(day + 1_000, 0.0, 33))

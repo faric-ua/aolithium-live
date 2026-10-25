@@ -145,7 +145,7 @@ class JbdLink(context: Context, override val address: String, private val quick:
             BleScanner.findOne(app, address, FIND_MS) { device ->
                 h.post {
                     if (!running || token != attempt) return@post
-                    when (ConnectPlan.afterScan(found = device != null, hasCached = cached != null, quick = quick)) {
+                    when (ConnectPlan.afterScan(found = device != null, hasCached = cached != null, quick = quick, retry = reconnects > 0)) {
                         ConnectPlan.AfterScan.FOUND -> {
                             LinkLog.add(tr("$short: знайшлась", "$short: found") +
                                 (BleScanner.lastRssi[address]?.let { tr(", сигнал ", ", signal ") + Signal.describe(it) } ?: "") +

@@ -148,8 +148,24 @@ object CellTrend {
  * світло повернулось. faric 03:31: при світлі інвертор лише заряджає, або батарея стоїть повна.
  */
 object Outages {
-    /** Віддає більше — це вже «світла нема». */
+    /** Віддає більше — це вже «світла нема» (поріг за замовчуванням; кожна батарея може мати свій — T85). */
     const val START_A = 0.5
+
+    /**
+     * T85 (faric 25.10 20:01, мамин сторож: «бот бреше — світла нема, а світло було»): 19:16–19:48 повна батарея (100 %)
+     * віддавала 1,1–1,3 А (~16 Вт) — інвертор Logic Power після заряду живить себе від батареї, поки напруга не впаде;
+     * справжні відключення там — 2,4–5 А. Тому: (А) при заряді від [FULL_SOC] % поріг щонайменше [FULL_MIN_A];
+     * (Б) свій поріг для кожної батареї — [CHOICES], вибір у «Сповіщеннях» (`data/AlertSettings.outageA`).
+     */
+    const val FULL_SOC = 98
+    const val FULL_MIN_A = 2.0
+    val CHOICES = listOf(0.5, 1.0, 2.0, 3.0)
+
+    /** Поріг «світла нема» для цього знімка: свій поріг батареї [userA], а при повній — не менше [FULL_MIN_A]. */
+    fun startA(userA: Double, soc: Int): Double = if (soc >= FULL_SOC) maxOf(userA, FULL_MIN_A) else userA
+
+    /** Батарея віддає стільки, що це схоже на відключення світла (а не на інвертор, що живиться від повної батареї). */
+    fun isOutageDraw(current: Double, soc: Int, userA: Double = START_A): Boolean = -current >= startA(userA, soc)
     /** Струм вище цього (майже нуль або заряд) — розряд скінчився. */
     const val END_A = -0.2
     /** Стільки має тривати розряд (і повернення), щоб рахувалось — короткі стрибки не відключення. */
@@ -172,12 +188,12 @@ object Outages {
         val avgW: Double get() = if (durationMs > 0) wh / (durationMs / 3_600_000.0) else 0.0
     }
 
-    fun find(points: List<HistoryPoint>): List<Outage> {
+    fun find(points: List<HistoryPoint>, userA: Double = START_A): List<Outage> {
         val pts = points.sortedBy { it.t }
         val out = ArrayList<Outage>()
         var i = 0
         while (i < pts.size) {
-            if (pts[i].current > -START_A) {
+            if (!isOutageDraw(pts[i].current, pts[i].soc, userA)) {
                 i++
                 continue
             }

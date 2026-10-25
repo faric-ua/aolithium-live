@@ -19,6 +19,7 @@ import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.Fmt
 import ua.faric.aolithium.core.Guard
+import ua.faric.aolithium.core.Outages
 import ua.faric.aolithium.core.GuardPicture
 import ua.faric.aolithium.core.StaleShow
 import ua.faric.aolithium.core.WidgetModel
@@ -43,12 +44,15 @@ object GuardArt {
     private const val FOOT_DP = 26f
     private const val WAIT_MS = 5_000L
 
-    fun battery(ctx: Context, look: GuardPicture.Look, name: String, s: BatterySnapshot?, at: Long?, now: Long): Bitmap? =
+    fun battery(
+        ctx: Context, look: GuardPicture.Look, name: String, s: BatterySnapshot?, at: Long?, now: Long,
+        oa: Double = Outages.START_A, // T85: свій поріг «світла нема»
+    ): Bitmap? =
         if (look == GuardPicture.Look.NONE) null else onMain {
             when (look) {
-                GuardPicture.Look.GAUGE -> if (s == null || at == null) widget(ctx, name, s, at, now) else gauge(ctx, name, s, at, now)
-                GuardPicture.Look.WIDGET -> widget(ctx, name, s, at, now)
-                GuardPicture.Look.CELLS -> cells(ctx, name, s, at, now)
+                GuardPicture.Look.GAUGE -> if (s == null || at == null) widget(ctx, name, s, at, now, oa) else gauge(ctx, name, s, at, now, oa)
+                GuardPicture.Look.WIDGET -> widget(ctx, name, s, at, now, oa)
+                GuardPicture.Look.CELLS -> cells(ctx, name, s, at, now, oa)
                 GuardPicture.Look.NONE -> null
             }
         }
@@ -57,7 +61,7 @@ object GuardArt {
     fun grid(ctx: Context, batteries: List<Guard.Seen>, now: Long): Bitmap? = onMain {
         if (batteries.size == 1) {
             val b = batteries[0]
-            widget(ctx, b.name, b.snapshot, b.at, now)
+            widget(ctx, b.name, b.snapshot, b.at, now, b.outageA)
         } else {
             gridArt(ctx, batteries, now)
         }
@@ -69,10 +73,10 @@ object GuardArt {
 
     private fun density(ctx: Context) = ctx.resources.displayMetrics.density.coerceIn(1.5f, 3f)
 
-    private fun widget(ctx: Context, name: String, s: BatterySnapshot?, at: Long?, now: Long): Bitmap {
+    private fun widget(ctx: Context, name: String, s: BatterySnapshot?, at: Long?, now: Long, oa: Double): Bitmap {
         val d = density(ctx)
         val pad = (12 * d).toInt()
-        val art = WidgetArt.draw(WidgetModel.of(name, s, at, now), W_DP, 170, d)
+        val art = WidgetArt.draw(WidgetModel.of(name, s, at, now, outageA = oa), W_DP, 170, d)
         val temp = s?.let { GuardPicture.tempLine(it.temperatures) }
         val foot = if (temp != null) FOOT_DP * d else 0f
         return frame(art.width + 2 * pad, (art.height + 2 * pad + foot).toInt()) { c ->
@@ -81,7 +85,7 @@ object GuardArt {
         }
     }
 
-    private fun gauge(ctx: Context, name: String, s: BatterySnapshot, at: Long, now: Long): Bitmap {
+    private fun gauge(ctx: Context, name: String, s: BatterySnapshot, at: Long, now: Long, oa: Double): Bitmap {
         val d = density(ctx)
         val w = (W_DP * d).toInt()
         val pad = 16 * d
@@ -100,7 +104,7 @@ object GuardArt {
         view.measure(View.MeasureSpec.makeMeasureSpec(inner, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
         val gh = view.measuredHeight.coerceAtLeast(1)
         view.layout(0, 0, inner, gh)
-        val model = WidgetModel.of(name, s, at, now)
+        val model = WidgetModel.of(name, s, at, now, outageA = oa)
         val zone = Zones.of(s.soc)
         val head = 30 * d
         val lines = listOf(zone.title to GaugeView.toneColor(zone.tone), model.status to statusColor(model.tone), model.line1 to Palette.muted)
@@ -123,12 +127,12 @@ object GuardArt {
         }
     }
 
-    private fun cells(ctx: Context, name: String, s: BatterySnapshot?, at: Long?, now: Long): Bitmap {
+    private fun cells(ctx: Context, name: String, s: BatterySnapshot?, at: Long?, now: Long, oa: Double): Bitmap {
         val d = density(ctx)
         val pad = (12 * d).toInt()
-        val art = WidgetArt.draw(WidgetModel.of(name, s, at, now), W_DP, 170, d)
+        val art = WidgetArt.draw(WidgetModel.of(name, s, at, now, outageA = oa), W_DP, 170, d)
         val mv = s?.cellsMv.orEmpty()
-        if (mv.isEmpty()) return widget(ctx, name, s, at, now)
+        if (mv.isEmpty()) return widget(ctx, name, s, at, now, oa)
         val temp = s?.let { GuardPicture.tempLine(it.temperatures) }
         val foot = if (temp != null) FOOT_DP * d else 0f
         val w = art.width + 2 * pad
@@ -181,7 +185,7 @@ object GuardArt {
         val gap = 10 * d
         val cols = 2
         val tileDp = 170
-        val art = list.map { WidgetArt.draw(WidgetModel.of(it.name, it.snapshot, it.at, now), tileDp, tileDp, d) }
+        val art = list.map { WidgetArt.draw(WidgetModel.of(it.name, it.snapshot, it.at, now, outageA = it.outageA), tileDp, tileDp, d) }
         val tileW = art.maxOf { it.width }
         val tileH = art.maxOf { it.height }
         val nameH = 24 * d

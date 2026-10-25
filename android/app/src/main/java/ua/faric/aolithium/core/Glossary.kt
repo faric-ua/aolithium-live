@@ -443,10 +443,14 @@ object Glossary {
         e("outages", Group.CHARTS, tr("Відключення світла", "Power outages"), null,
             tr("Застосунок сам знаходить в історії, коли батарея віддавала струм кілька хвилин поспіль (світла нема) " +
                 "і коли знову почала заряджатись чи перестала віддавати (світло повернулось). Для кожного: коли, скільки тривало, " +
-                "скільки батарея віддала, з якого відсотка до якого, середня й найбільша потужність.",
+                "скільки батарея віддала, з якого відсотка до якого, середня й найбільша потужність. Рахується розряд понад " +
+                "поріг батареї (0,5 А, свій — у «Сповіщеннях»); повна батарея (98 % і більше) — лише від 2 А: інвертор після " +
+                "заряду часто живиться від неї, хоч світло є.",
                 "The app finds in the history when the battery was discharging for several minutes in a row (no power) " +
                     "and when it started charging again or went idle (power came back). For each one: when, how long, " +
-                    "how much the battery gave, from what percent to what, average and peak power."),
+                    "how much the battery gave, from what percent to what, average and peak power. A discharge counts above " +
+                    "the battery threshold (0.5 A, your own in \"Notifications\"); a full battery (98 % and more) only from 2 A: " +
+                    "after charging the inverter often runs on it even with power on."),
             tr("Видно тільки ті години, коли телефон був поруч і записував (зараз — поки застосунок відкритий).",
                 "Only the hours when the phone was nearby and recording are shown (now — while the app is open)."),
             tr("Якщо батарея віддає струм і при світлі (наприклад, інвертор так налаштований) — скажи, підлаштуємо правило.",

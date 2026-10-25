@@ -95,6 +95,22 @@ class DiagTest {
         requestedBy = "Aolithium_room", fresh = Diag.Fresh.YES,
     )
 
+    @Test fun jk_line_is_readable_and_has_no_serial() {
+        // T83 (/diag мами 25.10 15:54): був сирий toString з «serial=30901447»
+        val j = JkExtra(
+            layout = "JK02_32S", balanceCurrent = 0.0, balancerAction = 0, wireMohm = listOf(52, 51, 51, 50), mosTemp = 20.4,
+            soh = 100, cycleCapacityAh = 13892.256, runtimeSec = 71_040_419, heatingOn = false, heatingCurrent = 7.083,
+            chargerPlugged = false, chargeStage = null, hw = "11.XW", serial = "30901447",
+        )
+        val line = Diag.jkLine(j)
+        assertFalse(line.contains("30901447"))
+        assertTrue(line.contains("опір дротів 52 51 51 50 мОм"))
+        assertTrue(line.contains("працює 822 діб"))
+        val withPhone = Diag.report(input().copy(device = "realme RMX2020"), kyiv)
+        assertTrue(withPhone.lines()[1].endsWith("· телефон realme RMX2020"))
+        assertFalse(Diag.report(input(), kyiv).lines()[1].contains("телефон"))
+    }
+
     @Test fun send_as_soon_as_the_background_has_read() {
         // T66: файл 22.10 02:47 прийшов через ~50 с, хоча фон дочитав за 4 с
         assertFalse("ще нема свіжих кадрів", Diag.readyToSend(4_000, freshFrames = false, stillReading = true))

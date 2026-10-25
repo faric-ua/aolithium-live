@@ -3,6 +3,7 @@ package ua.faric.aolithium.data
 import android.content.Context
 import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.Emergency
+import ua.faric.aolithium.core.Outages
 
 /**
  * Сповіщення (v0.3): які види увімкнені (спільно для всіх батарей, за замовчуванням — усі) і що вже сказано
@@ -26,6 +27,18 @@ class AlertSettings(context: Context) {
     private fun stateKey(address: String) = KEY_STATE + address.uppercase()
 
     /**
+     * T85: свій поріг «світла нема» для кожної батареї (А): батарея віддає більше — «Світло зникло». За замовчуванням
+     * [Outages.START_A]; при повній батареї ядро однаково бере щонайменше [Outages.FULL_MIN_A].
+     */
+    fun outageA(address: String): Double =
+        prefs.getFloat(KEY_OUTAGE + address.uppercase(), Outages.START_A.toFloat()).toDouble()
+            .takeIf { it in Outages.CHOICES } ?: Outages.START_A
+
+    fun setOutageA(address: String, a: Double) {
+        prefs.edit().putFloat(KEY_OUTAGE + address.uppercase(), a.toFloat()).apply()
+    }
+
+    /**
      * T50: кому дзвонити при серйозній тривозі — 101 (за замовчуванням так) і свій номер (сусід, родич). Спільне для
      * шторки цього телефона й бота сторожа. Лише в пам'яті телефона.
      */
@@ -38,6 +51,7 @@ class AlertSettings(context: Context) {
     private companion object {
         const val KEY_ON = "on:"
         const val KEY_STATE = "state:"
+        const val KEY_OUTAGE = "outageA:"
         const val KEY_RESCUE = "call:rescue"
         const val KEY_CONTACT = "call:contact"
     }

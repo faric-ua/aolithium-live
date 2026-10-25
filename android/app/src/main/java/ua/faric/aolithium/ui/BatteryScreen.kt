@@ -118,6 +118,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private val batteries = Batteries(host)
     private val bg = BgSettings(host)
     private val alertPrefs = AlertSettings(host)
+
+    /** T85: свій поріг «світла нема» цієї батареї (демо — за замовчуванням). */
+    private fun outageA(): Double = if (demo != null) Outages.START_A else alertPrefs.outageA(address)
     private val history = HistoryStore.get(host)
     private val demo = DemoLink.sceneOf(address)
     private var link: BatteryLink? = null
@@ -1181,7 +1184,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             out += oc
             return out
         }
-        val outages = Outages.find(pts)
+        val outages = Outages.find(pts, outageA()) // T85: свій поріг батареї
         if (outages.isEmpty()) {
             oc.addView(ui.muted(tr("За ${INSIGHT_DAYS} днів у записаній історії відключень не знайдено. Застосунок помічає їх сам: батарея " +
                 "кілька хвилин віддає струм — світла нема; знову заряджається чи стоїть — світло є. Записується, поки застосунок відкритий, " +
@@ -1619,6 +1622,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
         }
         card.addView(ui.grid(toggles, perRow = 1), ui.matchWrap())
+        card.addView(outageSection(), ui.matchWrap())
         if (demo == null) {
             card.addView(ui.iconButton(LineIcon.BELL, tr("Перевірити сповіщення", "Test notifications"), Ui.Kind.NORMAL) {
                 host.requestNotifications()
@@ -1629,6 +1633,31 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         card.addView(ui.muted(tr("Кожне — один раз, доки стан не мине. Захист «перезаряд комірки» наприкінці заряду — це «Батарея повна», не тривога.",
             "Each comes once, until the state passes. The \"cell overcharge\" protection at the end of charge means \"Battery full\", not an alarm."), 12.5f))
         return card
+    }
+
+    /**
+     * T85 (faric 25.10 20:01, мамин сторож «бот бреше»): коли вважати, що світла нема. Повна батарея віддає трохи (інвертор
+     * живиться від неї) — не відключення; свій поріг для кожної батареї; при 98 % і більше — щонайменше 2 А.
+     */
+    private fun outageSection(): View {
+        val box = ui.column(8).apply { setPadding(0, ui.dp(6), 0, 0) }
+        box.addView(ui.divider(), ui.matchWrap())
+        box.addView(ui.text(tr("Коли «світла нема»", "When it is \"no power\""), 15f, Palette.text, medium = true))
+        box.addView(ui.muted(tr(
+            "Батарея віддає більше, ніж вибрано, кілька хвилин — «Світло зникло». Повна батарея (98 % і більше) — щонайменше 2 А: після заряду інвертор часто живиться від батареї, хоч світло є.",
+            "The battery gives more than the chosen value for a few minutes — \"Power outage\". A full battery (98 % and more) — at least 2 A: after charging the inverter often runs on the battery even with power on.",
+        ), 13f))
+        val cur = outageA()
+        val chips = Outages.CHOICES.map { a ->
+            ui.choice(tr("понад ", "over ") + Fmt.num(a, if (a % 1.0 == 0.0) 0 else 1) + " " + Fmt.A, a == cur) {
+                if (demo == null && a != cur) {
+                    alertPrefs.setOutageA(address, a)
+                    render()
+                }
+            }
+        }
+        box.addView(ui.grid(chips, perRow = 2), ui.matchWrap())
+        return box
     }
 
     /**
@@ -1887,9 +1916,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         val s = snapshot ?: stale?.first
         val at = if (snapshot != null) snapshotAt else stale?.second
-        add(tr("Великий 4 × 2", "Large 4 × 2"), WidgetModel.of(title, s, at, now), 320, 160)
-        add(tr("Малий 2 × 2", "Small 2 × 2"), WidgetModel.of(title, s, at, now), 160, 160)
-        add(tr("Нема даних 2 год", "No data 2 h"), WidgetModel.of(title, s, (at ?: now) - 2 * 3_600_000L, now), 320, 160)
+        add(tr("Великий 4 × 2", "Large 4 × 2"), WidgetModel.of(title, s, at, now, outageA = outageA()), 320, 160)
+        add(tr("Малий 2 × 2", "Small 2 × 2"), WidgetModel.of(title, s, at, now, outageA = outageA()), 160, 160)
+        add(tr("Нема даних 2 год", "No data 2 h"), WidgetModel.of(title, s, (at ?: now) - 2 * 3_600_000L, now, outageA = outageA()), 320, 160)
         add(tr("Ще не було зв'язку", "Never connected"), WidgetModel.of(title, null, null, now), 160, 160)
         val dlg = host.overlay.dialog(
             tr("Віджет", "Widget"), "",
@@ -1910,10 +1939,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         val s = snapshot ?: stale?.first
         val at = if (snapshot != null) snapshotAt else stale?.second
         val bmp = if (look == "grid") {
-            GuardArt.grid(host, listOf(Guard.Seen(title, s, at), Guard.Seen(tr("Дача", "Cottage"), s, (at ?: now) - 3 * 3_600_000L),
+            GuardArt.grid(host, listOf(Guard.Seen(title, s, at, outageA()), Guard.Seen(tr("Дача", "Cottage"), s, (at ?: now) - 3 * 3_600_000L),
                 Guard.Seen("Logic Power", null, null)), now)
         } else {
-            GuardArt.battery(host, GuardPicture.Look.of(look) ?: GuardPicture.DEFAULT, title, s, at, now)
+            GuardArt.battery(host, GuardPicture.Look.of(look) ?: GuardPicture.DEFAULT, title, s, at, now, outageA())
         } ?: return
         val img = ImageView(host).apply {
             setImageBitmap(bmp)

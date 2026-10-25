@@ -132,7 +132,10 @@ object Guard {
 
     // ---------- новий знімок ----------
 
-    fun onSnapshot(st: State, s: BatterySnapshot, t: Long, battery: String, tz: TimeZone = TimeZone.getDefault()): Step {
+    fun onSnapshot(
+        st: State, s: BatterySnapshot, t: Long, battery: String, tz: TimeZone = TimeZone.getDefault(),
+        outageA: Double = Outages.START_A,
+    ): Step {
         val out = ArrayList<Msg>()
         var n = st
         if (n.noData) {
@@ -141,7 +144,7 @@ object Guard {
             out += Msg(Kind.NO_DATA, tr("Знову бачу батарею", "I can see the battery again"), gap + short(s), battery)
             n = n.copy(noData = false, seenAgainAt = t)
         }
-        val a = Alerts.onSnapshot(n.alerts, s, t, tz)
+        val a = Alerts.onSnapshot(n.alerts, s, t, tz, outageA) // T85: свій поріг «світла нема»
         n = n.copy(alerts = a.state)
         var lowSaid = false
         for (e in a.events) {
@@ -301,7 +304,7 @@ object Guard {
     }
 
     /** Що відомо про одну батарею для «я працюю» і «/стан». */
-    data class Seen(val name: String, val snapshot: BatterySnapshot?, val at: Long?)
+    data class Seen(val name: String, val snapshot: BatterySnapshot?, val at: Long?, val outageA: Double = Outages.START_A)
 
     fun daily(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault()): Msg =
         Msg(Kind.DAILY, tr("Сторож працює · ${Background.hhmm(now, tz)}", "The guard is working · ${Background.hhmm(now, tz)}"),

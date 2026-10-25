@@ -48,7 +48,7 @@ object Notifier {
         if (prev != null && atMs - prev in 0 until EVERY_MS) return
         lastRun[key] = atMs
         val settings = AlertSettings(ctx)
-        val step = Alerts.onSnapshot(settings.state(address), s, atMs)
+        val step = Alerts.onSnapshot(settings.state(address), s, atMs, outageA = settings.outageA(address)) // T85
         settings.save(address, step.state)
         post(ctx, address, step.events)
         chargeBar(ctx, address, s)

@@ -29,11 +29,15 @@ class AlertsTest {
     )
 
     /** Прогнати знімки по черзі; повертає стан і всі події. */
-    private fun run(vararg pts: Pair<Long, BatterySnapshot>, from: Alerts.State = Alerts.State()): Pair<Alerts.State, List<Alerts.Event>> {
+    private fun run(
+        vararg pts: Pair<Long, BatterySnapshot>,
+        from: Alerts.State = Alerts.State(),
+        outageA: Double = Outages.START_A,
+    ): Pair<Alerts.State, List<Alerts.Event>> {
         var st = from
         val all = ArrayList<Alerts.Event>()
         for ((t, s) in pts) {
-            val step = Alerts.onSnapshot(st, s, t, kyiv)
+            val step = Alerts.onSnapshot(st, s, t, kyiv, outageA)
             st = step.state
             all += step.events
         }
@@ -43,6 +47,38 @@ class AlertsTest {
     private fun kinds(ev: List<Alerts.Event>) = ev.map { it.kind }
 
     // ---------- світло ----------
+
+    @Test
+    fun fullBatterySmallDrawIsNotOutage() {
+        // T85 (/diag мами 25.10 19:48): 19:16–19:48 при 100 % віддає 1,30 → 1,14 А — інвертор від батареї, світло є.
+        val (st, ev) = run(
+            t0 to snap(current = -1.30, soc = 100), t0 + 5 * min to snap(current = -1.30, soc = 100),
+            t0 + 15 * min to snap(current = -1.14, soc = 100), t0 + 30 * min to snap(current = -1.14, soc = 100),
+            t0 + 32 * min to snap(current = 0.0, soc = 100), t0 + 37 * min to snap(current = 0.0, soc = 100),
+        )
+        assertFalse(kinds(ev).contains(Alerts.Kind.OUTAGE))
+        assertFalse(st.outage)
+    }
+
+    @Test
+    fun realOutageAtFullBatteryStillCounts() {
+        // 15:45 у мами: 99 %, віддає 5 А — справжнє відключення; 2,43 А теж понад 2 А.
+        val (_, ev) = run(t0 to snap(current = -5.03, soc = 99), t0 + 5 * min to snap(current = -5.03, soc = 99))
+        assertEquals(listOf(Alerts.Kind.OUTAGE), kinds(ev))
+        val (_, ev2) = run(t0 to snap(current = -2.43, soc = 99), t0 + 5 * min to snap(current = -2.43, soc = 99))
+        assertEquals(listOf(Alerts.Kind.OUTAGE), kinds(ev2))
+    }
+
+    @Test
+    fun ownThresholdPerBattery() {
+        // Б: свій поріг 2 А — 1,5 А при 60 % не відключення; за замовчуванням (0,5 А) — відключення.
+        val pts = arrayOf(t0 to snap(current = -1.5, soc = 60), t0 + 5 * min to snap(current = -1.5, soc = 60))
+        assertFalse(kinds(run(*pts, outageA = 2.0).second).contains(Alerts.Kind.OUTAGE))
+        assertEquals(listOf(Alerts.Kind.OUTAGE), kinds(run(*pts).second))
+        // поріг 3 А діє й для повної батареї (більший за 2 А)
+        val full = arrayOf(t0 to snap(current = -2.43, soc = 100), t0 + 5 * min to snap(current = -2.43, soc = 100))
+        assertFalse(kinds(run(*full, outageA = 3.0).second).contains(Alerts.Kind.OUTAGE))
+    }
 
     @Test
     fun outageNeedsTwoReadingsThreeMinutesApart() {
