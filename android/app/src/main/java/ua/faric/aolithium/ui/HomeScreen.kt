@@ -12,6 +12,7 @@ import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.UpdateFeature
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.Batteries
+import ua.faric.aolithium.data.SignalStore
 
 /**
  * Головна: що дозволити (якщо чогось бракує), «Мої батареї», «Шукати поруч», унизу — «Оновлення застосунку»
@@ -125,8 +126,13 @@ class HomeScreen(host: MainActivity, state: Bundle?) : Screen(host), BleScanner.
                 "None yet. Tap \"Find batteries nearby\" and pick yours (in Aolithium it is named like \"AL12-100-4S…\").",
             ), 14f))
         }
+        val signals = SignalStore(host)
+        val now = System.currentTimeMillis()
         for (b in list) {
-            card.addView(batteryRow(b.title, kindLine(b.kind, b.address)) { host.openBattery(b.address) }, ui.matchWrap())
+            // T81 (faric 25.10): під кожною батареєю — останній сигнал з ефіру (фонове слухання чи пошук) і коли.
+            val s = if (b.address.startsWith("demo:")) null else signals.get(b.address)
+            val sub = kindLine(b.kind, b.address) + "\n" + Signal.seen(s?.rssi, s?.at, now)
+            card.addView(batteryRow(b.title, sub) { host.openBattery(b.address) }, ui.matchWrap())
         }
         savedBox.addView(card, ui.matchWrap())
     }

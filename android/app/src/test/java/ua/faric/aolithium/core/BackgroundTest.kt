@@ -85,4 +85,67 @@ class BackgroundTest {
         assertFalse(Background.readOnUnlock(lastTickAt = t - 30_000L, now = t, busy = false))
         assertFalse(Background.readOnUnlock(lastTickAt = t - 5 * 60_000L, now = t, busy = true))
     }
+
+    // ---------- T81: причини й «ловити момент» ----------
+
+    @Test
+    fun reasonsAreConcrete() {
+        assertEquals("NO_REPLY", Background.why(seen = true, rssi = -70, connected = true))
+        assertEquals("NOT_SEEN", Background.why(seen = false, rssi = null, connected = false))
+        assertEquals("WEAK:-94", Background.why(seen = true, rssi = -94, connected = false))
+        assertEquals("NO_CONNECT:-75", Background.why(seen = true, rssi = -75, connected = false))
+        assertEquals("батарею видно, але сигнал слабкий (-94 dBm) — далеко або стіна", Background.Skip.localize("WEAK:-94"))
+        assertTrue(Background.Skip.localize("NOT_SEEN").startsWith("батареї не видно в ефірі"))
+        assertTrue(Background.Skip.localize("NO_CONNECT:-75").contains("(-75 dBm)"))
+        // старий запис і незнайомий текст — як було
+        assertEquals(Background.Skip.NO_ANSWER.text, Background.Skip.localize("NO_ANSWER"))
+        assertEquals("щось своє", Background.Skip.localize("щось своє"))
+        assertTrue(Background.Skip.isNoLink("WEAK:-94"))
+        assertTrue(Background.Skip.isNoLink("NO_ANSWER"))
+        assertFalse(Background.Skip.isNoLink("SCREEN_OPEN"))
+        assertFalse(Background.Skip.isNoLink("LOCATION_OFF"))
+    }
+
+    @Test
+    fun locationOffIsAReason() {
+        assertEquals(Background.Skip.LOCATION_OFF, Background.decide(false, permissionOk = true, bluetoothOn = true, locationOn = false))
+        assertNull(Background.decide(false, permissionOk = true, bluetoothOn = true, locationOn = true))
+    }
+
+    @Test
+    fun catchOnlyWhenDataIsOldAndSignalGood() {
+        val min = 60_000L
+        // даних нема 47 хв, сигнал −80 — читати
+        assertTrue(Background.shouldCatch(at, -80, at - 47 * min, 0L, busy = false))
+        // ще ні разу не читали — теж
+        assertTrue(Background.shouldCatch(at, -80, null, 0L, busy = false))
+        // дані свіжі (4 хв) — розклад сам прочитає
+        assertFalse(Background.shouldCatch(at, -80, at - 4 * min, 0L, busy = false))
+        // сигнал надто слабкий
+        assertFalse(Background.shouldCatch(at, -95, at - 47 * min, 0L, busy = false))
+        assertTrue(Background.shouldCatch(at, -90, at - 47 * min, 0L, busy = false))
+        // щойно пробували — почекати
+        assertFalse(Background.shouldCatch(at, -80, at - 47 * min, at - min, busy = false))
+        // уже читаємо
+        assertFalse(Background.shouldCatch(at, -80, at - 47 * min, 0L, busy = true))
+    }
+
+    @Test
+    fun sightingLogIsThrottled() {
+        val min = 60_000L
+        assertTrue(Background.logSighting(at, 0L, -80, null))
+        assertFalse(Background.logSighting(at, at - min, -81, -80))
+        assertTrue(Background.logSighting(at, at - 6 * min, -81, -80))
+        // рівень змінився (середній → слабкий) — одразу
+        assertTrue(Background.logSighting(at, at - min, -92, -80))
+    }
+
+    @Test
+    fun signalLineForMyBatteries() {
+        val min = 60_000L
+        assertEquals("сигнал: ще не бачив у ефірі", Signal.seen(null, null, at, kyiv))
+        assertEquals("сигнал -78 dBm, середній · щойно", Signal.seen(-78, at - 20_000L, at, kyiv))
+        assertEquals("сигнал -65 dBm, сильний · 3 хв тому", Signal.seen(-65, at - 3 * min, at, kyiv))
+        assertEquals("у ефірі не видно з 04:15", Signal.seen(-78, at - 20 * min, at, kyiv))
+    }
 }

@@ -6,6 +6,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,6 +23,7 @@ import android.os.Looper
 import android.os.PowerManager
 import ua.faric.aolithium.R
 import ua.faric.aolithium.ble.BatteryLink
+import ua.faric.aolithium.ble.BleScanner
 import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.ble.LinkHolder
 import ua.faric.aolithium.ble.LinkLog
@@ -32,6 +37,7 @@ import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.guard.GuardRunner
 import ua.faric.aolithium.data.HistoryStore
 import ua.faric.aolithium.data.LastSnapshot
+import ua.faric.aolithium.data.SignalStore
 import ua.faric.aolithium.ui.MainActivity
 import ua.faric.aolithium.widget.Widgets
 
@@ -57,6 +63,10 @@ class RecordService : Service() {
     @Volatile private var busy = false
     private val fallbackTick = Runnable { tick() }
     private val readTimeout = Runnable { finishRead(null, Background.Skip.NO_ANSWER.name) }
+
+    /** T81: коли почали поточне читання й чи дійшли до підключення — щоб назвати конкретну причину невдачі. */
+    private var readStartedAt = 0L
+    private var readConnected = false
 
     /** T55: скільки тіків поспіль не дістали батарею (лише в пам'яті). */
     private var failStreak = 0
@@ -124,6 +134,7 @@ class RecordService : Service() {
                 if (due || intent?.action == ACTION_TICK) tick() else schedule()
             }
         }
+        ensureWatch()
         return START_STICKY
     }
 
@@ -138,6 +149,7 @@ class RecordService : Service() {
             }
         }
         h.removeCallbacksAndMessages(null)
+        stopWatch()
         link?.let { it.listener = null; it.stop() }
         link = null
         Wake.release()
@@ -243,6 +255,10 @@ class RecordService : Service() {
         busy = true
         tickFailed = false
         GuardRunner.ensure(this)
+        // T81: слухання ефіру могло тихо зупинитись (Bluetooth вимикали) — раз на пів години перезапустити.
+        if (!BtAccess.bluetoothOn(this)) stopWatch()
+        else if (System.currentTimeMillis() - watchStartedAt > WATCH_RESTART_MS) stopWatch()
+        ensureWatch()
         settings.lastTickAt = System.currentTimeMillis()
         schedule()
         Wake.hold(this, Background.READ_TIMEOUT_MS * list.size + 30_000L)
@@ -270,6 +286,7 @@ class RecordService : Service() {
             screenHoldsIt = LinkHolder.holds(addr),
             permissionOk = BtAccess.missingPermissions(this).isEmpty(),
             bluetoothOn = BtAccess.bluetoothOn(this),
+            locationOn = BtAccess.locationOn(this),
         )
         if (skip != null) {
             val short = BmsMatch.shortAddress(addr)
@@ -278,14 +295,18 @@ class RecordService : Service() {
             settings.saveResult(addr, Background.Result(System.currentTimeMillis(), ok = false, note = skip.name))
             // Екран сам пише й сповіщає; а без Bluetooth чи дозволу — даних нема, як і коли батарея далеко.
             if (skip != Background.Skip.SCREEN_OPEN) Notifier.onNoData(this, addr, System.currentTimeMillis())
+            if (skip == Background.Skip.LOCATION_OFF) tickFailed = true
             h.post { readNext() }
             return
         }
         val l = LinkHolder.create(this, addr, quick = true)
         link = l
         linkAddress = addr
+        readStartedAt = System.currentTimeMillis()
+        readConnected = false
         l.listener = object : BatteryLink.Listener {
             override fun onStatus(status: LinkStatus) {
+                if (status.phase == LinkStatus.Phase.READING || status.phase == LinkStatus.Phase.LIVE) readConnected = true
                 if (status.phase == LinkStatus.Phase.FAILED || status.phase == LinkStatus.Phase.NO_ANSWER) {
                     finishRead(null, Background.Skip.NO_ANSWER.name)
                 }
@@ -318,10 +339,17 @@ class RecordService : Service() {
             Notifier.onSnapshot(this, addr, s, atMs)
             Widgets.onData(this, fromScreen = false)
         } else {
-            settings.saveResult(addr, Background.Result(atMs, ok = false, note = note))
-            if (note == Background.Skip.NO_ANSWER.name) tickFailed = true
+            // T81: замість «нема зв'язку» — чому саме: не видно в ефірі / слабкий сигнал / не підключається / плата мовчить.
+            val reason = if (note == Background.Skip.NO_ANSWER.name) {
+                val key = addr.uppercase()
+                val seenAt = BleScanner.seenAt.entries.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value ?: 0L
+                val rssi = BleScanner.lastRssi.entries.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value
+                Background.why(seen = seenAt >= readStartedAt - SEEN_BEFORE_MS, rssi = rssi, connected = readConnected)
+            } else note
+            settings.saveResult(addr, Background.Result(atMs, ok = false, note = reason))
+            if (Background.Skip.isNoLink(reason)) tickFailed = true
             val short = BmsMatch.shortAddress(addr)
-            val why = Background.Skip.localize(note)
+            val why = Background.Skip.localize(reason)
             LinkLog.add(tr("фон $short: $why", "background $short: $why"))
             Notifier.onNoData(this, addr, atMs)
             Widgets.onData(this, fromScreen = false)
@@ -345,7 +373,122 @@ class RecordService : Service() {
         h.postDelayed({ readNext() }, 1_500L)
     }
 
+    // ---------- T81: слухати ефір і ловити момент ----------
+
+    private var watching: Set<String> = emptySet()
+    private var watchStartedAt = 0L
+    private val lastCatchAt = HashMap<String, Long>()
+    private val lastSightLogAt = HashMap<String, Long>()
+    private val lastSightLogRssi = HashMap<String, Int>()
+
+    private val watchCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            h.post { onSighting(result) }
+        }
+
+        override fun onBatchScanResults(results: MutableList<ScanResult>) {
+            h.post { results.forEach { onSighting(it) } }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            h.post {
+                watching = emptySet()
+                LinkLog.add(tr("ефір: Android не дав слухати (код $errorCode) — спробую на наступному читанні",
+                    "air: Android did not let us listen (code $errorCode) — will retry on the next read"))
+            }
+        }
+    }
+
+    /**
+     * Тихо слухати ефір лише на свої батареї (фільтр за адресою — Android тоді шукає ощадливо й не вимикає пошук,
+     * коли екран погашено). Перезапускаємо лише коли змінився список батарей.
+     */
+    private fun ensureWatch() {
+        val want = settings.enabled().filterNot { it.startsWith("demo:") }
+            .map { it.uppercase() }
+            .filter { android.bluetooth.BluetoothAdapter.checkBluetoothAddress(it) }
+            .toSet()
+        if (want == watching) return
+        stopWatch()
+        if (want.isEmpty()) return
+        val ok = BtAccess.missingPermissions(this).isEmpty() && BtAccess.bluetoothOn(this)
+        if (!ok) return
+        val scanner = BtAccess.adapter(this)?.bluetoothLeScanner ?: return
+        val filters = want.map { ScanFilter.Builder().setDeviceAddress(it).build() }
+        val settingsLe = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build()
+        try {
+            scanner.startScan(filters, settingsLe, watchCallback)
+            watching = want
+            watchStartedAt = System.currentTimeMillis()
+            LinkLog.add(tr("ефір: слухаю свої батареї (${want.size}) — щойно з'явиться з добрим сигналом, прочитаю",
+                "air: listening for my batteries (${want.size}) — will read as soon as one appears with a good signal"))
+            if (!BtAccess.locationOn(this)) {
+                LinkLog.add(tr("ефір: геолокація вимкнена — на цьому Android без неї пошук нічого не бачить",
+                    "air: location is off — on this Android search sees nothing without it"))
+            }
+        } catch (e: SecurityException) {
+            LinkLog.add(tr("ефір: немає дозволу слухати", "air: no permission to listen"))
+        } catch (e: IllegalArgumentException) {
+            LinkLog.add(tr("ефір: Android не прийняв фільтр", "air: Android did not accept the filter"))
+        } catch (e: IllegalStateException) {
+            // Bluetooth вимкнули саме зараз
+        }
+    }
+
+    private fun stopWatch() {
+        if (watching.isEmpty()) return
+        watching = emptySet()
+        try {
+            BtAccess.adapter(this)?.bluetoothLeScanner?.stopScan(watchCallback)
+        } catch (e: SecurityException) {
+            // дозвіл забрали
+        } catch (e: IllegalStateException) {
+            // Bluetooth вимкнули
+        }
+    }
+
+    /** Батарею почули в ефірі: запам'ятати сигнал (для «Моїх батарей»), записати в журнал, а якщо даних давно нема — прочитати. */
+    private fun onSighting(r: ScanResult) {
+        val device = r.device ?: return
+        val addr = device.address ?: return
+        val now = System.currentTimeMillis()
+        BleScanner.seen[addr] = device
+        BleScanner.seenAt[addr] = now
+        BleScanner.lastRssi[addr] = r.rssi
+        SignalStore(this).save(addr, r.rssi, now)
+        val key = addr.uppercase()
+        val short = BmsMatch.shortAddress(addr)
+        if (Background.logSighting(now, lastSightLogAt[key] ?: 0L, r.rssi, lastSightLogRssi[key])) {
+            lastSightLogAt[key] = now
+            lastSightLogRssi[key] = r.rssi
+            LinkLog.add(tr("ефір $short: бачу батарею, сигнал ${ua.faric.aolithium.core.Signal.describe(r.rssi)}",
+                "air $short: I see the battery, signal ${ua.faric.aolithium.core.Signal.describe(r.rssi)}"))
+        }
+        val enabledAddr = settings.enabled().firstOrNull { it.equals(addr, ignoreCase = true) } ?: return
+        if (LinkHolder.holds(enabledAddr)) return
+        val last = settings.result(enabledAddr)
+        val lastOk = LastSnapshot(this).load(enabledAddr)?.second ?: last?.takeIf { it.ok }?.at
+        if (!Background.shouldCatch(now, r.rssi, lastOk, lastCatchAt[key] ?: 0L, busy)) return
+        lastCatchAt[key] = now
+        val gone = lastOk?.let { " " + tr("(даних нема ${(now - it) / 60_000L} хв)", "(no data for ${(now - it) / 60_000L} min)") } ?: ""
+        LinkLog.add(tr("ефір $short: батарея з'явилась з сигналом ${r.rssi} dBm$gone — читаю одразу",
+            "air $short: the battery appeared with ${r.rssi} dBm$gone — reading right away"))
+        readOnly(enabledAddr)
+    }
+
+    /** Прочитати одну батарею поза розкладом (розклад раз на 5 хв не зсуваємо). */
+    private fun readOnly(address: String) {
+        if (busy) return
+        busy = true
+        tickFailed = false
+        Wake.hold(this, Background.READ_TIMEOUT_MS + 30_000L)
+        queue.clear()
+        queue.add(address)
+        readNext()
+    }
+
     private fun stopEverything() {
+        stopWatch()
         h.removeCallbacksAndMessages(null)
         link?.let { it.listener = null; it.stop() }
         link = null
@@ -371,6 +514,10 @@ class RecordService : Service() {
             nm.createNotificationChannel(ch)
         }
         const val NOTE_ID = 5
+
+        /** T81: побачили батарею в ефірі незадовго до спроби — теж «видно» (пошук перед підключенням міг її вже не застати). */
+        private const val SEEN_BEFORE_MS = 2 * 60_000L
+        private const val WATCH_RESTART_MS = 30 * 60_000L
         const val ACTION_TICK = "ua.faric.aolithium.bg.TICK"
         const val ACTION_REFRESH = "ua.faric.aolithium.bg.REFRESH"
         const val ACTION_STOP = "ua.faric.aolithium.bg.STOP"

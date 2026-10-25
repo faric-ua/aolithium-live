@@ -49,4 +49,20 @@ object Signal {
 
     /** «−97 dBm, слабкий» — коротко, щоб влазило в рядок. */
     fun describe(rssi: Int): String = "$rssi dBm, ${level(rssi).title}"
+
+    /** T81: старше за це — «у ефірі не видно з …», а не сигнал. */
+    const val FRESH_MS = 15 * 60_000L
+
+    /**
+     * T81 (faric 25.10: «я бачу список батарей, але силу сигналу не бачу»): рядок під батареєю в «Моїх батареях» —
+     * останній сигнал з фонового слухання ефіру чи пошуку. [rssi]/[at] — null, якщо ще не бачили.
+     */
+    fun seen(rssi: Int?, at: Long?, now: Long, tz: java.util.TimeZone = java.util.TimeZone.getDefault()): String {
+        if (rssi == null || at == null || at <= 0) return tr("сигнал: ще не бачив у ефірі", "signal: not seen on the air yet")
+        val ago = now - at
+        if (ago >= FRESH_MS) return tr("у ефірі не видно з ${Alerts.at(at, now, tz)}", "not on the air since ${Alerts.at(at, now, tz)}")
+        val min = (ago / 60_000L).toInt()
+        val whenText = if (min < 1) tr("щойно", "just now") else tr("$min хв тому", "$min min ago")
+        return tr("сигнал ${describe(rssi)} · $whenText", "signal ${describe(rssi)} · $whenText")
+    }
 }

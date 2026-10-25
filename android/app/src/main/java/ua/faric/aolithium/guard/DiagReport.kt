@@ -5,13 +5,17 @@ import android.os.Build
 import ua.faric.aolithium.BuildConfig
 import ua.faric.aolithium.ble.DiagFrames
 import ua.faric.aolithium.ble.LinkLog
+import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.core.Alerts
+import ua.faric.aolithium.core.Background
+import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.GuardSettings
 import ua.faric.aolithium.data.LastSnapshot
+import ua.faric.aolithium.data.SignalStore
 
 /**
  * T64: зібрати «Дані для перевірки» на цьому телефоні — для бота (/diag) і для кнопки в «Журналі зв'язку».
@@ -40,7 +44,20 @@ object DiagReport {
                 requestedBy = requestedBy,
                 fresh = fresh,
                 outage = b?.let { Alerts.describe(GuardSettings(app).state(it.address).alerts, now) },
+                air = b?.let { air(app, it.address, now) }.orEmpty(),
             ),
+        )
+    }
+
+    /** T81: що телефон чув в ефірі й чому фон останній раз не дістав батарею. */
+    private fun air(ctx: Context, address: String, now: Long): List<String> {
+        val s = SignalStore(ctx).get(address)
+        val r = BgSettings(ctx).result(address)
+        return listOf(
+            Signal.seen(s?.rssi, s?.at, now),
+            "останнє читання фону: " + Background.status(r) + (r?.note?.takeIf { it.isNotBlank() }?.let { " [$it]" } ?: ""), // uk-only: файл для Claude
+            "геолокація: " + (if (BtAccess.locationNeeded) (if (BtAccess.locationOn(ctx)) "увімкнена" else "ВИМКНЕНА") else "не потрібна (Android 12+)"), // uk-only: файл для Claude
+            "Bluetooth: " + (if (BtAccess.bluetoothOn(ctx)) "увімкнено" else "ВИМКНЕНО"), // uk-only: файл для Claude
         )
     }
 

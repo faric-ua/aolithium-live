@@ -12,6 +12,7 @@ import ua.faric.aolithium.ble.LinkLog
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Diag
+import ua.faric.aolithium.core.Background
 import ua.faric.aolithium.core.Guard
 import ua.faric.aolithium.core.GuardBot
 import ua.faric.aolithium.core.GuardPicture
@@ -115,7 +116,10 @@ object GuardRunner {
             val st = GuardSettings(app)
             val lastOk = listOfNotNull(BgSettings(app).result(address)?.takeIf { it.ok }?.at, LastSnapshot(app).load(address)?.second).maxOrNull()
             val nm = name(app, address)
-            val step = Guard.onNoData(st.state(address), lastOk, now, nm)
+            // T81: у повідомленні — конкретна причина останньої невдачі (не видно в ефірі / слабкий сигнал / …).
+            val reason = BgSettings(app).result(address)?.takeIf { !it.ok && it.note.isNotBlank() }?.note
+                ?.let { Background.Skip.localize(it) }
+            val step = Guard.onNoData(st.state(address), lastOk, now, nm, reason = reason)
             if (step.messages.isNotEmpty()) {
                 st.save(address, step.state)
                 val last = LastSnapshot(app).load(address)

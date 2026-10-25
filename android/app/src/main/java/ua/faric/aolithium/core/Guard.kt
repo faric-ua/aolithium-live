@@ -164,15 +164,18 @@ object Guard {
     }
 
     /** Сторож не дістав батарею. [lastOkAt] — останній знімок звідки завгодно; null — ще не було. */
-    fun onNoData(st: State, lastOkAt: Long?, now: Long, battery: String, tz: TimeZone = TimeZone.getDefault()): Step {
+    /** [reason] — T81: остання конкретна причина (`Background.Skip.localize`), null — загальний текст. */
+    fun onNoData(st: State, lastOkAt: Long?, now: Long, battery: String, tz: TimeZone = TimeZone.getDefault(), reason: String? = null): Step {
         if (lastOkAt == null || st.noData || now - lastOkAt < NO_DATA_MS) return Step(st, emptyList())
         // T56: щойно казали «знову бачу» — ще почекати: на межі дальності батарея то зникає, то з'являється.
         if (st.seenAgainAt > 0 && now - st.seenAgainAt in 0 until NO_DATA_AGAIN_MS) return Step(st, emptyList())
-        val m = Msg(Kind.NO_DATA, tr("Сторож не бачить батарею з ${Background.hhmm(lastOkAt, tz)}",
-                "The guard has not seen the battery since ${Background.hhmm(lastOkAt, tz)}"), tr(
+        val text = if (reason != null) tr("Причина: $reason. Напишу, щойно побачу знову.", "Reason: $reason. I will write when I see it again.")
+        else tr(
             "Bluetooth не дістає: батарею вимкнули, вона зайнята іншим телефоном, або сторож далеко. Напишу, щойно побачу знову.",
             "Bluetooth cannot reach it: the battery is off, another phone is using it, or the guard is far. I will write when I see it again.",
-        ), battery)
+        )
+        val m = Msg(Kind.NO_DATA, tr("Сторож не бачить батарею з ${Alerts.at(lastOkAt, now, tz)}",
+                "The guard has not seen the battery since ${Alerts.at(lastOkAt, now, tz)}"), text, battery)
         return Step(st.copy(noData = true, lostSince = lastOkAt), listOf(m))
     }
 
