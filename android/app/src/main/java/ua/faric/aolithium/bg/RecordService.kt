@@ -256,9 +256,8 @@ class RecordService : Service() {
         tickFailed = false
         GuardRunner.ensure(this)
         // T81: слухання ефіру могло тихо зупинитись (Bluetooth вимикали) — раз на пів години перезапустити.
-        if (!BtAccess.bluetoothOn(this)) stopWatch()
-        else if (System.currentTimeMillis() - watchStartedAt > WATCH_RESTART_MS) stopWatch()
-        ensureWatch()
+        // T82: на час читання слухання все одно ставимо на паузу (readNext), а вмикаємо після.
+        if (!BtAccess.bluetoothOn(this) || System.currentTimeMillis() - watchStartedAt > WATCH_RESTART_MS) stopWatch()
         settings.lastTickAt = System.currentTimeMillis()
         schedule()
         Wake.hold(this, Background.READ_TIMEOUT_MS * list.size + 30_000L)
@@ -271,6 +270,8 @@ class RecordService : Service() {
         val addr = queue.removeFirstOrNull()
         if (addr == null) {
             busy = false
+            // T82: читання скінчилось — знову слухати ефір (з паузою: Android'у треба закрити підключення).
+            h.postDelayed({ ensureWatch() }, 2_000L)
             finishedReads++ // T73: /diag бачить, що читання на його запит скінчилось (вдало чи ні)
             // T55: не дістали — наступна спроба раніше (до двох разів поспіль), дістали — знову раз на 5 хв.
             failStreak = if (tickFailed) failStreak + 1 else 0
@@ -299,6 +300,10 @@ class RecordService : Service() {
             h.post { readNext() }
             return
         }
+        // T82 (/diag мами 25.10 15:40): поки йшло слухання ефіру, батарею з −58 dBm не вдавалось підключити жодного разу,
+        // а пошук перед підключенням «не бачив» її, хоч слухання бачило щосекунди. На багатьох телефонах (Android 10)
+        // постійний пошук заважає підключенню й другому пошуку — тож на час читання слухання на паузі.
+        stopWatch()
         val l = LinkHolder.create(this, addr, quick = true)
         link = l
         linkAddress = addr
@@ -404,6 +409,8 @@ class RecordService : Service() {
      * коли екран погашено). Перезапускаємо лише коли змінився список батарей.
      */
     private fun ensureWatch() {
+        // T82: не слухати, поки читаємо самі чи відкритий екран батареї (він тримає підключення).
+        if (busy || LinkHolder.active) return
         val want = settings.enabled().filterNot { it.startsWith("demo:") }
             .map { it.uppercase() }
             .filter { android.bluetooth.BluetoothAdapter.checkBluetoothAddress(it) }
@@ -470,7 +477,10 @@ class RecordService : Service() {
         val lastOk = LastSnapshot(this).load(enabledAddr)?.second ?: last?.takeIf { it.ok }?.at
         if (!Background.shouldCatch(now, r.rssi, lastOk, lastCatchAt[key] ?: 0L, busy)) return
         lastCatchAt[key] = now
-        val gone = lastOk?.let { " " + tr("(даних нема ${(now - it) / 60_000L} хв)", "(no data for ${(now - it) / 60_000L} min)") } ?: ""
+        val gone = lastOk?.let {
+            val d = ua.faric.aolithium.core.Fmt.duration((now - it) / 3_600_000.0)
+            " " + tr("(даних нема $d)", "(no data for $d)")
+        } ?: ""
         LinkLog.add(tr("ефір $short: батарея з'явилась з сигналом ${r.rssi} dBm$gone — читаю одразу",
             "air $short: the battery appeared with ${r.rssi} dBm$gone — reading right away"))
         readOnly(enabledAddr)
@@ -580,6 +590,7 @@ class RecordService : Service() {
         /** Кличе `LinkHolder`, коли відкривають екран батареї. Головний потік. */
         fun yieldTo(address: String) {
             instance?.cancelFor(address)
+            instance?.stopWatch() // T82: екран підключається — слухання ефіру не заважає
         }
     }
 }

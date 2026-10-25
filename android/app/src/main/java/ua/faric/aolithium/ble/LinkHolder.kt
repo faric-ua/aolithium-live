@@ -52,6 +52,9 @@ object LinkHolder {
     fun holds(address: String): Boolean =
         link?.let { it.address.equals(address, ignoreCase = true) && it.lastStatus.phase != LinkStatus.Phase.FAILED } == true
 
+    /** T82: екран батареї тримає якийсь зв'язок — запис у фоні не слухає ефір, щоб не заважати підключенню. */
+    val active: Boolean get() = link?.let { it.lastStatus.phase != LinkStatus.Phase.FAILED && it !is DemoLink } == true
+
     fun stopNow() {
         h.removeCallbacks(stopLater)
         link?.let {
