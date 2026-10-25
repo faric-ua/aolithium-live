@@ -185,4 +185,11 @@ class GuardTest {
         val r = Guard.Msg(Guard.Kind.OUTAGE, "Світло зникло", "Батарея віддає 320 Вт", "Aolithium").render()
         assertEquals("🔌 Світло зникло\n🔋 Aolithium\nБатарея віддає 320 Вт", r)
     }
+
+    @Test fun no_data_names_the_reason() {
+        // T81: у повідомленні сторожа — конкретна причина
+        val gone = Guard.onNoData(Guard.State(), t0, t0 + 31 * min, "A", kyiv, reason = Background.Skip.localize("WEAK:-94"))
+        val m = gone.messages.single()
+        assertTrue(m.text, m.text.startsWith("Причина: батарею видно, але сигнал слабкий (-94 dBm)"))
+    }
 }

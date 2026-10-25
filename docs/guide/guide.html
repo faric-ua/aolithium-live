@@ -733,14 +733,18 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </div>
   </div>
   <ul class="dots uk">
-    <li><b>Лише поруч з батареєю:</b> Bluetooth дістає кілька метрів. Далеко — у шторці «нема зв'язку — батарея далеко», нічого не пишеться.</li>
+    <li><b>Лише поруч з батареєю:</b> Bluetooth дістає кілька метрів. Далеко — нічого не пишеться, а в шторці й «Журналі зв'язку» — <b>чому саме</b>: «батареї не видно в ефірі», «видно, але сигнал слабкий (−94 dBm)», «видно, але не підключається», «підключився, але плата не відповіла», «геолокація вимкнена».</li>
+    <li><b>Ловить момент:</b> між читаннями телефон тихо слухає ефір лише на свої батареї (найощадливіший режим). Якщо даних нема 10+ хв, а батарея з'явилась з добрим сигналом (ти пройшов поруч) — читає одразу, не чекаючи 5 хв, і оновлює віджет.</li>
+    <li><b>Сигнал у «Моїх батареях»:</b> під кожною батареєю — останній сигнал і коли («сигнал −78 dBm, середній · 2 хв тому») або «у ефірі не видно з 15:24».</li>
     <li><b>Не вийшло — ще раз через 2 хв</b> (двічі поспіль), потім знову раз на 5 хв: на краю дальності друга спроба часто вдається, а коли телефон справді далеко, фон не ганяє Bluetooth зайвий раз.</li>
     <li>Після перезапуску телефона й після оновлення застосунку запис відновлюється сам.</li>
     <li>Перемикач — окремо для кожної батареї. Вимкнути — тут або кнопкою «Вимкнути» в шторці.</li>
     <li>У демо не працює — лише зі справжньою батареєю.</li>
   </ul>
   <ul class="dots en">
-    <li><b>Only near the battery:</b> Bluetooth reaches a few meters. Far away, the shade says "no connection — battery far away" and nothing is recorded.</li>
+    <li><b>Only near the battery:</b> Bluetooth reaches a few meters. Far away, nothing is recorded, and the shade and the "Connection log" say <b>exactly why</b>: "the battery is not on the air", "visible, but the signal is weak (−94 dBm)", "visible, but it does not connect", "connected, but the BMS did not reply", "location is off".</li>
+    <li><b>Catches the moment:</b> between reads the phone quietly listens to the air for your batteries only (the most power-saving mode). If there has been no data for 10+ min and the battery appears with a good signal (you walked by), it reads right away instead of waiting 5 min, and updates the widget.</li>
+    <li><b>Signal in "My batteries":</b> under each battery — the last signal and when ("signal −78 dBm, medium · 2 min ago") or "not on the air since 15:24".</li>
     <li><b>Failed — again in 2 min</b> (twice in a row), then every 5 min again: at the edge of range a second try often works, and when the phone is really far, background does not use Bluetooth for nothing.</li>
     <li>After a phone restart and after an app update, recording resumes by itself.</li>
     <li>The switch is per battery. Turn it off here or with the "Turn off" button in the shade.</li>
@@ -1346,6 +1350,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.27</b> · 25.10.2026</td><td>сигнал під кожною батареєю на головній; фон ловить момент, коли батарея з'являється в ефірі; конкретна причина, чому нема даних (журнал, шторка, сторож, /diag)</td></tr>
       <tr><td class="k"><b>0.4.26</b> · 23.10.2026</td><td>«Світло повернулось»: о котрій повернулось і з котрої не було; не сьогодні — з датою; після «телефон був далеко» — чесне «помітив о …»</td></tr>
       <tr><td class="k"><b>0.4.25</b> · 23.10.2026</td><td>«Номери» — табличкою: кожен номер своїм рядком, номери до правого краю</td></tr>
       <tr><td class="k"><b>0.4.24</b> · 23.10.2026</td><td>код доступу сторожа схований крапками; око праворуч показує код і номер, торкнись — скопіюється</td></tr>
@@ -1391,6 +1396,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.27</b> · 25.10.2026</td><td>signal under each battery on the home screen; background catches the moment the battery appears on the air; the exact reason for no data (log, shade, guard, /diag)</td></tr>
       <tr><td class="k"><b>0.4.26</b> · 23.10.2026</td><td>"Power restored": when it came back and since when it was gone; not today — with the date; after "the phone was far" — an honest "noticed at …"</td></tr>
       <tr><td class="k"><b>0.4.25</b> · 23.10.2026</td><td>"Numbers" as a small table: each number on its own row, numbers on the right edge</td></tr>
       <tr><td class="k"><b>0.4.24</b> · 23.10.2026</td><td>the guard access code is hidden with dots; the eye on the right shows the code and the number, tap to copy</td></tr>

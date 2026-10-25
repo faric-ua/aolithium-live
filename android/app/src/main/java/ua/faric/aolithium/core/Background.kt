@@ -37,9 +37,16 @@ object Background {
      * (за ~5 хв його замінить новий).
      */
     enum class Skip {
-        SCREEN_OPEN, NO_PERMISSION, BLUETOOTH_OFF, NO_ANSWER;
+        SCREEN_OPEN, NO_PERMISSION, BLUETOOTH_OFF, NO_ANSWER,
 
-        val text: String get() = when (this) {
+        /**
+         * T81 (faric 25.10: «щоб ти писав причину відсутності даних, конкретну»): замість одного «нема зв'язку» — чому саме.
+         * [LOCATION_OFF] — Android 8–11 без геолокації пошук мовчки нічого не бачить (мамин телефон — Android 10).
+         */
+        LOCATION_OFF, NOT_SEEN, WEAK, NO_CONNECT, NO_REPLY;
+
+        /** [arg] — для [WEAK] і [NO_CONNECT]: сигнал, dBm. */
+        fun text(arg: Int? = null): String = when (this) {
             SCREEN_OPEN -> tr("відкритий екран батареї сам записує", "the open battery screen records by itself")
             NO_PERMISSION -> tr("Android не дав дозволу на Bluetooth", "Android did not allow Bluetooth")
             BLUETOOTH_OFF -> tr("Bluetooth вимкнено", "Bluetooth is off")
@@ -47,21 +54,92 @@ object Background {
                 "нема зв'язку — батарея далеко чи зайнята іншим телефоном",
                 "no connection — battery far away or used by another phone",
             )
+            LOCATION_OFF -> tr(
+                "геолокація вимкнена — на Android 11 і старіших без неї пошук Bluetooth нічого не бачить",
+                "location is off — on Android 11 and older Bluetooth search sees nothing without it",
+            )
+            NOT_SEEN -> tr(
+                "батареї не видно в ефірі — телефон далеко, батарея вимкнена або з'єднана з іншим телефоном",
+                "the battery is not on the air — the phone is far, the battery is off or connected to another phone",
+            )
+            WEAK -> tr(
+                "батарею видно, але сигнал слабкий (${arg ?: "?"} dBm) — далеко або стіна",
+                "the battery is visible, but the signal is weak (${arg ?: "?"} dBm) — too far or a wall",
+            )
+            NO_CONNECT -> tr(
+                "батарею видно (${arg ?: "?"} dBm), але не підключається — Bluetooth телефона не дав з'єднання",
+                "the battery is visible (${arg ?: "?"} dBm), but it does not connect — the phone's Bluetooth refused",
+            )
+            NO_REPLY -> tr("підключився, але плата не відповіла", "connected, but the BMS did not reply")
         }
 
+        /** Без числа — як було (T12: getter, щоб після перемикання мови — новою мовою). */
+        val text: String get() = text(null)
+
+        /** Що класти в пам'ять: «WEAK:-94» (назва й число), щоб показати поточною мовою ([localize]). */
+        fun note(arg: Int? = null): String = if (arg == null) name else "$name:$arg"
+
         companion object {
-            /** Збережена причина ([name]) — текстом поточною мовою; незнайомий запис — як є. */
-            fun localize(note: String): String = entries.firstOrNull { it.name == note }?.text ?: note
+            /** Збережена причина («NAME» чи «NAME:число») — текстом поточною мовою; незнайомий запис — як є. */
+            fun localize(note: String): String {
+                val name = note.substringBefore(':')
+                val arg = note.substringAfter(':', "").toIntOrNull()
+                return entries.firstOrNull { it.name == name }?.text(arg) ?: note
+            }
+
+            /** Причина — це «телефон не дістав батарею» (для швидкого повтору, T55), а не «свідомо пропустили». */
+            fun isNoLink(note: String): Boolean = note.substringBefore(':') in setOf(
+                NO_ANSWER.name, NOT_SEEN.name, WEAK.name, NO_CONNECT.name, NO_REPLY.name,
+            )
         }
     }
 
-    /** Що зробити на черговому «тіку» з однією батареєю. */
-    fun decide(screenHoldsIt: Boolean, permissionOk: Boolean, bluetoothOn: Boolean): Skip? = when {
+    /** Що зробити на черговому «тіку» з однією батареєю. [locationOn] — для Android 8–11 (T81); новіші — завжди true. */
+    fun decide(screenHoldsIt: Boolean, permissionOk: Boolean, bluetoothOn: Boolean, locationOn: Boolean = true): Skip? = when {
         screenHoldsIt -> Skip.SCREEN_OPEN
         !permissionOk -> Skip.NO_PERMISSION
         !bluetoothOn -> Skip.BLUETOOTH_OFF
+        !locationOn -> Skip.LOCATION_OFF
         else -> null
     }
+
+    /** Слабше за це — «сигнал слабкий» (той самий поріг, що й підказка «ти далеко» в пошуку). */
+    const val WEAK_DBM = Signal.TOO_FAR
+
+    /**
+     * T81: чому не прочитали — з того, що бачили за час спроби: чи батарея була в ефірі ([seen]), з яким сигналом ([rssi]),
+     * і чи вдалось підключитись ([connected]). Повертає те, що класти в [Result.note].
+     */
+    fun why(seen: Boolean, rssi: Int?, connected: Boolean): String = when {
+        connected -> Skip.NO_REPLY.note()
+        !seen -> Skip.NOT_SEEN.note()
+        rssi != null && rssi <= WEAK_DBM -> Skip.WEAK.note(rssi)
+        else -> Skip.NO_CONNECT.note(rssi)
+    }
+
+    // ---------- T81: ловити момент ----------
+
+    /**
+     * T81 (faric 25.10: у мами через стіну 3 м телефон не бачить батарею, даних нема півдоби): поки працює запис у фоні,
+     * телефон тихо слухає ефір (пошук з фільтром лише на свої батареї, найощадливіший режим). Щойно батарея з'явилась
+     * з добрим сигналом, а даних давно нема — читаємо одразу, не чекаючи 5-хвилинного тіку. Розклад раз на 5 хв лишається.
+     */
+    /** «Давно нема даних» — від цього (faric: «віджет оновили хоча б раз на 10 хв»). */
+    const val CATCH_AFTER_MS = 10 * 60_000L
+    /** Сигнал, з яким уже варто пробувати (трохи слабший за [WEAK_DBM]: у мами краще −90, ніж нічого). */
+    const val CATCH_MIN_DBM = -90
+    /** Не частіше за це — щоб на межі дальності не смикати Bluetooth щохвилини. */
+    const val CATCH_COOLDOWN_MS = 2 * 60_000L
+
+    fun shouldCatch(now: Long, rssi: Int, lastOkAt: Long?, lastCatchAt: Long, busy: Boolean): Boolean =
+        !busy && rssi >= CATCH_MIN_DBM && now - lastCatchAt >= CATCH_COOLDOWN_MS &&
+            (lastOkAt == null || now - lastOkAt >= CATCH_AFTER_MS)
+
+    /** Скільки писати в журнал про «бачу в ефірі»: раз на [SIGHT_LOG_MS] або коли сигнал перейшов в інший рівень. */
+    const val SIGHT_LOG_MS = 5 * 60_000L
+
+    fun logSighting(now: Long, lastLoggedAt: Long, rssi: Int, lastLoggedRssi: Int?): Boolean =
+        lastLoggedRssi == null || now - lastLoggedAt >= SIGHT_LOG_MS || Signal.level(rssi) != Signal.level(lastLoggedRssi)
 
     /** «віддає 4,10 А» / «бере 8,50 А» / «стоїть». */
     fun flow(current: Double): String = when {

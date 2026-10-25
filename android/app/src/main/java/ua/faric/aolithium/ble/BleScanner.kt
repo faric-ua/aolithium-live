@@ -112,6 +112,7 @@ class BleScanner(context: Context) {
         val smooth = Signal.smooth(smoothed[address], r.rssi)
         smoothed[address] = smooth
         lastRssi[address] = smooth
+        if (kind != BmsMatch.Kind.OTHER) ua.faric.aolithium.data.SignalStore(app).save(address, smooth) // T81
         val shown = Signal.shown(old?.rssi, smooth)
         val updated = Found(
             address, name ?: old?.name, shown,
@@ -201,6 +202,7 @@ class BleScanner(context: Context) {
                             seen[result.device.address] = result.device
                             seenAt[result.device.address] = System.currentTimeMillis()
                             lastRssi[result.device.address] = result.rssi
+                            ua.faric.aolithium.data.SignalStore(context).save(result.device.address, result.rssi) // T81
                             finish(result.device)
                         }
                     }

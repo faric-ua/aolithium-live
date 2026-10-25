@@ -141,6 +141,8 @@ object Diag {
         val fresh: Fresh,
         /** T78: що «думає» сторож про світло ([Alerts.describe]); null — сторожа нема. */
         val outage: String? = null,
+        /** T81: ефір — останній сигнал і остання причина невдачі фону (готовими рядками). */
+        val air: List<String> = emptyList(),
     )
 
     /**
@@ -180,6 +182,11 @@ object Diag {
         i.outage?.let {
             appendLine("## Світло (стан сторожа)") // uk-only: файл для Claude
             appendLine(it)
+            appendLine()
+        }
+        if (i.air.isNotEmpty()) {
+            appendLine("## Ефір і фон") // uk-only: файл для Claude
+            i.air.forEach { appendLine(it) }
             appendLine()
         }
         appendLine("## Самоперевірки") // uk-only: файл для Claude

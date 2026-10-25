@@ -1591,7 +1591,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
      * faric 19.10 19:44: «всі типи сповіщень… якщо можеш про щось ще — сповіщай».
      */
     private fun alertsCard(): View {
-        val card = ui.card(8)
+        val card = ui.card(8).apply { clipChildren = false; clipToPadding = false } // T79: рамка «Номерів» трохи ширша
         card.addView(labelRow(tr("Сповіщення", "Notifications"), LineIcon.BELL, "alerts"))
         val bgOn = demo == null && bg.isOn(address)
         card.addView(ui.muted(
@@ -1667,7 +1667,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private fun callSection(): View {
-        val box = ui.column(8).apply { setPadding(0, ui.dp(6), 0, 0) }
+        // T79: рамка таблички «Номери» виходить на 7 dp за межі — не обрізати її.
+        val box = ui.column(8).apply { setPadding(0, ui.dp(6), 0, 0); clipChildren = false; clipToPadding = false }
         box.addView(ui.divider(), ui.matchWrap())
         box.addView(ui.text(tr("Дзвінок при серйозній тривозі", "Call on a serious alarm"), 15f, Palette.text, medium = true))
         val plan = if (sampleCall) Emergency.Plan(true, Emergency.Contact(tr("Фарік", "Faric"), "+380000000123")) else alertPrefs.callPlan
@@ -1680,7 +1681,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             "Перегрів, струм, коротке замикання — у шторці кнопки «Подзвонити», у Telegram — номери. Застосунок сам не дзвонить: лише відкриває набір номера.",
             "Overheating, current, short circuit — \"Call\" buttons in the shade, numbers in Telegram. The app never calls by itself: it only opens the dialer.",
         ), 13f))
-        box.addView(numbersTable(plan), ui.matchWrap())
+        // T79 (скрін faric 24.10 02:30): рамка таблички трохи ширша за картку (−7 dp з боків), щоб око в «Номерах» стояло
+        // на тій самій вертикалі, що й око в «Коді доступу» (у табличці свій відступ від рамки 6 dp + 1 dp рамка).
+        box.addView(numbersTable(plan), ui.matchWrap().apply { leftMargin = -ui.dp(7); rightMargin = -ui.dp(7) })
         if (plan.contacts.any { it.number != Emergency.RESCUE && Emergency.valid(it.number) }) {
             box.addView(ui.muted(tr("Око — показати номер; торкнись номера — скопіюється повністю.",
                 "The eye shows the number; tap the number to copy it in full."), 12.5f))
