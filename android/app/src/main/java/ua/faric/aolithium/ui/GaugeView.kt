@@ -74,6 +74,13 @@ class GaugeView(context: Context) : View(context) {
         }
     var blink: Boolean = true
 
+    /**
+     * T86 (скріни faric 26.10 17:31, мамин бот): картинка спідометра для Telegram 16:14 — нормальна, 17:23 — дуга вдвічі
+     * менша, а написи тієї ж величини налізли один на одного. Розмір брався з екрана телефона (половина висоти екрана): коли
+     * мамин телефон лежав боком (екран «низький»), дуга малювалась на 170 dp замість 300. Для картинки — сталий розмір.
+     */
+    var fixedSideDp: Int? = null
+
     /** T67 (faric 22.10 03:18): температура (найвища з датчиків) — дрібним рядком над «NN %»; null — рядка нема. */
     var temperature: Double? = null
         set(value) {
@@ -116,7 +123,7 @@ class GaugeView(context: Context) : View(context) {
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
-        val maxDp = minOf(MAX_DP, (resources.configuration.screenHeightDp * 0.5f).toInt().coerceAtLeast(MIN_DP))
+        val maxDp = fixedSideDp ?: minOf(MAX_DP, (resources.configuration.screenHeightDp * 0.5f).toInt().coerceAtLeast(MIN_DP))
         val want = (maxDp * dp).toInt()
         val side = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) want else minOf(w, want)
         val width = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) w else side

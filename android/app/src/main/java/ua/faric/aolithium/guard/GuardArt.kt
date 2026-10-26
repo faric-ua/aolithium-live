@@ -91,6 +91,7 @@ object GuardArt {
         val pad = 16 * d
         val inner = (w - 2 * pad).toInt()
         val view = GaugeView(ctx).apply {
+            fixedSideDp = GaugeView.MAX_DP // T86: не залежить від того, як зараз повернуто екран телефона
             soc = s.soc
             current = s.current
             power = s.power
