@@ -18,7 +18,7 @@ if [ -z "${AL_MENU_SYNCED:-}" ]; then
     exec bash "$REPO/menu.sh"
   elif [ "$rc" != 10 ]; then
     echo
-    read -r -p "Натисни Enter, щоб відкрити меню…" _
+    read -r -p "Натисни Enter, щоб відкрити меню…" _ || exit 0  # Termux закрили не пунктом 0 — вийти, а не крутитись (2026-10-30)
   fi
 fi
 
@@ -27,7 +27,7 @@ bash "$TOOLS/al-widget.sh" --quiet 2>/dev/null || true
 
 pause_menu() {
   echo
-  read -r -p "Натисни Enter, щоб повернутись у меню…" _
+  read -r -p "Натисни Enter, щоб повернутись у меню…" _ || exit 0  # Termux закрили не пунктом 0 — вийти, а не крутитись (2026-10-30)
 }
 
 # Шапка меню: велика назва між смужками (faric 2026-10-16 02:12 — «щоб одразу видно, яке це меню»).
@@ -95,7 +95,7 @@ while true; do
   echo
   echo "  0 — Вийти"
   echo
-  read -r -p "Вибір: " choice
+  read -r -p "Вибір: " choice || exit 0  # Termux закрили не пунктом 0 — вийти, а не крутитись (2026-10-30)
   case "$choice" in
     1)
       clear
