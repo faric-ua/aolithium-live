@@ -128,7 +128,7 @@ class JkLink(context: Context, override val address: String, private val quick: 
         LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням, спроба ${reconnects + 1}…",
             "$short: looking for the battery on air before connecting, attempt ${reconnects + 1}…"))
         main.post {
-            BleScanner.findOne(app, address, JbdLink.FIND_MS) { found ->
+            BleScanner.findOne(app, address, if (quick) JbdLink.FIND_QUICK_MS else JbdLink.FIND_MS) { found ->
                 h.post {
                     if (!running || token != attempt) return@post
                     when (ConnectPlan.afterScan(found = found != null, hasCached = cached != null, quick = quick, retry = reconnects > 0)) {

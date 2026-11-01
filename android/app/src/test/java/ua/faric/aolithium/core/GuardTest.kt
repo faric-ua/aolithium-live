@@ -173,6 +173,12 @@ class GuardTest {
         assertTrue(msg.text, msg.text.contains("87 %") && msg.text.contains("08:58"))
         val stale = Guard.status(listOf(Guard.Seen("Aolithium", snap(soc = 40), t0 - 120 * min)), t0, kyiv)
         assertTrue(stale, stale.contains("не бачу з 06:00"))
+        // T88: версія застосунку — останнім рядком
+        val v = Guard.status(listOf(Guard.Seen("Aolithium", snap(soc = 40), t0 - 120 * min)), t0, kyiv, version = "Aolithium Live 0.4.31 · збірка 47")
+        assertTrue(v.endsWith("\n📱 Aolithium Live 0.4.31 · збірка 47"))
+        assertFalse(stale.contains("📱"))
+        val d = Guard.daily(listOf(Guard.Seen("Aolithium", snap(soc = 40), t0 - min)), t0, kyiv, version = "Aolithium Live 0.4.31 · збірка 47")
+        assertTrue(d.text.contains("📱 Aolithium Live 0.4.31"))
     }
 
     @Test fun state_survives_save_and_load() {

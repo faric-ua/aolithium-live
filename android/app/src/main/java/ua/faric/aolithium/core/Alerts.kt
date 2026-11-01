@@ -217,7 +217,7 @@ object Alerts {
         if (t - n.cand < Outages.MIN_MS) return n
         val back = at(n.cand, t, tz)
         val start = at(n.outStart, t, tz)
-        val long = Fmt.duration((n.cand - n.outStart) / 3_600_000.0)
+        val long = Fmt.since((n.cand - n.outStart) / 3_600_000.0) // T89
         val soc = tr("заряд ${n.outSoc} → ${n.candSoc} %", "charge ${n.outSoc} → ${n.candSoc} %")
         val now = if (s.flow == BatterySnapshot.Flow.CHARGING) tr("батарея заряджається", "battery is charging")
             else tr("батарея стоїть", "battery is idle")

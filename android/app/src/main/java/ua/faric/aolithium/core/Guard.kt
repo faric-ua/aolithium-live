@@ -139,8 +139,8 @@ object Guard {
         val out = ArrayList<Msg>()
         var n = st
         if (n.noData) {
-            val gap = if (n.lostSince in 1 until t) tr("не бачив ${Fmt.duration((t - n.lostSince) / 3_600_000.0)} · ",
-                "not seen for ${Fmt.duration((t - n.lostSince) / 3_600_000.0)} · ") else ""
+            val gap = if (n.lostSince in 1 until t) tr("не бачив ${Fmt.since((t - n.lostSince) / 3_600_000.0)} · ",
+                "not seen for ${Fmt.since((t - n.lostSince) / 3_600_000.0)} · ") else ""
             out += Msg(Kind.NO_DATA, tr("Знову бачу батарею", "I can see the battery again"), gap + short(s), battery)
             n = n.copy(noData = false, seenAgainAt = t)
         }
@@ -306,12 +306,19 @@ object Guard {
     /** Що відомо про одну батарею для «я працюю» і «/стан». */
     data class Seen(val name: String, val snapshot: BatterySnapshot?, val at: Long?, val outageA: Double = Outages.START_A)
 
-    fun daily(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault()): Msg =
+    fun daily(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault(), version: String? = null): Msg =
         Msg(Kind.DAILY, tr("Сторож працює · ${Background.hhmm(now, tz)}", "The guard is working · ${Background.hhmm(now, tz)}"),
-            status(batteries, now, tz) + "\n" + tr("Якщо завтра цього повідомлення не буде — зі сторожем щось сталося (вимкнувся, нема інтернету).", // T70
+            status(batteries, now, tz, version) + "\n" + tr("Якщо завтра цього повідомлення не буде — зі сторожем щось сталося (вимкнувся, нема інтернету).", // T70
                 "If this does not come tomorrow, something happened to the guard (off, no internet)."))
 
-    fun status(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault()): String {
+    /**
+     * T88 (faric 01.11 16:15: «натискаю статус — і також версія додатка така-то»): [version] — рядок
+     * «Aolithium Live 0.4.31 · збірка 47» у кінці /status і «Сторож працює»; так видно, що стоїть на телефоні-сторожі.
+     */
+    fun status(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault(), version: String? = null): String =
+        statusLines(batteries, now, tz) + (version?.let { "\n📱 $it" } ?: "")
+
+    private fun statusLines(batteries: List<Seen>, now: Long, tz: TimeZone): String {
         if (batteries.isEmpty()) return tr("Батарей для сторожа ще нема — на телефоні-сторожі увімкни «Запис у фоні».",
             "No batteries for the guard yet — turn on \"Background recording\" on the guard phone.")
         return batteries.joinToString("\n") { b ->

@@ -142,7 +142,7 @@ class JbdLink(context: Context, override val address: String, private val quick:
         LinkLog.add(tr("$short: шукаю батарею в ефірі перед підключенням, спроба ${reconnects + 1}…",
             "$short: looking for the battery on air before connecting, attempt ${reconnects + 1}…"))
         main.post {
-            BleScanner.findOne(app, address, FIND_MS) { device ->
+            BleScanner.findOne(app, address, if (quick) FIND_QUICK_MS else FIND_MS) { device ->
                 h.post {
                     if (!running || token != attempt) return@post
                     when (ConnectPlan.afterScan(found = device != null, hasCached = cached != null, quick = quick, retry = reconnects > 0)) {
@@ -532,6 +532,11 @@ class JbdLink(context: Context, override val address: String, private val quick:
         const val QUICK_RECONNECTS = 2
         const val AFTER_SCAN_MS = 600L
         const val FIND_MS = 10_000L
+        /**
+         * T84 п. 2 (/diag мами 26.10, Realme C3): у фоні пошук 10 с щоразу «не видно», а за адресою — підключення за 1–3 с.
+         * На A26 батарея з'являється в пошуку менш ніж за секунду. Тому фон шукає 4 с і далі йде за адресою.
+         */
+        const val FIND_QUICK_MS = 4_000L
         const val WAIT_CONNECT_MS = 30_000L
 
         val NOT_ADVERTISING_HINT: String

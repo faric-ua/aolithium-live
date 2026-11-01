@@ -79,6 +79,12 @@ class SnapshotTest {
         assertEquals("3 год", Fmt.duration(3.0))
         assertEquals("3 год 20 хв", Fmt.duration(3.3333))
         assertEquals("понад 99 год", Fmt.duration(150.0))
+        // T89: скільки минуло — без обрізання на 99 год
+        assertEquals("1 год 39 хв", Fmt.since(1.65))
+        assertEquals("99 год", Fmt.since(99.0))
+        assertEquals("4 доби 13 год", Fmt.since(109.0))
+        assertEquals("5 діб", Fmt.since(120.0))
+        assertEquals("21 доба 2 год", Fmt.since(506.0))
         assertEquals("щойно", Fmt.ago(1200))
         assertEquals("12 с тому", Fmt.ago(12_000))
         assertEquals("3 хв тому", Fmt.ago(200_000))

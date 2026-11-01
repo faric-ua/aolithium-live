@@ -171,6 +171,10 @@ object GuardRunner {
 
     // ---------- внутрішнє (потік сторожа) ----------
 
+    /** T88: «Aolithium Live 0.4.31 · збірка 47» — у кінці /status і «Сторож працює». */
+    private fun appVersion(): String =
+        "Aolithium Live ${ua.faric.aolithium.BuildConfig.VERSION_NAME} · " + tr("збірка", "build") + " ${ua.faric.aolithium.BuildConfig.VERSION_CODE}"
+
     private fun name(ctx: Context, address: String): String =
         Batteries(ctx).find(address)?.title ?: BmsMatch.shortAddress(address)
 
@@ -334,7 +338,7 @@ object GuardRunner {
 
     private fun answer(ctx: Context, u: Telegram.Update) {
         val st = GuardSettings(ctx)
-        val res = GuardBot.handle(u, GuardBot.Input(st.code, st.members, { Guard.status(seen(ctx), System.currentTimeMillis()) },
+        val res = GuardBot.handle(u, GuardBot.Input(st.code, st.members, { Guard.status(seen(ctx), System.currentTimeMillis(), version = appVersion()) },
             System.currentTimeMillis(), tries, st.botName))
         tries = res.tries
         if (res.members != st.members) st.members = res.members
@@ -425,7 +429,7 @@ object GuardRunner {
         if (!st.enabled) return
         if (Guard.dailyDue(st.dailyDay, now, st.dailyHour)) {
             st.dailyDay = Guard.dayKey(now)
-            queue(ctx, listOf(Guard.daily(seen(ctx), now)), Pic.All)
+            queue(ctx, listOf(Guard.daily(seen(ctx), now, version = appVersion())), Pic.All)
         } else if (st.outbox.isNotEmpty()) {
             flush(ctx)
         }

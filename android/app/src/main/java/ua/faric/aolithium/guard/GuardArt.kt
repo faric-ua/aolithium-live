@@ -41,6 +41,8 @@ import ua.faric.aolithium.widget.WidgetArt
  */
 object GuardArt {
     private const val W_DP = 360
+    /** T87: розмір спідометра на картинці бота — картинка майже квадратна, Telegram не обрізає. */
+    const val BOT_GAUGE_DP = 250
     private const val FOOT_DP = 26f
     private const val WAIT_MS = 5_000L
 
@@ -91,7 +93,9 @@ object GuardArt {
         val pad = 16 * d
         val inner = (w - 2 * pad).toInt()
         val view = GaugeView(ctx).apply {
-            fixedSideDp = GaugeView.MAX_DP // T86: не залежить від того, як зараз повернуто екран телефона
+            // T86: не залежить від того, як зараз повернуто екран телефона. T87 (скріни faric 01.11): 300 dp давали картинку
+            // 360×400 dp — у особистому чаті з довгим підписом Telegram показує її ширше й обрізає верх і низ. 250 dp → ~360×355.
+            fixedSideDp = BOT_GAUGE_DP
             soc = s.soc
             current = s.current
             power = s.power
