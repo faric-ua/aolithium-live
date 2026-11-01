@@ -49,6 +49,21 @@ object Fmt {
     fun millivolts(mv: Int) = "$mv $MV"
     fun cellVolts(mv: Int) = num(mv / 1000.0, 3) + " " + V
 
+    /**
+     * T89 (відео faric 01.11 16:17: «Знову бачу батарею · не бачив понад 99 год», а насправді ~4–5 діб): скільки вже
+     * минуло — не обрізати на 99 год. До 99 год — як [duration], далі — «4 доби 13 год». Прогнози («вистачить ≈ …»)
+     * лишаються з [duration]: там «понад 99 год» чесніше за точні доби.
+     */
+    fun since(hours: Double): String {
+        if (hours.isNaN() || hours < 0) return "—"
+        if (hours <= 99) return duration(hours)
+        val h = hours.roundToLong()
+        val d = (h / 24).toInt()
+        val rest = h % 24
+        val days = "$d " + plural(d, "доба", "доби", "діб", "day", "days")
+        return if (rest == 0L) days else "$days $rest $H"
+    }
+
     /** «3 год 20 хв», «45 хв», «понад 99 год». */
     fun duration(hours: Double): String {
         if (hours.isNaN() || hours < 0) return "—"

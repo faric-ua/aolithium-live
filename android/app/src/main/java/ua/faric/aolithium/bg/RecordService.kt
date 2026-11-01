@@ -478,7 +478,7 @@ class RecordService : Service() {
         if (!Background.shouldCatch(now, r.rssi, lastOk, lastCatchAt[key] ?: 0L, busy)) return
         lastCatchAt[key] = now
         val gone = lastOk?.let {
-            val d = ua.faric.aolithium.core.Fmt.duration((now - it) / 3_600_000.0)
+            val d = ua.faric.aolithium.core.Fmt.since((now - it) / 3_600_000.0) // T89
             " " + tr("(даних нема $d)", "(no data for $d)")
         } ?: ""
         LinkLog.add(tr("ефір $short: батарея з'явилась з сигналом ${r.rssi} dBm$gone — читаю одразу",

@@ -56,7 +56,7 @@ object WidgetModel {
         val ring = (s.soc.coerceIn(0, 100) / 100f)
         val time = Background.hhmm(at, tz)
         if (now - at > STALE_MS) {
-            val ago = Fmt.duration((now - at) / 3_600_000.0)
+            val ago = Fmt.since((now - at) / 3_600_000.0) // T89
             return Model(
                 name, Tone.STALE, pct, ring, tr("о $time", "at $time"), tr("нема даних", "no data"), Arrow.NONE,
                 tr("$ago — телефон далеко?", "$ago — phone far away?"),

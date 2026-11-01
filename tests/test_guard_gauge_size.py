@@ -8,7 +8,11 @@ APP = pathlib.Path(__file__).resolve().parents[1] / "android/app/src/main/java/u
 class GuardGaugeSize(unittest.TestCase):
     def test_bot_gauge_has_fixed_size(self):
         art = (APP / "guard/GuardArt.kt").read_text(encoding="utf-8")
-        self.assertIn("fixedSideDp = GaugeView.MAX_DP", art)
+        self.assertIn("fixedSideDp = BOT_GAUGE_DP", art)
+        # T87: картинка майже квадратна — Telegram у особистому чаті не обрізає верх і низ
+        import re
+        dp = int(re.search(r"const val BOT_GAUGE_DP = (\d+)", art).group(1))
+        self.assertTrue(220 <= dp <= 260, dp)
 
     def test_gauge_uses_fixed_size_before_screen(self):
         g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
