@@ -187,8 +187,10 @@ object Glossary {
         e("power", Group.POWER, tr("Потужність, Вт", "Power, W"), "Power",
             tr("Напруга × струм: скільки ват іде в батарею (+) чи з неї (−) прямо зараз. 1000 Вт протягом години — 1 кВт·год.",
                 "Voltage × current: how many watts go into the battery (+) or out of it (−) right now. 1000 W for one hour is 1 kWh."),
-            tr("Порівнюй з потужністю приладів, які живить інвертор.",
-                "Compare with the power of the devices the inverter runs."),
+            tr("Порівнюй з потужністю приладів, які живить інвертор. Це вати, не вольти: напругу мережі (220 В) застосунок не бачить — " +
+                "її міряє інвертор (INPUT — з мережі, OUTPUT — у розетки). Плата батареї знає лише свої 12–14,6 В.",
+                "Compare with the power of the devices the inverter runs. These are watts, not volts: the app cannot see the grid voltage (220 V) — " +
+                    "the inverter measures it (INPUT — from the grid, OUTPUT — to the sockets). The BMS knows only its own 12–14.6 V."),
             tr("Потужність більша, ніж витримують інвертор чи плата, — краще розділити навантаження.",
                 "Power is higher than the inverter or the BMS is rated for — better split the load."))
         e("energy", Group.POWER, tr("Заряджено / віддано, Вт·год", "Charged / discharged, Wh"), null,

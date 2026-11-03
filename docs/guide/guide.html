@@ -532,6 +532,15 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <li><b>"Until full"</b> (when charging): time to 100 % (the BMS stops charging by itself) and how much 1–2 hours of such charging will add — handy for deciding how long to run the generator.</li>
     <li><b>"BMS state"</b>: charge and discharge allowed, whether it balances cells, whether a protection triggered. If it did, a red "What triggered" card appears at the top, explaining what to do.</li>
   </ul>
+  <div class="panel stack-s">
+    <h3 class="uk">Вати — це не напруга мережі</h3><h3 class="en">Watts are not the grid voltage</h3>
+    <p class="uk">Число під відсотками — <b>вати</b>: скільки енергії зараз іде в батарею чи з неї (напруга батареї × струм, напр. 13,46 В × 16,94 А = 228 Вт). Воно може випадково бути схожим на напругу в розетці (~220 В), але це різні речі.</p>
+    <p class="en">The number under the percent is <b>watts</b>: how much energy goes into or out of the battery right now (battery voltage × current, e.g. 13.46 V × 16.94 A = 228 W). It can look like the socket voltage (~220 V) by chance, but these are different things.</p>
+    <p class="uk"><b>Напругу мережі застосунок не бачить.</b> Плата батареї знає лише свою напругу (12–14,6 В), струм і комірки. Мережу міряє інвертор: на його дисплеї <b>INPUT</b> — що приходить з мережі (буває 170 В і менше, коли мережа просіла), <b>OUTPUT</b> — що інвертор дає в розетки (він сам вирівнює до ~220 В). Яка напруга в мережі — дивись на інверторі.</p>
+    <p class="en"><b>The app cannot see the grid voltage.</b> The battery BMS knows only its own voltage (12–14.6 V), current and cells. The inverter measures the grid: on its display <b>INPUT</b> is what comes from the grid (it can be 170 V or less when the grid sags), <b>OUTPUT</b> is what the inverter gives to the sockets (it evens it out to ~220 V by itself). For the grid voltage, look at the inverter.</p>
+    <p class="uk">Мережа ~ → <b>інвертор</b> (INPUT 172 В → OUTPUT 222 В у розетки) → батарея 13,46 В, 16,94 А → <b>Aolithium Live: 228 Вт</b>.</p>
+    <p class="en">Grid ~ → <b>inverter</b> (INPUT 172 V → OUTPUT 222 V to sockets) → battery 13.46 V, 16.94 A → <b>Aolithium Live: 228 W</b>.</p>
+  </div>
   <div class="shots">
     <figure class="shot uk"><img loading="lazy" width="540" height="1200" src="img/uk/now-discharging.webp" alt="Світла нема: червоні вати й вистачить на"><figcaption>Світла нема: червоні вати, «Вистачить на».</figcaption></figure>
     <figure class="shot en"><img loading="lazy" width="540" height="1200" src="img/en/now-discharging.webp" alt="No power: red watts and lasts for"><figcaption>No power: red watts, "Lasts for".</figcaption></figure>
@@ -1352,6 +1361,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.32</b> · 03.11.2026</td><td>інструкція й довідник: вати під відсотками — не напруга мережі; напругу мережі показує інвертор (INPUT / OUTPUT)</td></tr>
       <tr><td class="k"><b>0.4.31</b> · 01.11.2026</td><td>версія застосунку в /status і «Сторож працює»; картинка бота майже квадратна — Telegram не обрізає її в особистому чаті; довгий пропуск — «4 доби 13 год» замість «понад 99 год»; фон шукає батарею 4 с, далі підключається за адресою</td></tr>
       <tr><td class="k"><b>0.4.30</b> · 26.10.2026</td><td>картинка спідометра в боті завжди однакового розміру — не стискається, коли телефон лежить боком</td></tr>
       <tr><td class="k"><b>0.4.29</b> · 25.10.2026</td><td>повна батарея, що віддає трохи (інвертор від батареї), — вже не «світла нема»; свій поріг відключення для кожної батареї; фон після невдачі підключається напряму за адресою; у файлі /diag — модель телефона, без серійного номера плати</td></tr>
@@ -1402,6 +1412,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.32</b> · 03.11.2026</td><td>guide and glossary: the watts under the percent are not the grid voltage; the inverter shows the grid voltage (INPUT / OUTPUT)</td></tr>
       <tr><td class="k"><b>0.4.31</b> · 01.11.2026</td><td>app version in /status and "The guard is working"; the bot picture is almost square, so Telegram does not crop it in a private chat; a long gap shows "4 days 13 h" instead of "over 99 h"; the background searches for 4 s, then connects by address</td></tr>
       <tr><td class="k"><b>0.4.30</b> · 26.10.2026</td><td>the gauge picture in the bot always has the same size — it no longer shrinks when the phone lies sideways</td></tr>
       <tr><td class="k"><b>0.4.29</b> · 25.10.2026</td><td>a full battery giving a little (inverter on battery) is no longer "no power"; each battery has its own outage threshold; after a failure the background connects directly by address; the /diag file shows the phone model and no board serial number</td></tr>
