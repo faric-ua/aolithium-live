@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import java.util.UUID
+import ua.faric.aolithium.bg.PreciseMode
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.core.BmsMatch
@@ -21,6 +22,7 @@ import ua.faric.aolithium.core.JbdAssembler
 import ua.faric.aolithium.core.JbdBasic
 import ua.faric.aolithium.core.JbdFrame
 import ua.faric.aolithium.core.JbdParser
+import ua.faric.aolithium.core.Precise
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.tr
 
@@ -502,7 +504,8 @@ class JbdLink(context: Context, override val address: String, private val quick:
             main.post { listener?.onSnapshot(snap, now) }
             status(LinkStatus.Phase.LIVE)
         }
-        h.postDelayed(nextCycle, POLL_MS)
+        // T93: «Точний запис» цієї батареї — наступний круг через 0,6 с (≈ читання щосекунди), інакше через 2 с.
+        h.postDelayed(nextCycle, Precise.pollMs(PreciseMode.isOn(address), POLL_MS))
     }
 
     private fun status(phase: LinkStatus.Phase, message: String = "", attempt: Int = 0) {
