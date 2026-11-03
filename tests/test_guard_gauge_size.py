@@ -12,7 +12,12 @@ class GuardGaugeSize(unittest.TestCase):
         # T87: картинка майже квадратна — Telegram у особистому чаті не обрізає верх і низ
         import re
         dp = int(re.search(r"const val BOT_GAUGE_DP = (\d+)", art).group(1))
-        self.assertTrue(220 <= dp <= 260, dp)
+        w = int(re.search(r"const val GAUGE_W_DP = (\d+)", art).group(1))
+        # T95: спідометр більший (320), картинка ширша — висота ≈ 16 + 30 (назва) + 0,88 × бік + 8 + 3 рядки × 22 + 16
+        h = 16 + 30 + 0.88 * dp + 8 + 3 * 22 + 16
+        self.assertTrue(0.92 <= w / h <= 1.12, (w, h))
+        self.assertTrue(dp >= 300, dp)  # faric 03.11 22:15: «спідометр збільшити»
+        self.assertIn("textScale = BOT_TEXT_SCALE", art)
 
     def test_gauge_uses_fixed_size_before_screen(self):
         g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
