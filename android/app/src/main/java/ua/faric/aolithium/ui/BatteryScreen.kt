@@ -158,6 +158,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     private var points: List<HistoryPoint> = emptyList()
     private var pointsFor: Range? = null
     private var pointsLoadedAt = 0L
+    /** T93: оновити вже показані графіки новими точками без перебудови сторінки (точний запис, короткі періоди). */
+    private var liveCharts: ((List<HistoryPoint>) -> Unit)? = null
+    private var liveLoadedAt = 0L
     private var historyBytes: Pair<Int, Long>? = null
     private val marks = Marks(host)
     /** Струм для «вистачить на» — середній, не скаче (faric 19.10 03:02). */
@@ -331,7 +334,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         if (tab == Tab.CHARTS) {
             // графіки не перемальовуємо щосекунди — лише підвантажуємо нові точки раз на 30 с
+            val every = Precise.chartReloadMs(PreciseMode.isOn(address), range.ms)
             if (atMs - pointsLoadedAt > 30_000) loadHistory()
+            else if (every < 30_000 && atMs - liveLoadedAt >= every - 300) loadHistory(live = true)
             if (atMs - insightLoadedAt > INSIGHT_RELOAD_MS) loadInsights()
             renderHead()
         } else {
@@ -1051,21 +1056,26 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     // ---------- «Графіки» ----------
 
-    private fun loadHistory() {
+    /** [live] — T93: лише підсунути нові точки в ті самі графіки (точний запис), без перебудови сторінки. */
+    private fun loadHistory(live: Boolean = false) {
         val r = range
         val now = System.currentTimeMillis()
-        pointsLoadedAt = now
+        liveLoadedAt = now
+        if (!live) pointsLoadedAt = now // повне оновлення (з підсумком) — як і досі, раз на 30 с
         history.load(address, now - r.ms, now) { pts ->
             if (r != range) return@load
+            val same = pointsFor == r
             points = pts
             pointsFor = r
-            if (tab == Tab.CHARTS) render()
+            if (tab != Tab.CHARTS) return@load
+            val upd = liveCharts
+            if (live && same && upd != null) upd(pts) else render()
         }
     }
 
     /**
      * T91 «Точний запис» (faric 03.11): кнопка увімкнути / вимкнути. Стан лише в пам'яті — після закриття застосунку
-     * завжди вимкнено. Пише кожне читання (~2 с) і коли застосунок згорнутий; екран погас на 5 хв — вимикається сам.
+     * завжди вимкнено. Пише кожне читання (з T93 — щосекунди) і коли застосунок згорнутий; екран погас на 5 хв — вимикається сам.
      */
     private fun preciseCard(): View {
         val on = PreciseMode.isOn(address)
@@ -1074,8 +1084,8 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         c.addView(labelRow(tr("Точний запис", "Precise recording") + if (on) tr(" · іде", " · on") else "", LineIcon.PULSE, "precise"))
         if (on) {
             val since = hm.format(java.util.Date(PreciseMode.startedAt))
-            c.addView(ui.text(tr("Пише кожне читання з $since · записано ${PreciseMode.points}",
-                "Saving every reading since $since · ${PreciseMode.points} saved"), 14f))
+            c.addView(ui.text(tr("Читає щосекунди з $since · записано ${PreciseMode.points}",
+                "Reading every second since $since · ${PreciseMode.points} saved"), 14f))
             c.addView(ui.muted(tr("Можна згорнути застосунок чи відкрити інший — запис іде далі. Вимкнеться сам, коли закриєш " +
                 "застосунок або екран телефона погасне на 5 хв.",
                 "You can minimize the app or open another one — recording continues. It stops by itself when you close the app " +
@@ -1084,9 +1094,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 PreciseMode.stop(Precise.Stop.USER)
             }, ui.matchWrap())
         } else {
-            c.addView(ui.muted(tr("Кожне читання плати (раз на 2 с) — в історію, а не раз на 10 с. Видно справжні стрибки струму. " +
+            c.addView(ui.muted(tr("Плата читається щосекунди, і кожне читання — в історію (а не раз на 10 с); графіки «15 хв» і «1 год» оновлюються наживо. Видно справжні стрибки струму. " +
                 "Пише й коли застосунок згорнутий. Вимкнеться сам, коли закриєш застосунок або екран погасне на 5 хв.",
-                "Every board reading (every 2 s) goes to history instead of every 10 s. Shows the real current jumps. " +
+                "The board is read every second and each reading goes to history (instead of every 10 s); the \"15 min\" and \"1 h\" charts update live. Shows the real current jumps. " +
                 "Keeps recording when the app is minimized. Stops by itself when you close the app or the screen is off for 5 min."), 13f))
             PreciseMode.lastRun?.let { r ->
                 c.addView(ui.muted(tr("Останній: ${hm.format(java.util.Date(r.from))}–${hm.format(java.util.Date(r.to))} · ${r.why.text}",
@@ -1105,6 +1115,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
     }
 
     private fun renderCharts() {
+        liveCharts = null
         // Періоди — один рядок на всю ширину, 5 рівних кнопок.
         val chipList = ArrayList<View>()
         for (r in Range.entries) {
@@ -1159,10 +1170,10 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                     "Recorded ${share} % of the time (the rest — app closed, background off)."), 12.5f))
         }
 
-        val n = 240
+        // T93: «15 хв» — точка на секунду, «1 год» — на 5 с; довші — 240 шматків, як було.
+        val n = Precise.chartBuckets(shown.ms)
         val gap = maxOf(HistoryMath.GAP_MS, shown.ms / n * 3)
         val sparse = HistoryMath.sparseSpans(pts) // T92: де заміри рідкі — пунктир з крапками
-        fun ser(name: String, color: Int, f: (HistoryPoint) -> Double?) = ChartView.Series(name, color, HistoryMath.bucket(pts, from, to, n, f))
         fun chartCard(name: String, icon: LineIcon, info: String, chart: ChartView, legend: List<Pair<String, Int>> = emptyList()): View {
             val c = ui.card(8)
             c.addView(labelRow(name, icon, info))
@@ -1174,27 +1185,42 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             }
             return c
         }
-        val socChart = ChartView(host).apply { set(listOf(ser(tr("Заряд", "Charge"), Palette.accent) { it.soc.toDouble() }), from, to, "%",
-                0, min = 0.0, max = 100.0, gapMs = gap, sparse = sparse) }
-        val curChart = ChartView(host).apply { set(listOf(ser(tr("Струм", "Current"), Palette.success) { it.current }), from, to, Fmt.A, 2,
-                zeroSplit = true, gapMs = gap, sparse = sparse) }
-        val pwrChart = ChartView(host).apply { set(listOf(ser(tr("Потужність", "Power"), Palette.success) { it.power }), from, to, Fmt.W, 0,
-                zeroSplit = true, gapMs = gap, sparse = sparse) }
-        val vChart = ChartView(host).apply { set(listOf(ser(tr("Напруга", "Voltage"), Palette.accent) { it.voltage }), from, to, Fmt.V, 2,
-                gapMs = gap, sparse = sparse) }
-        val tChart = ChartView(host).apply {
-            set(listOf(ser(tr("Макс.", "Max"), Palette.warning) { it.tempMax }, ser(tr("Мін.", "Min"), Palette.accent) { it.tempMin }),
-                    from, to, "°C", 1, gapMs = gap, sparse = sparse)
-        }
-        val dChart = ChartView(host).apply { set(listOf(ser(tr("Різниця", "Difference"), Palette.warning) { it.deltaMv?.toDouble() }), from,
-                to, Fmt.MV, 0, min = 0.0, gapMs = gap, sparse = sparse) }
+        val socChart = ChartView(host)
+        val curChart = ChartView(host)
+        val pwrChart = ChartView(host)
+        val vChart = ChartView(host)
+        val tChart = ChartView(host)
+        val dChart = ChartView(host)
+        val cChart = ChartView(host)
         // Без зеленого й червоного: тут вони означають заряд / розряд.
         val cellColors = listOf(Palette.warning, Palette.accent, Palette.violet, Palette.text)
         val cellsN = pts.lastOrNull()?.cellsMv?.size ?: 0
-        val cChart = ChartView(host).apply {
-            set((0 until cellsN).map { i -> ser(cellNo(i + 1), cellColors[i % cellColors.size]) { p -> p.cellsMv.getOrNull(i)?.div(1000.0) } },
-                from, to, Fmt.V, 3, gapMs = gap, sparse = sparse)
+
+        /**
+         * Наповнити графіки точками. T93: у точному записі кличеться й щосекунди з [liveCharts] — ті самі графіки отримують
+         * нові точки, сторінка не перебудовується (не стрибає, палець на графіку не губиться).
+         */
+        fun fill(p: List<HistoryPoint>, sp: List<LongRange>) {
+            val t1 = System.currentTimeMillis()
+            val t0 = t1 - shown.ms
+            fun ser(name: String, color: Int, f: (HistoryPoint) -> Double?) = ChartView.Series(name, color, HistoryMath.bucket(p, t0, t1, n, f))
+            socChart.set(listOf(ser(tr("Заряд", "Charge"), Palette.accent) { it.soc.toDouble() }), t0, t1, "%",
+                    0, min = 0.0, max = 100.0, gapMs = gap, sparse = sp)
+            curChart.set(listOf(ser(tr("Струм", "Current"), Palette.success) { it.current }), t0, t1, Fmt.A, 2,
+                    zeroSplit = true, gapMs = gap, sparse = sp)
+            pwrChart.set(listOf(ser(tr("Потужність", "Power"), Palette.success) { it.power }), t0, t1, Fmt.W, 0,
+                    zeroSplit = true, gapMs = gap, sparse = sp)
+            vChart.set(listOf(ser(tr("Напруга", "Voltage"), Palette.accent) { it.voltage }), t0, t1, Fmt.V, 2,
+                    gapMs = gap, sparse = sp)
+            tChart.set(listOf(ser(tr("Макс.", "Max"), Palette.warning) { it.tempMax }, ser(tr("Мін.", "Min"), Palette.accent) { it.tempMin }),
+                    t0, t1, "°C", 1, gapMs = gap, sparse = sp)
+            dChart.set(listOf(ser(tr("Різниця", "Difference"), Palette.warning) { it.deltaMv?.toDouble() }), t0,
+                    t1, Fmt.MV, 0, min = 0.0, gapMs = gap, sparse = sp)
+            cChart.set((0 until cellsN).map { i -> ser(cellNo(i + 1), cellColors[i % cellColors.size]) { q -> q.cellsMv.getOrNull(i)?.div(1000.0) } },
+                    t0, t1, Fmt.V, 3, gapMs = gap, sparse = sp)
         }
+        fill(pts, sparse)
+        liveCharts = { p -> fill(p, HistoryMath.sparseSpans(p)) }
         val left = listOf(
             sum,
             chartCard(tr("Заряд, %", "Charge, %"), LineIcon.BATTERY, "soc", socChart),

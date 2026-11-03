@@ -20,10 +20,11 @@ class PreciseTest {
     }
 
     @Test fun records_every_reading_only_when_on() {
-        assertEquals(1_500L, Precise.recordEvery(true))
+        assertEquals(Precise.EVERY_MS, Precise.recordEvery(true))
         assertEquals(HistoryMath.RECORD_EVERY_MS, Precise.recordEvery(false))
-        // плата читається раз на 2 с — точний запис мусить брати кожне читання
-        assertEquals(true, Precise.EVERY_MS < 2_000L)
+        // T93: плата читається ~щосекунди — точний запис мусить брати кожне читання
+        assertEquals(true, Precise.EVERY_MS < 1_000L)
+        assertEquals(true, Precise.EVERY_MS > Precise.POLL_MS) // запис не частіше, ніж справді приходять читання
     }
 
     @Test fun stop_reasons_have_text_in_both_languages() {
@@ -38,5 +39,25 @@ class PreciseTest {
         } finally {
             Lang.current = Lang.Code.UK
         }
+    }
+
+    @Test fun t93_reads_about_every_second_only_when_on() {
+        assertEquals(600L, Precise.pollMs(true, 2_000L))
+        assertEquals(2_000L, Precise.pollMs(false, 2_000L))
+    }
+
+    @Test fun t93_charts_live_only_for_short_ranges() {
+        assertEquals(30_000L, Precise.chartReloadMs(false, 15 * 60_000L))
+        assertEquals(1_000L, Precise.chartReloadMs(true, 15 * 60_000L))
+        assertEquals(1_000L, Precise.chartReloadMs(true, 3_600_000L))
+        assertEquals(5_000L, Precise.chartReloadMs(true, 6 * 3_600_000L))
+        assertEquals(30_000L, Precise.chartReloadMs(true, 86_400_000L))
+    }
+
+    @Test fun t93_fifteen_minutes_has_a_point_per_second() {
+        assertEquals(900, Precise.chartBuckets(15 * 60_000L))
+        assertEquals(720, Precise.chartBuckets(3_600_000L))
+        assertEquals(240, Precise.chartBuckets(6 * 3_600_000L))
+        assertEquals(240, Precise.chartBuckets(7 * 86_400_000L))
     }
 }

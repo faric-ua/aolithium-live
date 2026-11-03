@@ -46,7 +46,8 @@ object PreciseMode {
     /** Остання зупинка — щоб картка могла сказати «зупинився: екран був вимкнений 5 хв». */
     class LastRun(val from: Long, val to: Long, val why: Precise.Stop)
 
-    var address: String? = null
+    /** Читають і потоки зв'язку (`JbdLink` — пауза між кругами, T93), тому @Volatile. */
+    @Volatile var address: String? = null
         private set
     var startedAt = 0L
         private set
@@ -257,7 +258,7 @@ class PreciseService : Service() {
         return pm.isInteractive && km?.isKeyguardLocked != true
     }
 
-    /** Поки пишемо — процесор не спить (інакше з вимкненим екраном читання раз на 2 с завмирає). Не довше за 5 хв без перевірки. */
+    /** Поки пишемо — процесор не спить (інакше з вимкненим екраном читання щосекунди завмирає). Не довше за 5 хв без перевірки. */
     private fun holdAwake() {
         val l = lock ?: (getSystemService(Context.POWER_SERVICE) as? PowerManager)
             ?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "aolithium:precise")

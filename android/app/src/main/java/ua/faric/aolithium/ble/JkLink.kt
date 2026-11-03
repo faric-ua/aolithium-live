@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import java.util.UUID
+import ua.faric.aolithium.bg.PreciseMode
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.Diag
 import ua.faric.aolithium.core.BmsMatch
@@ -22,6 +23,7 @@ import ua.faric.aolithium.core.JkDevice
 import ua.faric.aolithium.core.JkFrame
 import ua.faric.aolithium.core.JkParser
 import ua.faric.aolithium.core.JkSettings
+import ua.faric.aolithium.core.Precise
 import ua.faric.aolithium.core.Signal
 import ua.faric.aolithium.core.tr
 
@@ -437,8 +439,10 @@ class JkLink(context: Context, override val address: String, private val quick: 
         h.removeCallbacks(silence)
         h.postDelayed(silence, SILENT_MS)
         val now = System.currentTimeMillis()
-        // Плата шле кадри часто — екрану досить раз на [JbdLink.POLL_MS], як і з JBD.
-        if (now - lastPublished < JbdLink.POLL_MS - 200 && everLive) return
+        // Плата шле кадри часто — екрану досить раз на [JbdLink.POLL_MS], як і з JBD. T93: точний запис — кожен кадр,
+        // але не частіше ніж раз на [Precise.EVERY_MS] (≈ щосекунди).
+        val minGap = if (PreciseMode.isOn(address)) Precise.EVERY_MS else JbdLink.POLL_MS - 200
+        if (now - lastPublished < minGap && everLive) return
         lastPublished = now
         if (!everLive) {
             LinkLog.add(tr("   розкладка ${c.layout.title}, комірок ${c.cellsMv.size}", "   layout ${c.layout.title}, cells ${c.cellsMv.size}"))

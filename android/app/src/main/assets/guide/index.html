@@ -354,7 +354,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="foot">
     <p class="uk">Дані батареї лишаються на телефоні й нікуди не передаються. Інтернет застосунок використовує лише для оновлень з Google Диска автора. Без реклами й аналітики.</p>
     <p class="en">Battery data stays on the phone and is not sent anywhere. The app uses the internet only for updates from the author's Google Drive. No ads, no analytics.</p>
-    <p>Aolithium Live 0.4.33 · github.com/faric-ua/aolithium-live</p>
+    <p>Aolithium Live 0.4.34 · github.com/faric-ua/aolithium-live</p>
   </div>
 </main>
 
@@ -617,13 +617,13 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <ul class="dots uk">
     <li><b>Історія</b> — лінії заряду, струму, потужності, напруги, температури й комірок; скільки заряджено й віддано. Період: <span class="btn norm">15 хв</span> <span class="btn norm">1 год</span> <span class="btn norm">6 год</span> <span class="btn sel">24 год</span> <span class="btn norm">7 днів</span>. Торкнись графіка й веди пальцем убік — побачиш значення.</li>
     <li><b>Звідки дані:</b> поки застосунок відкритий і на зв'язку — запис раз на 10 с; з «Записом у фоні» — ще й раз на ~5 хв, коли закритий. Зберігається 90 днів у телефоні.</li>
-    <li><b>Точний запис</b> — кнопка вгорі «Графіків»: кожне читання плати (раз на 2 с), і коли застосунок згорнутий. Вимикається сам: закрив застосунок або екран погас на 5 хв.</li>
+    <li><b>Точний запис</b> — кнопка вгорі «Графіків»: плата читається щосекунди, кожне читання — в історію, і коли застосунок згорнутий; «15 хв» і «1 год» оновлюються наживо. Вимикається сам: закрив застосунок або екран погас на 5 хв.</li>
     <li><b>Суцільна лінія</b> — часті заміри (точні). <b>Пунктир з крапками</b> — рідкі (фон раз на 5 хв): що було між крапками, невідомо.</li>
   </ul>
   <ul class="dots en">
     <li><b>History</b> — lines for charge, current, power, voltage, temperature and cells; how much was charged and given. Period: <span class="btn norm">15 min</span> <span class="btn norm">1 h</span> <span class="btn norm">6 h</span> <span class="btn sel">24 h</span> <span class="btn norm">7 days</span>. Touch a chart and slide your finger sideways to see values.</li>
     <li><b>Where the data comes from:</b> while the app is open and connected — a record every 10 s; with "Background recording" — also every ~5 min while it is closed. Kept for 90 days on the phone.</li>
-    <li><b>Precise recording</b> — the button at the top of "Charts": every board reading (every 2 s), also while the app is minimized. Stops by itself: you closed the app or the screen was off for 5 min.</li>
+    <li><b>Precise recording</b> — the button at the top of "Charts": the board is read every second, each reading goes to history, also while the app is minimized; "15 min" and "1 h" update live. Stops by itself: you closed the app or the screen was off for 5 min.</li>
     <li><b>Solid line</b> — frequent readings (exact). <b>Dashed with dots</b> — sparse ones (background every 5 min): what happened between the dots is unknown.</li>
   </ul>
   <div class="shots">
@@ -1223,8 +1223,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
     <p class="uk">Без Termux і без браузера: головна, унизу «Оновлення застосунку» → <span class="btn prim">Перевірити оновлення</span> → «Завантажити й встановити». Докладно — <a href="#update">«Оновити з Google Диска»</a>.</p>
     <p class="en">No Termux and no browser: home screen, "App update" at the bottom → <span class="btn prim">Check for updates</span> → "Download and install". Details — <a href="#update">"Update from Google Drive"</a>.</p>
   </div>
-  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.33 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.33.</p>
-  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.33 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.33.</p>
+  <p class="note uk"><b>Яка версія стоїть:</b> унизу головної — «v0.4.34 · build …» і рядок «Встановлено» в картці «Оновлення застосунку». Ця інструкція — для версії 0.4.34.</p>
+  <p class="note en"><b>Which version is installed:</b> at the bottom of the home screen — "v0.4.34 · build …", and the "Installed" line in the "App update" card. This guide is for version 0.4.34.</p>
 </section>
 
 <!-- ================= 16а. ОНОВИТИ З ДИСКА (T37) ================= -->
@@ -1372,6 +1372,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.34</b> · 03.11.2026</td><td>«Точний запис» — щосекунди: плата читається раз на ~1 с, графіки «15 хв» (точка на секунду) і «1 год» оновлюються наживо, сторінка не стрибає</td></tr>
       <tr><td class="k"><b>0.4.33</b> · 03.11.2026</td><td>«Точний запис» на «Графіках»: кожне читання (раз на 2 с), і коли застосунок згорнутий; вимикається сам. Рідкі заміри на графіках — пунктиром з крапками</td></tr>
       <tr><td class="k"><b>0.4.32</b> · 03.11.2026</td><td>інструкція й довідник: вати під відсотками — не напруга мережі; напругу мережі показує інвертор (INPUT / OUTPUT)</td></tr>
       <tr><td class="k"><b>0.4.31</b> · 01.11.2026</td><td>версія застосунку в /status і «Сторож працює»; картинка бота майже квадратна — Telegram не обрізає її в особистому чаті; довгий пропуск — «4 доби 13 год» замість «понад 99 год»; фон шукає батарею 4 с, далі підключається за адресою</td></tr>
@@ -1424,6 +1425,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.34</b> · 03.11.2026</td><td>"Precise recording" every second: the board is read about once a second, the "15 min" (a point per second) and "1 h" charts update live, the page does not jump</td></tr>
       <tr><td class="k"><b>0.4.33</b> · 03.11.2026</td><td>"Precise recording" on "Charts": every reading (every 2 s), also while the app is minimized; stops by itself. Sparse readings on the charts are drawn dashed with dots</td></tr>
       <tr><td class="k"><b>0.4.32</b> · 03.11.2026</td><td>guide and glossary: the watts under the percent are not the grid voltage; the inverter shows the grid voltage (INPUT / OUTPUT)</td></tr>
       <tr><td class="k"><b>0.4.31</b> · 01.11.2026</td><td>app version in /status and "The guard is working"; the bot picture is almost square, so Telegram does not crop it in a private chat; a long gap shows "4 days 13 h" instead of "over 99 h"; the background searches for 4 s, then connects by address</td></tr>
