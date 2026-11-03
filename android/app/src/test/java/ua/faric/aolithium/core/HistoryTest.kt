@@ -1,6 +1,7 @@
 package ua.faric.aolithium.core
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -86,5 +87,24 @@ class HistoryTest {
         for (id in listOf("soc", "zones", "voltage", "current", "power", "cells", "delta", "temp", "signal", "history", "soh", "energy", "background", "alerts")) {
             assertTrue(id, Glossary.get(id) != null)
         }
+    }
+
+    // ---------- T92: рідкі заміри — пунктир ----------
+
+    @Test fun sparse_spans_only_between_far_apart_points() {
+        // 10 с з екрана, потім два заміри фону раз на 5 хв, потім знову 2 с (точний запис)
+        val pts = listOf(p(0, 1.0), p(10_000, 1.0), p(20_000, 1.0), p(320_000, 25.0), p(620_000, 0.0), p(622_000, 3.0), p(624_000, 3.0))
+        val spans = HistoryMath.sparseSpans(pts)
+        assertEquals(listOf(20_000L..320_000L, 320_000L..620_000L), spans)
+        assertFalse(HistoryMath.sparseBetween(spans, 0, 20_000))
+        assertTrue(HistoryMath.sparseBetween(spans, 15_000, 25_000)) // відрізок графіка заходить у рідкий проміжок
+        assertTrue(HistoryMath.sparseBetween(spans, 400_000, 500_000))
+        assertFalse(HistoryMath.sparseBetween(spans, 620_000, 624_000))
+        assertFalse(HistoryMath.sparseBetween(emptyList(), 0, 1_000_000))
+    }
+
+    @Test fun sparse_spans_ignore_order_and_one_minute_steps() {
+        val pts = listOf(p(120_000, 1.0), p(0, 1.0), p(60_000, 1.0))
+        assertTrue(HistoryMath.sparseSpans(pts).isEmpty()) // рівно хвилина — ще суцільно
     }
 }

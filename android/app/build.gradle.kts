@@ -45,8 +45,8 @@ android {
         // Android 8 — через Huawei Mate 10 Lite (перший телефон faric).
         minSdk = 26
         targetSdk = 36
-        versionCode = 48
-        versionName = "0.4.32"
+        versionCode = 49
+        versionName = "0.4.33"
         buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
     }
 

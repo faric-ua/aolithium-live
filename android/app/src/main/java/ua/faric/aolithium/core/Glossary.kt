@@ -458,6 +458,21 @@ object Glossary {
             tr("Якщо батарея віддає струм і при світлі (наприклад, інвертор так налаштований) — скажи, підлаштуємо правило.",
                 "If the battery also discharges when there is power (for example, the inverter is set up that way) — " +
                     "tell us, we will adjust the rule."))
+        e("precise", Group.CHARTS, tr("Точний запис", "Precise recording"), null,
+            tr("Звичайно в історію йде замір раз на 10 с (застосунок відкритий) або раз на 5 хв (запис у фоні). Між ними " +
+                "графік просто з'єднує точки — і стрибок струму 0 → 25 А може виглядати як різкий «зуб» або зовсім загубитись. " +
+                "«Точний запис» пише кожне читання плати (раз на 2 с), і коли застосунок згорнутий чи відкритий інший. " +
+                "На графіках: суцільна лінія — часті заміри, пунктир з крапками — рідкі (між крапками могло бути що завгодно).",
+                "Normally history gets a reading every 10 s (app open) or every 5 min (background recording). In between, " +
+                    "the chart just joins the points — and a current jump 0 → 25 A can look like a sharp \"tooth\" or get lost. " +
+                    "\"Precise recording\" saves every board reading (every 2 s), also when the app is minimized or another one is open. " +
+                    "On the charts: solid line — frequent readings, dashed with dots — sparse ones (anything could happen between the dots)."),
+            tr("Вмикай на час, коли хочеш подивитись щось точно: кінець заряду, увімкнення великого приладу. Вимкнеться сам — " +
+                "коли закриєш застосунок або екран погасне на 5 хв. Після перезапуску завжди вимкнено.",
+                "Turn it on while you want to see something exactly: end of charge, switching on a big appliance. It stops by itself — " +
+                    "when you close the app or the screen is off for 5 min. After a restart it is always off."),
+            tr("Поки пише — батарея зайнята цим телефоном (Aolithium на іншому не підключиться), а телефон трохи більше витрачає заряд.",
+                "While it records the battery is busy with this phone (Aolithium on another phone cannot connect), and the phone uses a bit more charge."))
         e("dailyMin", Group.CHARTS, tr("Найнижчий заряд за днями", "Lowest charge by day"), null,
             tr("Для кожного дня — до скількох відсотків опускалась батарея. Видно «хвилі»: з кожним днем нижче — " +
                 "пора генератор — знову вгору. Торкнись дня, щоб позначити «Г» — у цей день працював генератор " +

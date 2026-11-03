@@ -16,12 +16,15 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import ua.faric.aolithium.core.Fmt
+import ua.faric.aolithium.core.HistoryMath
 import ua.faric.aolithium.core.tr
 
 /**
  * Простий графік лініями за час. Кілька ліній; розриви (застосунок був закритий) — не з'єднуються.
  * [zeroSplit] — для струму: вище нуля лінія зелена (заряд), нижче — червона (розряд).
  * Дотик чи ведення пальцем убік — вертикальна риска й значення в цій точці.
+ * T92: де між справжніми замірами пройшло більше хвилини ([sparse], `HistoryMath.sparseSpans`) — тонкий пунктир
+ * з крапками на замірах: це лише здогадка, що було між ними (запис у фоні раз на 5 хв). Суцільно — точні дані.
  */
 class ChartView(context: Context) : View(context) {
     class Series(val name: String, val color: Int, val points: List<Pair<Long, Double>?>)
@@ -35,11 +38,20 @@ class ChartView(context: Context) : View(context) {
     private var fixedMin: Double? = null
     private var fixedMax: Double? = null
     private var gapMs = 60_000L
+    private var sparse: List<LongRange> = emptyList()
     private var touchX = -1f
 
     private val dp = resources.displayMetrics.density
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2.2f * dp; strokeJoin = Paint.Join.ROUND; strokeCap = Paint.Cap.ROUND }
     private val grid = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.border; strokeWidth = 1f }
+    /** T92: рідкі заміри — тонкий пунктир. */
+    private val dashed = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE; strokeWidth = 1.4f * dp; strokeCap = Paint.Cap.BUTT
+        pathEffect = DashPathEffect(floatArrayOf(4 * dp, 4 * dp), 0f)
+    }
+    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val dashPath = Path()
+    private val dots = ArrayList<Float>()
     private val zero = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.muted; strokeWidth = 1f * dp; pathEffect = DashPathEffect(floatArrayOf(6 * dp, 4 * dp), 0f) }
     private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.faint; textSize = sp(11f); fontFeatureSettings = "tnum" }
     private val cursor = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Palette.text; strokeWidth = 1f * dp }
@@ -53,8 +65,10 @@ class ChartView(context: Context) : View(context) {
     fun set(
         series: List<Series>, from: Long, to: Long, unit: String, digits: Int,
         zeroSplit: Boolean = false, min: Double? = null, max: Double? = null, gapMs: Long = 60_000L,
+        sparse: List<LongRange> = emptyList(),
     ) {
         this.gapMs = gapMs
+        this.sparse = sparse
         this.series = series
         this.from = from
         this.to = max(to, from + 1)
@@ -192,40 +206,101 @@ class ChartView(context: Context) : View(context) {
         }
     }
 
+    /** Відрізок між сусідніми точками графіка — лише здогадка (між замірами більше хвилини)? */
+    private fun sparseSeg(a: Long, b: Long) = HistoryMath.sparseBetween(sparse, a, b)
+
+    /** Крапки на рідких замірах — лише якщо вони не злипаються в товсту лінію (≥ 5 dp одна від одної). */
+    private fun addDot(px: Float, py: Float) {
+        val n = dots.size
+        if (n >= 2 && abs(dots[n - 2] - px) < 0.5f && abs(dots[n - 1] - py) < 0.5f) return
+        dots += px
+        dots += py
+    }
+
+    private fun flushDots(canvas: Canvas, color: Int) {
+        dot.color = color
+        var i = 0
+        var lastX = -1e9f
+        while (i < dots.size) {
+            val px = dots[i]
+            if (px - lastX >= 5 * dp) {
+                canvas.drawCircle(px, dots[i + 1], 2.4f * dp, dot)
+                lastX = px
+            }
+            i += 2
+        }
+        dots.clear()
+    }
+
     /**
      * Лінія через точки; порожні шматки часу пропускаємо. Розрив — лише коли між сусідніми точками більше [gapMs]
      * (застосунок був закритий). Інакше на 1 год з точкою раз на 10 с лінія розсипалась на крапки (знімки CI 18.10).
+     * T92: відрізки між рідкими замірами — пунктиром з крапками.
      */
     private fun drawPath(canvas: Canvas, pts: List<Pair<Long, Double>?>, x: (Long) -> Float, y: (Double) -> Float) {
         path.reset()
+        dashPath.reset()
+        dots.clear()
         var prev: Pair<Long, Double>? = null
         var segLen = 0
+        var penDown = false // суцільна лінія зараз продовжується з prev
         for (p in pts) {
             if (p == null) continue
             val a = prev
             if (a == null || p.first - a.first > gapMs) {
                 if (a != null && segLen == 1) canvas.drawPoint(x(a.first), y(a.second), line)
                 path.moveTo(x(p.first), y(p.second))
+                penDown = true
                 segLen = 1
+            } else if (sparseSeg(a.first, p.first)) {
+                dashPath.moveTo(x(a.first), y(a.second))
+                dashPath.lineTo(x(p.first), y(p.second))
+                addDot(x(a.first), y(a.second))
+                addDot(x(p.first), y(p.second))
+                penDown = false
+                segLen++
             } else {
+                if (!penDown) path.moveTo(x(a.first), y(a.second))
                 path.lineTo(x(p.first), y(p.second))
+                penDown = true
                 segLen++
             }
             prev = p
         }
         prev?.let { if (segLen == 1) canvas.drawPoint(x(it.first), y(it.second), line) }
         canvas.drawPath(path, line)
+        dashed.color = line.color
+        canvas.drawPath(dashPath, dashed)
+        flushDots(canvas, line.color)
     }
 
-    /** Струм: кожен відрізок свого кольору за знаком; розриви — як у [drawPath]. */
+    /** Струм: кожен відрізок свого кольору за знаком; розриви — як у [drawPath]; рідкі заміри — пунктир з крапками (T92). */
     private fun drawLine(canvas: Canvas, pts: List<Pair<Long, Double>?>, x: (Long) -> Float, y: (Double) -> Float, positive: (Double) -> Boolean) {
         var prev: Pair<Long, Double>? = null
+        var lastDotX = -1e9f
+        fun dotAt(px: Float, py: Float, color: Int) {
+            if (px - lastDotX < 5 * dp) return
+            dot.color = color
+            canvas.drawCircle(px, py, 2.4f * dp, dot)
+            lastDotX = px
+        }
         for (p in pts) {
             if (p == null) continue
             val a = prev
             if (a != null && p.first - a.first <= gapMs) {
-                line.color = if (positive((a.second + p.second) / 2)) Palette.success else Palette.danger
-                canvas.drawLine(x(a.first), y(a.second), x(p.first), y(p.second), line)
+                val c = if (positive((a.second + p.second) / 2)) Palette.success else Palette.danger
+                if (sparseSeg(a.first, p.first)) {
+                    dashed.color = c
+                    dashPath.reset()
+                    dashPath.moveTo(x(a.first), y(a.second))
+                    dashPath.lineTo(x(p.first), y(p.second))
+                    canvas.drawPath(dashPath, dashed) // drawLine пунктир не малює — лише шлях
+                    dotAt(x(a.first), y(a.second), if (positive(a.second)) Palette.success else Palette.danger)
+                    dotAt(x(p.first), y(p.second), if (positive(p.second)) Palette.success else Palette.danger)
+                } else {
+                    line.color = c
+                    canvas.drawLine(x(a.first), y(a.second), x(p.first), y(p.second), line)
+                }
             } else {
                 line.color = if (positive(p.second)) Palette.success else Palette.danger
                 canvas.drawPoint(x(p.first), y(p.second), line)
