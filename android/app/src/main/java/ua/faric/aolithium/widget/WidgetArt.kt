@@ -145,7 +145,13 @@ object WidgetArt {
         val status = paint(14 * f, statusColor(m.tone), medium = true)
         val small = paint(13 * f, Palette.muted)
         val small2 = paint(13 * f, Palette.muted)
-        val lines = listOf(name to m.name, power to m.power, status to m.status, small to m.line1, small2 to m.line2)
+        // T94: «світла нема з 11:40 · 8 год 2 хв» не влазить у вузьку колонку — два рядки (з котрої / скільки вже).
+        val statusLines = if (status.measureText(m.status) > width && m.status.contains(" · ")) {
+            m.status.split(" · ", limit = 2).map { status to it }
+        } else {
+            listOf(status to m.status)
+        }
+        val lines = (listOf(name to m.name, power to m.power) + statusLines + listOf(small to m.line1, small2 to m.line2))
             .filter { it.second.isNotBlank() }
         val gap = 5 * f
         val total = lines.sumOf { (it.first.textSize * 1.15f).toDouble() }.toFloat() + gap * (lines.size - 1)

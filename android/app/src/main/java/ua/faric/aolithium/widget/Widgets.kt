@@ -10,9 +10,11 @@ import android.os.Bundle
 import android.widget.RemoteViews
 import ua.faric.aolithium.R
 import ua.faric.aolithium.ble.LinkLog
+import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.WidgetModel
 import ua.faric.aolithium.core.WidgetPick
 import ua.faric.aolithium.core.tr
+import ua.faric.aolithium.data.AlertSettings
 import ua.faric.aolithium.data.Batteries
 import ua.faric.aolithium.data.BgSettings
 import ua.faric.aolithium.data.LastSnapshot
@@ -81,7 +83,9 @@ object Widgets {
         val b = pickBattery(ctx, widgetId) ?: return WidgetModel.of("Aolithium Live", null, null, now) to null
         val last = LastSnapshot(ctx).load(b.address)
         val oa = ua.faric.aolithium.data.AlertSettings(ctx).outageA(b.address) // T85
-        return WidgetModel.of(b.title, last?.first, last?.second, now, outageA = oa) to b.address
+        // T94: «світла нема з … · N год» — стан сповіщень цієї батареї (той самий, що шле «Світло зникло»)
+        val out = Alerts.outMark(AlertSettings(ctx).state(b.address))
+        return WidgetModel.of(b.title, last?.first, last?.second, now, outageA = oa, out = out) to b.address
     }
 
     fun update(ctx: Context, mgr: AppWidgetManager, id: Int, large: Boolean) {

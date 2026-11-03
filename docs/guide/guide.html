@@ -595,6 +595,8 @@ details > div{padding:0 0 12px; color:var(--muted)}
       <p class="en">While there is power, the inverter usually only charges or the battery stands full. If the battery <b>gives more than 0.5 A for longer than 3 minutes</b>, there is no power. Short spikes do not count.</p>
       <p class="uk">Деякі інвертори після повного заряду якийсь час живляться від батареї, хоч світло є (~1 А, 15 Вт). Тому <b>повна батарея (98 % і більше) рахується лише від 2 А</b>, а менший розряд підписано «віддає трохи — світло є?». Свій поріг для кожної батареї — «Ще» → «Сповіщення» → «Коли „світла нема“»: понад 0,5 / 1 / 2 / 3 А.</p>
       <p class="en">Some inverters run on the battery for a while after a full charge even with power on (~1 A, 15 W). So <b>a full battery (98 % and more) counts only from 2 A</b>, and a smaller discharge is labelled "small draw — power on?". Each battery has its own threshold — "More" → "Notifications" → "When it is "no power"": over 0.5 / 1 / 2 / 3 A.</p>
+      <p class="uk">Поки світла нема, на картинці сторожа, у /status і у віджеті — <b>«світла нема з 11:40 · 8 год 2 хв»</b>: з котрої й скільки вже. Телефон був далеко й помітив пізніше — «щонайменше з …».</p>
+      <p class="en">While there is no power, the guard picture, /status and the widget show <b>"no power since 11:40 · 8 h 2 min"</b>: since when and for how long. If the phone was far and noticed later — "since at least …".</p>
     </div>
     <div class="panel stack-s">
       <h3 class="uk">Найнижчий заряд за днями</h3><h3 class="en">Lowest charge by day</h3>
@@ -1365,6 +1367,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
   <div class="tbl kv">
     <table class="uk">
       <tr class="hd"><th>Версія</th><th>Що нового</th></tr>
+      <tr><td class="k"><b>0.4.35</b> · 03.11.2026</td><td>світла нема — з котрої й скільки вже: на картинці сторожа, у /status і у віджеті («світла нема з 11:40 · 8 год 2 хв»)</td></tr>
       <tr><td class="k"><b>0.4.34</b> · 03.11.2026</td><td>«Точний запис» — щосекунди: плата читається раз на ~1 с, графіки «15 хв» (точка на секунду) і «1 год» оновлюються наживо, сторінка не стрибає</td></tr>
       <tr><td class="k"><b>0.4.33</b> · 03.11.2026</td><td>«Точний запис» на «Графіках»: кожне читання (раз на 2 с), і коли застосунок згорнутий; вимикається сам. Рідкі заміри на графіках — пунктиром з крапками</td></tr>
       <tr><td class="k"><b>0.4.32</b> · 03.11.2026</td><td>інструкція й довідник: вати під відсотками — не напруга мережі; напругу мережі показує інвертор (INPUT / OUTPUT)</td></tr>
@@ -1418,6 +1421,7 @@ details > div{padding:0 0 12px; color:var(--muted)}
     </table>
     <table class="en">
       <tr class="hd"><th>Version</th><th>What's new</th></tr>
+      <tr><td class="k"><b>0.4.35</b> · 03.11.2026</td><td>no power — since when and for how long: on the guard picture, in /status and in the widget ("no power since 11:40 · 8 h 2 min")</td></tr>
       <tr><td class="k"><b>0.4.34</b> · 03.11.2026</td><td>"Precise recording" every second: the board is read about once a second, the "15 min" (a point per second) and "1 h" charts update live, the page does not jump</td></tr>
       <tr><td class="k"><b>0.4.33</b> · 03.11.2026</td><td>"Precise recording" on "Charts": every reading (every 2 s), also while the app is minimized; stops by itself. Sparse readings on the charts are drawn dashed with dots</td></tr>
       <tr><td class="k"><b>0.4.32</b> · 03.11.2026</td><td>guide and glossary: the watts under the percent are not the grid voltage; the inverter shows the grid voltage (INPUT / OUTPUT)</td></tr>

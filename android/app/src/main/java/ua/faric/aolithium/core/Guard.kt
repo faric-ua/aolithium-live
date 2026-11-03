@@ -304,7 +304,11 @@ object Guard {
     }
 
     /** Що відомо про одну батарею для «я працюю» і «/стан». */
-    data class Seen(val name: String, val snapshot: BatterySnapshot?, val at: Long?, val outageA: Double = Outages.START_A)
+    data class Seen(
+        val name: String, val snapshot: BatterySnapshot?, val at: Long?, val outageA: Double = Outages.START_A,
+        /** T94: світла нема з … (стан сторожа). */
+        val out: Alerts.OutMark? = null,
+    )
 
     fun daily(batteries: List<Seen>, now: Long, tz: TimeZone = TimeZone.getDefault(), version: String? = null): Msg =
         Msg(Kind.DAILY, tr("Сторож працює · ${Background.hhmm(now, tz)}", "The guard is working · ${Background.hhmm(now, tz)}"),
@@ -328,7 +332,8 @@ object Guard {
                 s == null || at == null -> "🔋 ${b.name}: " + tr("даних ще нема", "no data yet")
                 now - at > NO_DATA_MS -> "🔋 ${b.name}: " + tr("не бачу з ${Background.hhmm(at, tz)}; тоді було ${s.soc} %",
                     "not seen since ${Background.hhmm(at, tz)}; it was ${s.soc} % then")
-                else -> "🔋 ${b.name}: ${short(s)} · " + tr("о ${Background.hhmm(at, tz)}", "at ${Background.hhmm(at, tz)}")
+                else -> "🔋 ${b.name}: ${short(s)} · " + tr("о ${Background.hhmm(at, tz)}", "at ${Background.hhmm(at, tz)}") +
+                    (b.out?.takeIf { Outages.isOutageDraw(s.current, s.soc, b.outageA) }?.let { "\n💡 " + Alerts.outageNow(it, now, tz) } ?: "")
             }
         }
     }

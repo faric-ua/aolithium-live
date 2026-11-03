@@ -85,4 +85,27 @@ class WidgetModelTest {
         assertEquals("—", m.percent)
         assertEquals(0f, m.ring, 0f)
     }
+
+    // ---------- T94: світла нема з … ----------
+
+    @Test
+    fun outageSinceOnCard() {
+        // світла нема з 11:40 (8 год тому)
+        val out = Alerts.OutMark(at - 8 * 60 * min, approx = false)
+        val m = WidgetModel.of("Мама", snap(-5.2, 89), at, at + 2 * min, kyiv, out = out)
+        assertEquals("світла нема з 11:40 · 8 год 2 хв", m.status)
+        // з попереднього дня — з датою; після пропуску — «щонайменше»
+        val y = Alerts.OutMark(at - 22 * 60 * min, approx = true)
+        assertEquals("світла нема щонайменше з 18.10, 21:40 · 22 год", WidgetModel.of("Мама", snap(-5.2, 89), at, at, kyiv, out = y).status)
+        // без стану — як було; малий розряд повної — «світло є?», навіть якщо стан каже «нема»
+        assertEquals("віддає — світла нема", WidgetModel.of("Мама", snap(-5.2, 89), at, at, kyiv).status)
+        assertEquals("віддає трохи — світло є?", WidgetModel.of("Мама", snap(-0.6, 100), at, at, kyiv, out = out).status)
+    }
+
+    @Test
+    fun outMarkOnlyWhenConfirmed() {
+        assertEquals(null, Alerts.outMark(Alerts.State()))
+        assertEquals(Alerts.OutMark(at, false), Alerts.outMark(Alerts.State(outage = true, outStart = at)))
+        assertEquals(Alerts.OutMark(at, true), Alerts.outMark(Alerts.State(outage = true, outStart = at, outLate = true)))
+    }
 }
