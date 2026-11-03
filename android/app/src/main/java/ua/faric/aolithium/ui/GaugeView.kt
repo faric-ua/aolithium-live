@@ -88,6 +88,17 @@ class GaugeView(context: Context) : View(context) {
             invalidate()
         }
 
+    /**
+     * T95 (faric 03.11 22:15, картинка сторожа: «спідометр збільшити, цифри трохи зменшити»): множник для чисел усередині
+     * спідометра. 1 — як у застосунку; на картинці бота менше.
+     * T96: оголошено ДО фарб (Paint) — у 0.4.36 стояло нижче, і поки фарби створювались, тут ще був 0: розмір поділок
+     * 0 / 20 / 50 / 90 / 100 ставав нулем, і вони зникли (і в боті, і в застосунку). Kotlin ініціалізує поля по черзі.
+     */
+    var textScale: Float = 1f
+
+    /** T96: розмір підписів поділок (sp, без [textScale]); на картинці бота — більший (12,5), бо підкова більша. */
+    var tickSp: Float = 11f
+
     private val dp = resources.displayMetrics.density
     private val zoneStroke = 9 * dp
     private val fillStroke = 16 * dp
@@ -105,12 +116,6 @@ class GaugeView(context: Context) : View(context) {
     }
     private val box = RectF()
     private val path = Path()
-
-    /**
-     * T95 (faric 03.11 22:15, картинка сторожа: «спідометр збільшити, цифри трохи зменшити»): множник для чисел усередині
-     * спідометра. 1 — як у застосунку; на картинці бота менше.
-     */
-    var textScale: Float = 1f
 
     private fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, resources.displayMetrics) * textScale
 
@@ -168,8 +173,10 @@ class GaugeView(context: Context) : View(context) {
         fill.color = if (old != null) Palette.faint else if (soc < 20) toneColor(Zones.of(soc).tone) else Palette.accent
         if (soc > 0 && !noData && !blank) canvas.drawArc(box, START, SWEEP * soc / 100f, false, fill)
 
-        // поділки 0 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення. Центр підпису відсуваємо від дуги на
+        // поділки 0 / 10 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення. Центр підпису відсуваємо від дуги на
         // половину його ширини/висоти в напрямку дуги — інакше широке «100» торкалось дуги (скрін faric 19.10 04:41, T18).
+        // T96: розмір ставимо тут, а не при створенні фарби — тоді не залежить від порядку полів
+        tick.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tickSp, resources.displayMetrics)
         val rTick = rFill - fillStroke / 2 - 12 * dp
         val rEdge = rFill - fillStroke / 2 - 5 * dp
         var zeroRight = cx - rTick // T71: правий край підпису «0» і лівий край «100» — між ними місце для «немає зв'язку»
@@ -339,7 +346,8 @@ class GaugeView(context: Context) : View(context) {
         private const val FRAME_MS = 40L
         private const val START = 150f
         private const val SWEEP = 240f
-        private val TICKS = listOf(0, 20, 50, 90, 100)
+        /** T96 (faric 04.11): + «10» — межа червоної й помаранчевої зон. */
+        private val TICKS = listOf(0, 10, 20, 50, 90, 100)
 
         /** Колір температури — як у картці «Температура» на «Зараз». */
         fun tempColor(t: Double) = when {

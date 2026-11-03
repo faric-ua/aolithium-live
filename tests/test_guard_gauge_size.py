@@ -13,11 +13,21 @@ class GuardGaugeSize(unittest.TestCase):
         import re
         dp = int(re.search(r"const val BOT_GAUGE_DP = (\d+)", art).group(1))
         w = int(re.search(r"const val GAUGE_W_DP = (\d+)", art).group(1))
-        # T95: спідометр більший (320), картинка ширша — висота ≈ 16 + 30 (назва) + 0,88 × бік + 8 + 3 рядки × 22 + 16
-        h = 16 + 30 + 0.88 * dp + 8 + 3 * 22 + 16
-        self.assertTrue(0.92 <= w / h <= 1.12, (w, h))
-        self.assertTrue(dp >= 300, dp)  # faric 03.11 22:15: «спідометр збільшити»
+        f = lambda n: float(re.search(r"const val %s = ([\d.]+)f" % n, art).group(1))
+        # T96: висота = 16 + назва + 0,88 × бік + проміжок + 3 рядки + низ (як у gauge())
+        h = 16 + f("HEAD_DP") + 0.88 * dp + f("GAP_DP") + 3 * f("LINE_DP") + f("BOTTOM_DP")
+        # T87: 360×400 (0,9) Telegram обрізав у особистому чаті; тримаємо ≥ 0,93
+        self.assertTrue(0.93 <= w / h <= 1.12, (w, h))
+        self.assertTrue(dp >= 360, dp)  # faric 04.11, макет «варіант А»: підкова майже на всю ширину
+        self.assertLessEqual(dp, w - 32)  # влазить у картинку з полями по 16
         self.assertIn("textScale = BOT_TEXT_SCALE", art)
+
+    def test_ticks_size_does_not_depend_on_field_order(self):
+        # T96: у 0.4.36 textScale стояв нижче фарб — поділки отримали розмір 0 і зникли
+        g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
+        self.assertLess(g.index("var textScale"), g.index("private val tick = Paint"))
+        self.assertIn("tick.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tickSp", g)
+        self.assertIn("listOf(0, 10, 20, 50, 90, 100)", g)
 
     def test_gauge_uses_fixed_size_before_screen(self):
         g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")

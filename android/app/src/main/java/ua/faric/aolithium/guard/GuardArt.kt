@@ -47,9 +47,15 @@ object GuardArt {
      * T95 (faric 03.11 22:15 «спідометр збільшити, цифри трохи зменшити»): 250 → 320 dp, а сама картинка ширша —
      * [GAUGE_W_DP] 420 замість 360, щоб лишалась майже квадратною (~420×416); числа в спідометрі — [BOT_TEXT_SCALE].
      */
-    const val BOT_GAUGE_DP = 320
+    const val BOT_GAUGE_DP = 370 // T96 (faric 04.11, макет «варіант А»): підкова майже на всю ширину (було 320)
     const val GAUGE_W_DP = 420
     const val BOT_TEXT_SCALE = 0.9f
+    const val BOT_TICK_SP = 12.5f
+    /** T96: щільніше над і під спідометром, щоб картинка з більшою підковою лишалась майже квадратною (~420×446). */
+    private const val HEAD_DP = 28f
+    private const val LINE_DP = 20f
+    private const val GAP_DP = 4f
+    private const val BOTTOM_DP = 12f
     private const val FOOT_DP = 26f
     private const val WAIT_MS = 5_000L
 
@@ -105,6 +111,7 @@ object GuardArt {
             // 360×400 dp — у особистому чаті з довгим підписом Telegram показує її ширше й обрізає верх і низ. 250 dp → ~360×355.
             fixedSideDp = BOT_GAUGE_DP
             textScale = BOT_TEXT_SCALE
+            tickSp = BOT_TICK_SP
             soc = s.soc
             current = s.current
             power = s.power
@@ -120,19 +127,19 @@ object GuardArt {
         view.layout(0, 0, inner, gh)
         val model = WidgetModel.of(name, s, at, now, outageA = oa, out = out)
         val zone = Zones.of(s.soc)
-        val head = 30 * d
+        val head = HEAD_DP * d
         val lines = listOf(zone.title to GaugeView.toneColor(zone.tone), model.status to statusColor(model.tone), model.line1 to Palette.muted)
             // T65 рядок «температура …» тут не потрібен: з T67 вона над «NN %» у самому спідометрі
             .filter { it.first.isNotBlank() }
-        val lineH = 22 * d
-        val h = (pad + head + gh + 8 * d + lines.size * lineH + pad).toInt()
+        val lineH = LINE_DP * d
+        val h = (pad + head + gh + GAP_DP * d + lines.size * lineH + BOTTOM_DP * d).toInt()
         return frame(w, h) { c ->
             header(c, name, model, at, now, pad, pad, w - pad, d)
             c.save()
             c.translate(pad, pad + head)
             view.draw(c)
             c.restore()
-            var y = pad + head + gh + 8 * d
+            var y = pad + head + gh + GAP_DP * d
             lines.forEachIndexed { i, (text, color) ->
                 val p = text(if (i == 0) 15f else 13.5f, d, color, medium = i < 2, center = true)
                 c.drawText(fit(text, p, w - 2 * pad), w / 2f, y + p.textSize, p)
