@@ -42,6 +42,8 @@ object WidgetModel {
     fun of(
         name: String, s: BatterySnapshot?, at: Long?, now: Long, tz: TimeZone = TimeZone.getDefault(),
         outageA: Double = Outages.START_A,
+        /** T94: світла нема з … (стан сторожа / сповіщень); null — не знаємо. */
+        out: Alerts.OutMark? = null,
     ): Model {
         if (s == null || at == null) {
             return Model(
@@ -84,7 +86,9 @@ object WidgetModel {
                 Model(
                     name, Tone.DISCHARGE, pct, ring, ah, Fmt.watts(abs(s.power)), Arrow.UP,
                     // T85: малий розряд повної батареї — не стверджувати «світла нема» (інвертор може живитися від неї)
-                    if (Outages.isOutageDraw(s.current, s.soc, outageA)) tr("віддає — світла нема", "discharging — no power")
+                    if (Outages.isOutageDraw(s.current, s.soc, outageA)) {
+                        out?.let { Alerts.outageNow(it, now, tz) } ?: tr("віддає — світла нема", "discharging — no power")
+                    }
                     else tr("віддає трохи — світло є?", "small draw — power on?"),
                     left, saved, "$short · $time",
                 )

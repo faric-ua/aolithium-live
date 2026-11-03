@@ -198,4 +198,14 @@ class GuardTest {
         val m = gone.messages.single()
         assertTrue(m.text, m.text.startsWith("Причина: батарею видно, але сигнал слабкий (-94 dBm)"))
     }
+
+    @Test fun t94_status_says_since_when_no_power() {
+        // t0 = 08:00; світла нема з 23:15 учора
+        val out = Alerts.OutMark(t0 - 525 * min, approx = false)
+        val st = Guard.status(listOf(Guard.Seen("Мама", snap(soc = 89, current = -5.2), t0 - min, out = out)), t0, kyiv)
+        assertTrue(st, st.contains("\n💡 світла нема з ") && st.contains("· 8 год 45 хв"))
+        // світло є (заряджається) — рядка нема, навіть якщо стан ще не встиг змінитись
+        val back = Guard.status(listOf(Guard.Seen("Мама", snap(soc = 89, current = 10.0), t0 - min, out = out)), t0, kyiv)
+        assertFalse(back, back.contains("💡"))
+    }
 }

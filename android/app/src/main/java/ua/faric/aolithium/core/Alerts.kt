@@ -262,6 +262,24 @@ object Alerts {
         }
     }
 
+    /**
+     * T94 (faric 03.11 18:55, картинка маминого сторожа «віддає — світла нема»): коли зникло світло — щоб на картинці,
+     * у віджеті й /status було видно «з котрої» і «скільки вже». [approx] — розряд помітили після пропуску (телефон був
+     * далеко), справжній початок раніше.
+     */
+    data class OutMark(val since: Long, val approx: Boolean)
+
+    /** Світла нема (підтверджено) — коли почалось; інакше null. */
+    fun outMark(st: State): OutMark? = if (st.outage && st.outStart > 0L) OutMark(st.outStart, st.outLate) else null
+
+    /** «світла нема з 10:47 · 8 год 05 хв» (інший день — «з 02.11, 22:10»; після пропуску — «щонайменше з …»). */
+    fun outageNow(m: OutMark, now: Long, tz: TimeZone = TimeZone.getDefault()): String {
+        val from = at(m.since, now, tz)
+        val long = Fmt.since((now - m.since).coerceAtLeast(0L) / 3_600_000.0)
+        return if (m.approx) tr("світла нема щонайменше з $from · $long", "no power since at least $from · $long")
+        else tr("світла нема з $from · $long", "no power since $from · $long")
+    }
+
     fun outageStartText(s: BatterySnapshot): String {
         val w = Fmt.watts(abs(s.power))
         val parts = mutableListOf(tr("Батарея віддає $w", "Battery discharging at $w"), "${s.soc} %")

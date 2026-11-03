@@ -9,6 +9,7 @@ import android.os.PowerManager
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.DiagFrames
 import ua.faric.aolithium.ble.LinkLog
+import ua.faric.aolithium.core.Alerts
 import ua.faric.aolithium.core.BatterySnapshot
 import ua.faric.aolithium.core.BmsMatch
 import ua.faric.aolithium.core.Diag
@@ -51,7 +52,10 @@ object GuardRunner {
 
     /** Про що картинка: одна батарея (знімок, з якого повідомлення) або стан усіх батарей сторожа. */
     private sealed class Pic {
-        data class One(val name: String, val snapshot: BatterySnapshot?, val at: Long?, val outageA: Double = Outages.START_A) : Pic()
+        data class One(
+            val name: String, val snapshot: BatterySnapshot?, val at: Long?, val outageA: Double = Outages.START_A,
+            val out: Alerts.OutMark? = null, // T94
+        ) : Pic()
         object All : Pic()
     }
 
@@ -105,7 +109,7 @@ object GuardRunner {
             val oa = AlertSettings(app).outageA(address) // T85
             val step = Guard.onSnapshot(st.state(address), s, atMs, nm, outageA = oa)
             st.save(address, step.state)
-            queue(app, step.messages, Pic.One(nm, s, atMs, oa))
+            queue(app, step.messages, Pic.One(nm, s, atMs, oa, Alerts.outMark(step.state.alerts)))
         }
     }
 
@@ -125,7 +129,8 @@ object GuardRunner {
             if (step.messages.isNotEmpty()) {
                 st.save(address, step.state)
                 val last = LastSnapshot(app).load(address)
-                queue(app, step.messages, Pic.One(nm, last?.first, last?.second, AlertSettings(app).outageA(address)))
+                queue(app, step.messages, Pic.One(nm, last?.first, last?.second, AlertSettings(app).outageA(address),
+                    Alerts.outMark(step.state.alerts)))
             }
         }
     }
@@ -180,7 +185,7 @@ object GuardRunner {
 
     private fun seen(ctx: Context): List<Guard.Seen> = BgSettings(ctx).enabled().filterNot { it.startsWith("demo:") }.sorted().map { a ->
         val last = LastSnapshot(ctx).load(a)
-        Guard.Seen(name(ctx, a), last?.first, last?.second, AlertSettings(ctx).outageA(a))
+        Guard.Seen(name(ctx, a), last?.first, last?.second, AlertSettings(ctx).outageA(a), Alerts.outMark(GuardSettings(ctx).state(a).alerts))
     }
 
     private fun queue(ctx: Context, msgs: List<Guard.Msg>, pic: Pic) {
@@ -226,12 +231,12 @@ object GuardRunner {
         if (look == GuardPicture.Look.NONE) return null
         val now = System.currentTimeMillis()
         return when (pic) {
-            is Pic.One -> GuardArt.battery(ctx, look, pic.name, pic.snapshot, pic.at, now, pic.outageA)
+            is Pic.One -> GuardArt.battery(ctx, look, pic.name, pic.snapshot, pic.at, now, pic.outageA, pic.out)
             Pic.All -> {
                 val all = seen(ctx)
                 when {
                     all.isEmpty() -> null
-                    all.size == 1 && !grid -> GuardArt.battery(ctx, look, all[0].name, all[0].snapshot, all[0].at, now, all[0].outageA)
+                    all.size == 1 && !grid -> GuardArt.battery(ctx, look, all[0].name, all[0].snapshot, all[0].at, now, all[0].outageA, all[0].out)
                     else -> GuardArt.grid(ctx, all, now)
                 }
             }
