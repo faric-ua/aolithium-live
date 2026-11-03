@@ -25,11 +25,11 @@ class HistoryStore private constructor(context: Context) {
     private val lastAt = HashMap<String, Long>()
     private val day = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
 
-    /** Записати, якщо з попереднього запису цієї батареї минуло ≥ 10 с. */
-    fun record(address: String, s: BatterySnapshot, atMs: Long) {
+    /** Записати, якщо з попереднього запису цієї батареї минуло ≥ [every] (звичайно 10 с; «Точний запис», T91 — кожне читання). */
+    fun record(address: String, s: BatterySnapshot, atMs: Long, every: Long = HistoryMath.RECORD_EVERY_MS) {
         if (address.startsWith("demo:")) return
         val prev = lastAt[address] ?: 0L
-        if (atMs - prev < HistoryMath.RECORD_EVERY_MS - 500) return
+        if (atMs - prev < every - 500) return
         lastAt[address] = atMs
         val line = HistoryPoint.of(s, atMs).toCsv() + "\n"
         io.post {

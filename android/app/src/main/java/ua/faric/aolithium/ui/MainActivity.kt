@@ -21,9 +21,11 @@ import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import ua.faric.aolithium.BuildConfig
 import ua.faric.aolithium.bg.Notifier
+import ua.faric.aolithium.bg.PreciseMode
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BtAccess
 import ua.faric.aolithium.core.Lang
+import ua.faric.aolithium.core.Precise
 import ua.faric.aolithium.core.UpdateFeature
 import ua.faric.aolithium.core.tr
 import ua.faric.aolithium.data.LangSettings
@@ -450,6 +452,13 @@ class MainActivity : Activity() {
         screen?.onStop()
         Updater.detach(this)
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        // T91: застосунок закрили («Назад» з головної чи змахнули) — «Точний запис» вимикається, щоб не забути ввімкненим.
+        // Поворот / зміна теми (isFinishing = false) — не закриття.
+        if (isFinishing && PreciseMode.on) PreciseMode.stop(Precise.Stop.CLOSED)
+        super.onDestroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

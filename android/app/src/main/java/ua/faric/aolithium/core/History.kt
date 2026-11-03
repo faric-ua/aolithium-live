@@ -106,6 +106,38 @@ object HistoryMath {
         }
     }
 
+    /**
+     * T92 (faric 03.11): між справжніми замірами пройшло більше цього — на графіку пунктир з крапками, а не суцільна лінія.
+     * Запис з відкритого екрана — раз на 10 с, точний запис — раз на 2 с: суцільно. Запис у фоні — раз на 5 хв: пунктир
+     * (що було між замірами — невідомо, лінія лише з'єднує дві точки).
+     */
+    const val SPARSE_MS = 60_000L
+
+    /** Проміжки часу між сусідніми замірами, довші за [sparseMs] (за зростанням). На графіку — пунктир. */
+    fun sparseSpans(points: List<HistoryPoint>, sparseMs: Long = SPARSE_MS): List<LongRange> {
+        val out = ArrayList<LongRange>()
+        var prev: Long? = null
+        for (t in points.map { it.t }.sorted()) {
+            val a = prev
+            if (a != null && t - a > sparseMs) out += a..t
+            prev = t
+        }
+        return out
+    }
+
+    /** Чи відрізок графіка від [a] до [b] зачіпає рідкий проміжок з [sparseSpans] (пошук половинним діленням). */
+    fun sparseBetween(spans: List<LongRange>, a: Long, b: Long): Boolean {
+        if (spans.isEmpty() || b <= a) return false
+        // перший проміжок, що закінчується після a
+        var lo = 0
+        var hi = spans.size
+        while (lo < hi) {
+            val mid = (lo + hi) / 2
+            if (spans[mid].last <= a) lo = mid + 1 else hi = mid
+        }
+        return lo < spans.size && spans[lo].first < b
+    }
+
     fun stats(points: List<HistoryPoint>): HistoryStats {
         var inWh = 0.0
         var outWh = 0.0

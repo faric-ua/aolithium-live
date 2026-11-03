@@ -117,6 +117,12 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
+        <!-- T91 «Точний запис»: кожне читання в історію, поки застосунок згорнутий; вимикається сам (екран погас на 5 хв). -->
+        <service
+            android:name=".bg.PreciseService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
         <receiver
             android:name=".bg.BgReceiver"
             android:exported="true">

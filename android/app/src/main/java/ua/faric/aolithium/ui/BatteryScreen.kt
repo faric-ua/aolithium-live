@@ -15,6 +15,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import ua.faric.aolithium.bg.Notifier
+import ua.faric.aolithium.bg.PreciseMode
 import ua.faric.aolithium.bg.RecordService
 import ua.faric.aolithium.ble.BatteryLink
 import ua.faric.aolithium.ble.BleScanner
@@ -41,6 +42,7 @@ import ua.faric.aolithium.core.GuardPicture
 import ua.faric.aolithium.core.Health
 import ua.faric.aolithium.core.HistoryCsv
 import ua.faric.aolithium.core.HistoryMath
+import ua.faric.aolithium.core.Precise
 import ua.faric.aolithium.core.HistoryPoint
 import ua.faric.aolithium.core.JbdParser
 import ua.faric.aolithium.core.JkSettings
@@ -226,6 +228,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         l.lastSnapshot?.let { snapshot = it; snapshotAt = l.lastSnapshotAt; feed(it, l.lastSnapshotAt) }
         render()
         handler.post(ticker)
+        PreciseMode.observe(preciseChanged)
         if (tab == Tab.CHARTS) loadInsights()
         if (tab == Tab.CELLS) loadHour()
     }
@@ -241,8 +244,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
     override fun onStop() {
         handler.removeCallbacks(ticker)
+        PreciseMode.unobserve(preciseChanged)
         LinkHolder.release(this)
     }
+
+    /** T91: точний запис увімкнули / вимкнули (і сам, і з шторки) — перемалювати картку на «Графіках». */
+    private val preciseChanged: () -> Unit = { if (tab == Tab.CHARTS) render() }
 
     override fun save(out: Bundle) {
         renameDraft?.let { out.putString(KEY_DRAFT, it) }
@@ -314,7 +321,9 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             remembered = true
             batteries.remember(address, Batteries.scanNames[address] ?: snapshot.model, Batteries.kindOf(host, address))
         }
-        history.record(address, snapshot, atMs)
+        val precise = PreciseMode.isOn(address)
+        history.record(address, snapshot, atMs, every = Precise.recordEvery(precise))
+        if (precise) PreciseMode.counted()
         lastStore.save(address, snapshot, atMs)
         if (demo == null) {
             Notifier.onSnapshot(host, address, snapshot, atMs)
@@ -877,7 +886,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 val chart = ChartView(host).apply {
                     set(listOf(ChartView.Series(tr("Різниця", "Difference"), Palette.accent,
                             HistoryMath.bucket(hp, from, to, 120) { it.deltaMv?.toDouble() })),
-                        from, to, Fmt.MV, 0, min = 0.0, gapMs = HistoryMath.GAP_MS)
+                        from, to, Fmt.MV, 0, min = 0.0, gapMs = HistoryMath.GAP_MS, sparse = HistoryMath.sparseSpans(hp))
                 }
                 hour.addView(chart, ui.matchWrap())
                 val first = hp.firstNotNullOfOrNull { it.deltaMv }
@@ -1054,6 +1063,47 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
     }
 
+    /**
+     * T91 «Точний запис» (faric 03.11): кнопка увімкнути / вимкнути. Стан лише в пам'яті — після закриття застосунку
+     * завжди вимкнено. Пише кожне читання (~2 с) і коли застосунок згорнутий; екран погас на 5 хв — вимикається сам.
+     */
+    private fun preciseCard(): View {
+        val on = PreciseMode.isOn(address)
+        val hm = java.text.SimpleDateFormat("HH:mm", java.util.Locale.ROOT)
+        val c = if (on) ui.card(8, fill = Palette.accentFill, stroke = Palette.accent) else ui.card(8)
+        c.addView(labelRow(tr("Точний запис", "Precise recording") + if (on) tr(" · іде", " · on") else "", LineIcon.PULSE, "precise"))
+        if (on) {
+            val since = hm.format(java.util.Date(PreciseMode.startedAt))
+            c.addView(ui.text(tr("Пише кожне читання з $since · записано ${PreciseMode.points}",
+                "Saving every reading since $since · ${PreciseMode.points} saved"), 14f))
+            c.addView(ui.muted(tr("Можна згорнути застосунок чи відкрити інший — запис іде далі. Вимкнеться сам, коли закриєш " +
+                "застосунок або екран телефона погасне на 5 хв.",
+                "You can minimize the app or open another one — recording continues. It stops by itself when you close the app " +
+                "or the phone screen is off for 5 min."), 13f))
+            c.addView(ui.button(tr("Вимкнути точний запис", "Turn off precise recording")) {
+                PreciseMode.stop(Precise.Stop.USER)
+            }, ui.matchWrap())
+        } else {
+            c.addView(ui.muted(tr("Кожне читання плати (раз на 2 с) — в історію, а не раз на 10 с. Видно справжні стрибки струму. " +
+                "Пише й коли застосунок згорнутий. Вимкнеться сам, коли закриєш застосунок або екран погасне на 5 хв.",
+                "Every board reading (every 2 s) goes to history instead of every 10 s. Shows the real current jumps. " +
+                "Keeps recording when the app is minimized. Stops by itself when you close the app or the screen is off for 5 min."), 13f))
+            PreciseMode.lastRun?.let { r ->
+                c.addView(ui.muted(tr("Останній: ${hm.format(java.util.Date(r.from))}–${hm.format(java.util.Date(r.to))} · ${r.why.text}",
+                    "Last: ${hm.format(java.util.Date(r.from))}–${hm.format(java.util.Date(r.to))} · ${r.why.text}"), 12.5f))
+            }
+            c.addView(ui.button(tr("Увімкнути точний запис", "Turn on precise recording"), Ui.Kind.PRIMARY) {
+                if (PreciseMode.start(host, address)) {
+                    // одразу підхопити нові точки на графіках
+                    pointsLoadedAt = 0L
+                } else {
+                    host.toast(tr("Телефон не дав увімкнути — дивись «Журнал зв'язку»", "The phone did not allow it — see \"Connection log\""))
+                }
+            }, ui.matchWrap())
+        }
+        return c
+    }
+
     private fun renderCharts() {
         // Періоди — один рядок на всю ширину, 5 рівних кнопок.
         val chipList = ArrayList<View>()
@@ -1069,6 +1119,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         }
         chipList.forEach { (it as TextView).apply { minWidth = 0; setPadding(ui.dp(2), ui.dp(8), ui.dp(2), ui.dp(8)); textSize = 14f } }
         body.addView(ui.grid(chipList, perRow = chipList.size, gapDp = 6), ui.matchWrap())
+        if (demo == null) body.addView(preciseCard(), ui.matchWrap())
         val shown = pointsFor
         if (shown == null) {
             body.addView(ui.muted(tr("Завантажую історію…", "Loading history…"), 14f).apply { minHeight = ui.dp(ChartView.HEIGHT_DP) },
@@ -1110,6 +1161,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
 
         val n = 240
         val gap = maxOf(HistoryMath.GAP_MS, shown.ms / n * 3)
+        val sparse = HistoryMath.sparseSpans(pts) // T92: де заміри рідкі — пунктир з крапками
         fun ser(name: String, color: Int, f: (HistoryPoint) -> Double?) = ChartView.Series(name, color, HistoryMath.bucket(pts, from, to, n, f))
         fun chartCard(name: String, icon: LineIcon, info: String, chart: ChartView, legend: List<Pair<String, Int>> = emptyList()): View {
             val c = ui.card(8)
@@ -1123,25 +1175,25 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
             return c
         }
         val socChart = ChartView(host).apply { set(listOf(ser(tr("Заряд", "Charge"), Palette.accent) { it.soc.toDouble() }), from, to, "%",
-                0, min = 0.0, max = 100.0, gapMs = gap) }
+                0, min = 0.0, max = 100.0, gapMs = gap, sparse = sparse) }
         val curChart = ChartView(host).apply { set(listOf(ser(tr("Струм", "Current"), Palette.success) { it.current }), from, to, Fmt.A, 2,
-                zeroSplit = true, gapMs = gap) }
+                zeroSplit = true, gapMs = gap, sparse = sparse) }
         val pwrChart = ChartView(host).apply { set(listOf(ser(tr("Потужність", "Power"), Palette.success) { it.power }), from, to, Fmt.W, 0,
-                zeroSplit = true, gapMs = gap) }
+                zeroSplit = true, gapMs = gap, sparse = sparse) }
         val vChart = ChartView(host).apply { set(listOf(ser(tr("Напруга", "Voltage"), Palette.accent) { it.voltage }), from, to, Fmt.V, 2,
-                gapMs = gap) }
+                gapMs = gap, sparse = sparse) }
         val tChart = ChartView(host).apply {
             set(listOf(ser(tr("Макс.", "Max"), Palette.warning) { it.tempMax }, ser(tr("Мін.", "Min"), Palette.accent) { it.tempMin }),
-                    from, to, "°C", 1, gapMs = gap)
+                    from, to, "°C", 1, gapMs = gap, sparse = sparse)
         }
         val dChart = ChartView(host).apply { set(listOf(ser(tr("Різниця", "Difference"), Palette.warning) { it.deltaMv?.toDouble() }), from,
-                to, Fmt.MV, 0, min = 0.0, gapMs = gap) }
+                to, Fmt.MV, 0, min = 0.0, gapMs = gap, sparse = sparse) }
         // Без зеленого й червоного: тут вони означають заряд / розряд.
         val cellColors = listOf(Palette.warning, Palette.accent, Palette.violet, Palette.text)
         val cellsN = pts.lastOrNull()?.cellsMv?.size ?: 0
         val cChart = ChartView(host).apply {
             set((0 until cellsN).map { i -> ser(cellNo(i + 1), cellColors[i % cellColors.size]) { p -> p.cellsMv.getOrNull(i)?.div(1000.0) } },
-                from, to, Fmt.V, 3, gapMs = gap)
+                from, to, Fmt.V, 3, gapMs = gap, sparse = sparse)
         }
         val left = listOf(
             sum,
@@ -1160,6 +1212,12 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
         )
         val ins = insightCards()
         columns(ins.take(2) + left, right + ins.drop(2))
+        if (sparse.isNotEmpty()) {
+            body.addView(ui.muted(tr("Суцільна лінія — часті заміри (точні). Пунктир з крапками — рідкі заміри, напр. запис у фоні раз на 5 хв: " +
+                "що було між крапками, невідомо. Для точних графіків — «Точний запис» угорі.",
+                "Solid line — frequent readings (exact). Dashed line with dots — sparse readings, e.g. background recording every 5 min: " +
+                "what happened between the dots is unknown. For exact charts — \"Precise recording\" at the top."), 12.5f), ui.matchWrap())
+        }
         body.addView(ui.muted(tr("Торкнись графіка й веди пальцем — побачиш значення в будь-який момент.",
                 "Touch a chart and slide your finger to see the value at any moment."), 12.5f).apply { gravity = Gravity.CENTER }, ui.matchWrap())
     }
@@ -2090,6 +2148,7 @@ class BatteryScreen(host: MainActivity, private val address: String, state: Bund
                 host.overlay.dismiss()
                 if (i == 0) {
                     batteries.forget(address)
+                    if (PreciseMode.isOn(address)) PreciseMode.stop(Precise.Stop.USER)
                     LinkHolder.stopNow()
                     host.goHome()
                 }
