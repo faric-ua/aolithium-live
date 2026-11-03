@@ -106,7 +106,13 @@ class GaugeView(context: Context) : View(context) {
     private val box = RectF()
     private val path = Path()
 
-    private fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, resources.displayMetrics)
+    /**
+     * T95 (faric 03.11 22:15, картинка сторожа: «спідометр збільшити, цифри трохи зменшити»): множник для чисел усередині
+     * спідометра. 1 — як у застосунку; на картинці бота менше.
+     */
+    var textScale: Float = 1f
+
+    private fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, resources.displayMetrics) * textScale
 
     private fun describe() {
         val dir = when {
