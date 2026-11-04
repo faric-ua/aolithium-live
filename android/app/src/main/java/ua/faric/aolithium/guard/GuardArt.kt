@@ -117,6 +117,7 @@ object GuardArt {
             tickSp = BOT_TICK_SP
             // T97 (faric 04.11 01:51–01:58): числа більші й рівномірно від «50» до низу — 7 смуг
             slots = true
+            fixedText = true // T98: шрифт телефона-сторожа (великий у мами) не міняє картинку
             bigSp = BOT_BIG_SP
             tempSp = BOT_TEMP_SP
             ampSp = BOT_AMP_SP

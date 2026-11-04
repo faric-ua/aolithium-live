@@ -113,6 +113,16 @@ class GaugeView(context: Context) : View(context) {
      */
     var slots: Boolean = false
 
+    /**
+     * T98 (скрін маминої групи 04.11 22:31): на маминому телефоні (Realme, великий шрифт у налаштуваннях) відсотки,
+     * температура й вати на картинці бота налізли одне на одне — розміри «sp» ростуть разом зі шрифтом телефона, а смуги
+     * (T97) — ні. Для картинки бота розміри — у dp: однаково на будь-якому телефоні. У застосунку — sp, як і було
+     * (людина з великим шрифтом бачить більші числа).
+     */
+    var fixedText: Boolean = false
+
+    private val textUnit: Int get() = if (fixedText) TypedValue.COMPLEX_UNIT_DIP else TypedValue.COMPLEX_UNIT_SP
+
     private val dp = resources.displayMetrics.density
     private val zoneStroke = 9 * dp
     private val fillStroke = 16 * dp
@@ -131,7 +141,7 @@ class GaugeView(context: Context) : View(context) {
     private val box = RectF()
     private val path = Path()
 
-    private fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, resources.displayMetrics) * textScale
+    private fun sp(v: Float) = TypedValue.applyDimension(textUnit, v, resources.displayMetrics) * textScale
 
     private fun describe() {
         val dir = when {
@@ -190,7 +200,7 @@ class GaugeView(context: Context) : View(context) {
         // поділки 0 / 10 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення. Центр підпису відсуваємо від дуги на
         // половину його ширини/висоти в напрямку дуги — інакше широке «100» торкалось дуги (скрін faric 19.10 04:41, T18).
         // T96: розмір ставимо тут, а не при створенні фарби — тоді не залежить від порядку полів
-        tick.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tickSp, resources.displayMetrics)
+        tick.textSize = TypedValue.applyDimension(textUnit, tickSp, resources.displayMetrics)
         val rTick = rFill - fillStroke / 2 - 12 * dp
         val rEdge = rFill - fillStroke / 2 - 5 * dp
         var label50 = cy - rTick // T97: низ підпису «50» — звідси починаються смуги
