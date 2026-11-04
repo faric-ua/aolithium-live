@@ -45,11 +45,15 @@ object GuardArt {
     /**
      * T87: розмір спідометра на картинці бота — картинка майже квадратна, Telegram не обрізає.
      * T95 (faric 03.11 22:15 «спідометр збільшити, цифри трохи зменшити»): 250 → 320 dp, а сама картинка ширша —
-     * [GAUGE_W_DP] 420 замість 360, щоб лишалась майже квадратною (~420×416); числа в спідометрі — [BOT_TEXT_SCALE].
+     * [GAUGE_W_DP] 420 замість 360, щоб лишалась майже квадратною (~420×416); числа в спідометрі — BOT_*_SP (T97).
      */
     const val BOT_GAUGE_DP = 370 // T96 (faric 04.11, макет «варіант А»): підкова майже на всю ширину (було 320)
     const val GAUGE_W_DP = 420
-    const val BOT_TEXT_SCALE = 0.9f
+    /** T97: розміри чисел у спідометрі бота (sp): 0.4.37 було 43,2 / 12,6 / 21,6 / 11,7; faric: +6 / +6 / +6 / +6. */
+    const val BOT_BIG_SP = 49.2f
+    const val BOT_TEMP_SP = 18.6f
+    const val BOT_AMP_SP = 27.6f
+    const val BOT_LINE_SP = 17.7f
     const val BOT_TICK_SP = 12.5f
     /** T96: щільніше над і під спідометром, щоб картинка з більшою підковою лишалась майже квадратною (~420×446). */
     private const val HEAD_DP = 28f
@@ -110,8 +114,14 @@ object GuardArt {
             // T86: не залежить від того, як зараз повернуто екран телефона. T87 (скріни faric 01.11): 300 dp давали картинку
             // 360×400 dp — у особистому чаті з довгим підписом Telegram показує її ширше й обрізає верх і низ. 250 dp → ~360×355.
             fixedSideDp = BOT_GAUGE_DP
-            textScale = BOT_TEXT_SCALE
             tickSp = BOT_TICK_SP
+            // T97 (faric 04.11 01:51–01:58): числа більші й рівномірно від «50» до низу — 7 смуг
+            slots = true
+            bigSp = BOT_BIG_SP
+            tempSp = BOT_TEMP_SP
+            ampSp = BOT_AMP_SP
+            smallSp = BOT_LINE_SP
+            capSp = BOT_LINE_SP
             soc = s.soc
             current = s.current
             power = s.power
