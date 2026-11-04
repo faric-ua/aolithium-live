@@ -99,6 +99,20 @@ class GaugeView(context: Context) : View(context) {
     /** T96: розмір підписів поділок (sp, без [textScale]); на картинці бота — більший (12,5), бо підкова більша. */
     var tickSp: Float = 11f
 
+    /** T97: розміри чисел усередині (sp, до [textScale]): відсотки, вати/ампери, 3-й рядок, підпис А·год, температура. */
+    var bigSp: Float = 48f
+    var ampSp: Float = 24f
+    var smallSp: Float = 13f
+    var capSp: Float = 13f
+    var tempSp: Float = 14f
+
+    /**
+     * T97 (faric 04.11 01:58, картинка бота): місце від поділки «50» до низу спідометра — 7 рівних смуг: порожня,
+     * температура, відсотки, вати, «13,32 В · стоїть», «92,3 з 92,3 А·год», порожня. Кожен рядок — посередині своєї смуги.
+     * У застосунку — як було (false).
+     */
+    var slots: Boolean = false
+
     private val dp = resources.displayMetrics.density
     private val zoneStroke = 9 * dp
     private val fillStroke = 16 * dp
@@ -179,6 +193,7 @@ class GaugeView(context: Context) : View(context) {
         tick.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tickSp, resources.displayMetrics)
         val rTick = rFill - fillStroke / 2 - 12 * dp
         val rEdge = rFill - fillStroke / 2 - 5 * dp
+        var label50 = cy - rTick // T97: низ підпису «50» — звідси починаються смуги
         var zeroRight = cx - rTick // T71: правий край підпису «0» і лівий край «100» — між ними місце для «немає зв'язку»
         var hundredLeft = cx + rTick
         for (v in TICKS) {
@@ -188,6 +203,7 @@ class GaugeView(context: Context) : View(context) {
             val r = minOf(rTick, rEdge - halfW * kotlin.math.abs(cos(a)).toFloat() - halfH * kotlin.math.abs(sin(a)).toFloat())
             val x = cx + (r * cos(a)).toFloat()
             canvas.drawText("$v", x, cy + (r * sin(a)).toFloat() + halfH, tick)
+            if (v == 50) label50 = cy + (r * sin(a)).toFloat() + halfH
             if (v == TICKS.first()) zeroRight = x + halfW
             if (v == TICKS.last()) hundredLeft = x - halfW
         }
@@ -228,7 +244,7 @@ class GaugeView(context: Context) : View(context) {
         // на одному — підпис стояв за геометрією дуги, а 3-й рядок — за висотою шрифтів. Тепер спершу рахуємо всі
         // рядки по черзі (кожен нижче попереднього), а якщо низ не влазить — увесь блок піднімаємо.
         val inner = (rTick - 10 * dp) * 2f
-        big.textSize = sp(48f)
+        big.textSize = sp(bigSp)
         fit(big, "$soc %", inner * 0.9f)
         var yBig = cy + big.textSize * 0.15f
 
@@ -245,7 +261,7 @@ class GaugeView(context: Context) : View(context) {
         }
         big.color = if (old != null) Palette.muted else Palette.text
         amp.color = color
-        amp.textSize = sp(24f)
+        amp.textSize = sp(ampSp)
         val absA = kotlin.math.abs(current)
         val absW = kotlin.math.abs(power)
         val mainText = if (showAmps) Fmt.amps(absA) else Fmt.watts(absW)
@@ -254,7 +270,7 @@ class GaugeView(context: Context) : View(context) {
         var yAmp = yBig + amp.textSize * 1.3f
 
         // 3-й рядок — друге число, напруга й напрям
-        small.textSize = sp(13f)
+        small.textSize = sp(smallSp)
         val other = if (showAmps) Fmt.watts(absW) else Fmt.amps(absA)
         val line3 = if (old != null) old else when (flow) {
             1 -> "$other · " + tr("бере заряд", "charging")
@@ -269,7 +285,7 @@ class GaugeView(context: Context) : View(context) {
         val capPaint = Paint(small)
         var yCap = 0f
         if (caption.isNotEmpty()) {
-            capPaint.textSize = sp(13f)
+            capPaint.textSize = sp(capSp)
             val gapWidth = (2 * rFill * cos(Math.toRadians(30.0))).toFloat() * 0.7f
             fit(capPaint, caption, gapWidth)
             val geometric = cy + (rFill * sin(Math.toRadians(30.0))).toFloat() + fillStroke / 2 + capPaint.textSize
@@ -284,12 +300,24 @@ class GaugeView(context: Context) : View(context) {
             yCap -= overflow
         }
 
+        var yTemp = yBig - big.textSize * 1.02f
+        if (slots) {
+            // T97: 7 рівних смуг від «50» до низу; рядок — посередині смуги (цифри ≈ 0,72 висоти шрифту → +0,36)
+            val top = label50 + 3 * dp
+            val band = (height - top) / 7f
+            fun mid(k: Int, size: Float) = top + band * (k + 0.5f) + size * 0.36f
+            yTemp = mid(1, sp(tempSp))
+            yBig = mid(2, big.textSize)
+            yAmp = mid(3, amp.textSize)
+            y3 = mid(4, size3)
+            yCap = mid(5, capPaint.textSize)
+        }
         canvas.drawText("$soc %", cx, yBig, big)
         temperature?.let { t ->
             // над «NN %»: між великим числом і поділкою «50» вільно (верх цифр ≈ 0,75 розміру шрифту над рядком)
-            small.textSize = sp(14f)
+            small.textSize = sp(tempSp)
             small.color = if (old != null) Palette.muted else tempColor(t)
-            canvas.drawText(Fmt.celsius(t), cx, yBig - big.textSize * 1.02f, small)
+            canvas.drawText(Fmt.celsius(t), cx, yTemp, small)
             small.color = Palette.muted
         }
         val textW = amp.measureText(mainText)

@@ -20,7 +20,7 @@ class GuardGaugeSize(unittest.TestCase):
         self.assertTrue(0.93 <= w / h <= 1.12, (w, h))
         self.assertTrue(dp >= 360, dp)  # faric 04.11, макет «варіант А»: підкова майже на всю ширину
         self.assertLessEqual(dp, w - 32)  # влазить у картинку з полями по 16
-        self.assertIn("textScale = BOT_TEXT_SCALE", art)
+        self.assertIn("slots = true", art)  # T97: 7 смуг від «50» до низу
 
     def test_ticks_size_does_not_depend_on_field_order(self):
         # T96: у 0.4.36 textScale стояв нижче фарб — поділки отримали розмір 0 і зникли
