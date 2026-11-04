@@ -115,5 +115,8 @@
   змінився вигляд — свіжі знімки: пуш у `diag/ui-screens*` → `python3 scripts/guide_images.py <ui-screens>` (набір `g-uk-*`,
   `g-en-*` у `scripts/ci/ui-screens.sh`). Нова можливість — абзац / рядок / плитка в наявній групі, стиль не міняти.
   Той самий файл — артефакт «Інструкція Aolithium Live» (`--fragment`, картинки поруч).
+  **Поділитися з іншими людьми** (faric 04.11): `python3 scripts/build_guide.py --share OUT.html` — один файл, картинки
+  всередині, без особистого (телефони faric, мама, Termux-меню, Claude, коментарі); заміни — `SHARE_REPLACE`, сторож —
+  `SHARE_FORBIDDEN` і `tests/test_guide_share.py`. Змінив текст інструкції й тест упав — онови `SHARE_REPLACE`.
 - Ключ підпису: **свій** (`~/.android/aolithium-live.jks`, секрети `AL_*`), створює телефон (меню 7). Не ключ Track Catcher.
 - Пакет `ua.faric.aolithium` (debug — `.dev`); стоїть поруч з оригінальним `com.ao.lithium` 1.3, нічого в ньому не чіпає.
