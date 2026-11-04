@@ -110,6 +110,8 @@ class GaugeView(context: Context) : View(context) {
      * T97 (faric 04.11 01:58, картинка бота): місце від поділки «50» до низу спідометра — 7 рівних смуг: порожня,
      * температура, відсотки, вати, «13,32 В · стоїть», «92,3 з 92,3 А·год», порожня. Кожен рядок — посередині своєї смуги.
      * У застосунку — як було (false).
+     * T99 (faric 04.11 22:34, скрін A26): вати — на смугу нижче (між «%» і ватами — порожня смуга), за ними рядок В і
+     * А·год (остання смуга); температура — посередині між низом «50» і верхом «NN %».
      */
     var slots: Boolean = false
 
@@ -316,11 +318,13 @@ class GaugeView(context: Context) : View(context) {
             val top = label50 + 3 * dp
             val band = (height - top) / 7f
             fun mid(k: Int, size: Float) = top + band * (k + 0.5f) + size * 0.36f
-            yTemp = mid(1, sp(tempSp))
             yBig = mid(2, big.textSize)
-            yAmp = mid(3, amp.textSize)
-            y3 = mid(4, size3)
-            yCap = mid(5, capPaint.textSize)
+            yAmp = mid(4, amp.textSize) // T99: смуга 3 — порожня, вати відступають від «NN %»
+            y3 = mid(5, size3)
+            yCap = mid(6, capPaint.textSize)
+            // T99: температура — посередині між низом підпису «50» і верхом цифр «NN %» (≈ 0,72 висоти шрифту)
+            val pctTop = yBig - big.textSize * 0.72f
+            yTemp = (label50 + pctTop) / 2f + sp(tempSp) * 0.36f
         }
         canvas.drawText("$soc %", cx, yBig, big)
         temperature?.let { t ->
