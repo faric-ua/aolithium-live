@@ -110,8 +110,20 @@ class GaugeView(context: Context) : View(context) {
      * T97 (faric 04.11 01:58, картинка бота): місце від поділки «50» до низу спідометра — 7 рівних смуг: порожня,
      * температура, відсотки, вати, «13,32 В · стоїть», «92,3 з 92,3 А·год», порожня. Кожен рядок — посередині своєї смуги.
      * У застосунку — як було (false).
+     * T99 (faric 04.11 22:34, скрін A26): вати — на смугу нижче (між «%» і ватами — порожня смуга), за ними рядок В і
+     * А·год (остання смуга); температура — посередині між низом «50» і верхом «NN %».
      */
     var slots: Boolean = false
+
+    /**
+     * T98 (скрін маминої групи 04.11 22:31): на маминому телефоні (Realme, великий шрифт у налаштуваннях) відсотки,
+     * температура й вати на картинці бота налізли одне на одне — розміри «sp» ростуть разом зі шрифтом телефона, а смуги
+     * (T97) — ні. Для картинки бота розміри — у dp: однаково на будь-якому телефоні. У застосунку — sp, як і було
+     * (людина з великим шрифтом бачить більші числа).
+     */
+    var fixedText: Boolean = false
+
+    private val textUnit: Int get() = if (fixedText) TypedValue.COMPLEX_UNIT_DIP else TypedValue.COMPLEX_UNIT_SP
 
     private val dp = resources.displayMetrics.density
     private val zoneStroke = 9 * dp
@@ -131,7 +143,7 @@ class GaugeView(context: Context) : View(context) {
     private val box = RectF()
     private val path = Path()
 
-    private fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, resources.displayMetrics) * textScale
+    private fun sp(v: Float) = TypedValue.applyDimension(textUnit, v, resources.displayMetrics) * textScale
 
     private fun describe() {
         val dir = when {
@@ -190,7 +202,7 @@ class GaugeView(context: Context) : View(context) {
         // поділки 0 / 10 / 20 / 50 / 90 / 100 — всередині, під дугою заповнення. Центр підпису відсуваємо від дуги на
         // половину його ширини/висоти в напрямку дуги — інакше широке «100» торкалось дуги (скрін faric 19.10 04:41, T18).
         // T96: розмір ставимо тут, а не при створенні фарби — тоді не залежить від порядку полів
-        tick.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tickSp, resources.displayMetrics)
+        tick.textSize = TypedValue.applyDimension(textUnit, tickSp, resources.displayMetrics)
         val rTick = rFill - fillStroke / 2 - 12 * dp
         val rEdge = rFill - fillStroke / 2 - 5 * dp
         var label50 = cy - rTick // T97: низ підпису «50» — звідси починаються смуги
@@ -306,11 +318,13 @@ class GaugeView(context: Context) : View(context) {
             val top = label50 + 3 * dp
             val band = (height - top) / 7f
             fun mid(k: Int, size: Float) = top + band * (k + 0.5f) + size * 0.36f
-            yTemp = mid(1, sp(tempSp))
             yBig = mid(2, big.textSize)
-            yAmp = mid(3, amp.textSize)
-            y3 = mid(4, size3)
-            yCap = mid(5, capPaint.textSize)
+            yAmp = mid(4, amp.textSize) // T99: смуга 3 — порожня, вати відступають від «NN %»
+            y3 = mid(5, size3)
+            yCap = mid(6, capPaint.textSize)
+            // T99: температура — посередині між низом підпису «50» і верхом цифр «NN %» (≈ 0,72 висоти шрифту)
+            val pctTop = yBig - big.textSize * 0.72f
+            yTemp = (label50 + pctTop) / 2f + sp(tempSp) * 0.36f
         }
         canvas.drawText("$soc %", cx, yBig, big)
         temperature?.let { t ->

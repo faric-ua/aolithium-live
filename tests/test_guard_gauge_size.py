@@ -21,12 +21,16 @@ class GuardGaugeSize(unittest.TestCase):
         self.assertTrue(dp >= 360, dp)  # faric 04.11, макет «варіант А»: підкова майже на всю ширину
         self.assertLessEqual(dp, w - 32)  # влазить у картинку з полями по 16
         self.assertIn("slots = true", art)  # T97: 7 смуг від «50» до низу
+        # T98: великий шрифт на телефоні-сторожі (у мами) не роздуває числа — розміри картинки бота в dp
+        self.assertIn("fixedText = true", art)
+        g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
+        self.assertNotIn("applyDimension(TypedValue.COMPLEX_UNIT_SP", g)  # лише через textUnit
 
     def test_ticks_size_does_not_depend_on_field_order(self):
         # T96: у 0.4.36 textScale стояв нижче фарб — поділки отримали розмір 0 і зникли
         g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
         self.assertLess(g.index("var textScale"), g.index("private val tick = Paint"))
-        self.assertIn("tick.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, tickSp", g)
+        self.assertIn("tick.textSize = TypedValue.applyDimension(textUnit, tickSp", g)
         self.assertIn("listOf(0, 10, 20, 50, 90, 100)", g)
 
     def test_gauge_uses_fixed_size_before_screen(self):
