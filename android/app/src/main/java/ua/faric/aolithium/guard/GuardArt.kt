@@ -50,10 +50,12 @@ object GuardArt {
     const val BOT_GAUGE_DP = 370 // T96 (faric 04.11, макет «варіант А»): підкова майже на всю ширину (було 320)
     const val GAUGE_W_DP = 420
     /** T97: розміри чисел у спідометрі бота (sp): 0.4.37 було 43,2 / 12,6 / 21,6 / 11,7; faric: +6 / +6 / +6 / +6. */
-    const val BOT_BIG_SP = 49.2f
-    const val BOT_TEMP_SP = 18.6f
-    const val BOT_AMP_SP = 27.6f
-    const val BOT_LINE_SP = 17.7f
+    // T100 (faric 05.11 03:36): з T98 розміри в dp — на A26 (великий шрифт у телефоні) стало дрібніше, ніж у 0.4.38;
+    // усе всередині спідометра × 1,15 (було 49,2 / 18,6 / 27,6 / 17,7). Довгі рядки звужує fit() — не вилізуть за дугу.
+    const val BOT_BIG_SP = 56.6f
+    const val BOT_TEMP_SP = 21.4f
+    const val BOT_AMP_SP = 31.7f
+    const val BOT_LINE_SP = 20.4f
     const val BOT_TICK_SP = 12.5f
     /** T96: щільніше над і під спідометром, щоб картинка з більшою підковою лишалась майже квадратною (~420×446). */
     private const val HEAD_DP = 28f
