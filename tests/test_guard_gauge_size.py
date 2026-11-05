@@ -20,7 +20,7 @@ class GuardGaugeSize(unittest.TestCase):
         self.assertTrue(0.93 <= w / h <= 1.12, (w, h))
         self.assertTrue(dp >= 360, dp)  # faric 04.11, макет «варіант А»: підкова майже на всю ширину
         self.assertLessEqual(dp, w - 32)  # влазить у картинку з полями по 16
-        self.assertIn("slots = true", art)  # T97: 7 смуг від «50» до низу
+        self.assertIn("slots = false", art)  # T101: розклад як у застосунку (смуги T97 — ні)
         # T98: великий шрифт на телефоні-сторожі (у мами) не роздуває числа — розміри картинки бота в dp
         self.assertIn("fixedText = true", art)
         g = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
