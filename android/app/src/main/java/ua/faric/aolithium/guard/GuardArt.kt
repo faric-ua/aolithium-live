@@ -52,10 +52,14 @@ object GuardArt {
     /** T97: розміри чисел у спідометрі бота (sp): 0.4.37 було 43,2 / 12,6 / 21,6 / 11,7; faric: +6 / +6 / +6 / +6. */
     // T100 (faric 05.11 03:36): з T98 розміри в dp — на A26 (великий шрифт у телефоні) стало дрібніше, ніж у 0.4.38;
     // усе всередині спідометра × 1,15 (було 49,2 / 18,6 / 27,6 / 17,7). Довгі рядки звужує fit() — не вилізуть за дугу.
-    const val BOT_BIG_SP = 56.6f
-    const val BOT_TEMP_SP = 21.4f
-    const val BOT_AMP_SP = 31.7f
-    const val BOT_LINE_SP = 20.4f
+    // T102 (faric 05.11 17:22, скріни «Зараз» і бота поруч): «підкова в боті більша, а текст той самий» — числа губились
+    // у великій підкові. Заміряно на скрінах частку ширини дуги, яку займає кожен рядок у застосунку й у боті, і
+    // підігнано бота під застосунок: % ×1,07, Вт ×1,10, «В · стоїть» ×1,08, А·год ×1,16, °C ×1,3 (було 56,6 / 31,7 / 20,4 / 20,4 / 21,4).
+    const val BOT_BIG_SP = 60.6f
+    const val BOT_TEMP_SP = 27.8f
+    const val BOT_AMP_SP = 34.9f
+    const val BOT_LINE_SP = 22.0f
+    const val BOT_CAP_SP = 23.7f
     const val BOT_TICK_SP = 12.5f
     /** T96: щільніше над і під спідометром, щоб картинка з більшою підковою лишалась майже квадратною (~420×446). */
     private const val HEAD_DP = 28f
@@ -125,7 +129,7 @@ object GuardArt {
             tempSp = BOT_TEMP_SP
             ampSp = BOT_AMP_SP
             smallSp = BOT_LINE_SP
-            capSp = BOT_LINE_SP
+            capSp = BOT_CAP_SP
             soc = s.soc
             current = s.current
             power = s.power
