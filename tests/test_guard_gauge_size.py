@@ -18,7 +18,9 @@ class GuardGaugeSize(unittest.TestCase):
         h = 16 + f("HEAD_DP") + 0.88 * dp + f("GAP_DP") + 3 * f("LINE_DP") + f("BOTTOM_DP")
         # T87: 360×400 (0,9) Telegram обрізав у особистому чаті; тримаємо ≥ 0,93
         self.assertTrue(0.93 <= w / h <= 1.12, (w, h))
-        self.assertTrue(dp >= 360, dp)  # faric 04.11, макет «варіант А»: підкова майже на всю ширину
+        # T96 (04.11) підкова була ≥ 360; T102 (faric 05.11 17:23 «почнемо з радіуса»): як у застосунку — MAX_DP GaugeView
+        g0 = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
+        self.assertEqual(dp, int(re.search(r"const val MAX_DP = (\d+)", g0).group(1)), dp)
         self.assertLessEqual(dp, w - 32)  # влазить у картинку з полями по 16
         self.assertIn("slots = false", art)  # T101: розклад як у застосунку (смуги T97 — ні)
         # T98: великий шрифт на телефоні-сторожі (у мами) не роздуває числа — розміри картинки бота в dp
