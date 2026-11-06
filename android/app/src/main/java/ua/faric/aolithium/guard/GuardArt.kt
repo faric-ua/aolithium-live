@@ -70,6 +70,8 @@ object GuardArt {
     private const val BOTTOM_DP = 12f
     private const val FOOT_DP = 26f
     private const val WAIT_MS = 5_000L
+    /** T105: під спідометром завжди місце на стільки рядків — усі картинки бота однакового розміру. */
+    const val BOTTOM_LINES = 3
 
     fun battery(
         ctx: Context, look: GuardPicture.Look, name: String, s: BatterySnapshot?, at: Long?, now: Long,
@@ -152,7 +154,9 @@ object GuardArt {
             // T65 рядок «температура …» тут не потрібен: з T67 вона над «NN %» у самому спідометрі
             .filter { it.first.isNotBlank() }
         val lineH = LINE_DP * d
-        val h = (pad + head + gh + GAP_DP * d + lines.size * lineH + BOTTOM_DP * d).toInt()
+        // T105 (faric 06.11 21:15, мамин бот: «Батарея повна» — 2 рядки, «Світло зникло» — 3 рядки): висота картинки
+        // залежала від кількості рядків, і Telegram показував картинки різної ширини. Тепер місце завжди на 3 рядки.
+        val h = (pad + head + gh + GAP_DP * d + BOTTOM_LINES * lineH + BOTTOM_DP * d).toInt()
         return frame(w, h) { c ->
             header(c, name, model, at, now, pad, pad, w - pad, d)
             c.save()
