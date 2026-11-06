@@ -77,6 +77,7 @@ while true; do
   echo " 10 — Вікно встановлення сховалось? Відкрити ще раз"
   echo "  5 — Встановити версію, зібрану на іншому телефоні"
   echo " 13 — Відкрити папку з останнім APK"
+  echo " 14 — 🔑 Покласти ключ підпису в «Ключі» (для брата)"
   echo "  4 — Телефон без Termux (Huawei): як поставити"
   echo
   echo " ЩОДНЯ"
@@ -130,6 +131,7 @@ while true; do
     9) run_tool al-widget.sh ;;
     10) run_tool al-reopen-install.sh ;;
     13) run_tool al-open-apk-folder.sh ;;
+    14) clear; bash "$TOOLS/faric-keys-put.sh" "Aolithium Live"; pause_menu ;;
     11) run_tool al-local-build.sh ;;
     12)
       clear
