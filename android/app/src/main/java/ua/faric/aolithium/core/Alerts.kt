@@ -286,7 +286,7 @@ object Alerts {
         TimeLeft.discharge(s.remainAh, s.fullAh, s.current)?.let { d ->
             val to20 = d.toThreshold.firstOrNull { it.first == 20 }?.second
             parts += if (to20 != null) {
-                tr("вистачить ≈ ${Fmt.duration(to20)} до 20 %", "lasts ≈ ${Fmt.duration(to20)} to 20 %")
+                tr("вистачить ≈ ${Fmt.since(to20)} до 20 %", "lasts ≈ ${Fmt.since(to20)} to 20 %") /* T105: «≈ 4 доби 6 год», не «понад 99 год» */
             } else {
                 tr("до кінця ≈ ${Fmt.duration(d.totalH)}", "until empty ≈ ${Fmt.duration(d.totalH)}")
             }

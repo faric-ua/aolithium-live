@@ -74,7 +74,7 @@ object WidgetModel {
                 val d = TimeLeft.discharge(s.remainAh, s.fullAh, s.current)
                 val to20 = d?.toThreshold?.firstOrNull { it.first == 20 }?.second
                 val left = when {
-                    to20 != null -> tr("вистачить ≈ ${Fmt.duration(to20)} до 20 %", "lasts ≈ ${Fmt.duration(to20)} to 20 %")
+                    to20 != null -> tr("вистачить ≈ ${Fmt.since(to20)} до 20 %", "lasts ≈ ${Fmt.since(to20)} to 20 %") /* T105: «≈ 4 доби 6 год», не «понад 99 год» */
                     d != null -> {
                         val total = Fmt.duration(d.totalH)
                         tr("до кінця ≈ $total — час заряджати", "until empty ≈ $total — time to charge")
