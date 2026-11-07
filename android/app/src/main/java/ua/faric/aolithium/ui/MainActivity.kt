@@ -440,14 +440,28 @@ class MainActivity : Activity() {
         }
     }
 
+    /**
+     * T106 (faric 07.11 16:42): поки «Точний запис» увімкнений і застосунок на екрані — екран не гасне й телефон не
+     * блокується (FLAG_KEEP_SCREEN_ON: лише поки це вікно видно; згорнув — телефон гасне як завжди). Вимкнули — прапорець знято.
+     */
+    private val keepScreen: () -> Unit = {
+        runOnUiThread {
+            if (PreciseMode.on) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        PreciseMode.observe(keepScreen)
+        keepScreen()
         screen?.onResume()
         // Повернулись з «Дозволити з цього джерела» — встановлення перевіреного оновлення продовжується саме.
         if (UpdateFeature.VISIBLE) UpdateUi(this).resumePendingInstall()
     }
 
     override fun onStop() {
+        PreciseMode.unobserve(keepScreen)
         started = false
         screen?.onStop()
         Updater.detach(this)
