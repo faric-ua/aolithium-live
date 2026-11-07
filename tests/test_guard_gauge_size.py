@@ -17,7 +17,8 @@ class GuardGaugeSize(unittest.TestCase):
         # T96: висота = 16 + назва + 0,88 × бік + проміжок + 3 рядки + низ (як у gauge())
         h = 16 + f("HEAD_DP") + 0.88 * dp + f("GAP_DP") + 3 * f("LINE_DP") + f("BOTTOM_DP")
         # T87: 360×400 (0,9) Telegram обрізав у особистому чаті; тримаємо ≥ 0,93
-        self.assertTrue(0.93 <= w / h <= 1.12, (w, h))
+        # T107 (07.11): в особистому чаті Telegram ріже все, що не ширше за висоту ≈ в 1,2 раза
+        self.assertTrue(1.2 <= w / h <= 1.35, (w, h))
         # T96 (04.11) підкова була ≥ 360; T102 (faric 05.11 17:23 «почнемо з радіуса»): як у застосунку — MAX_DP GaugeView
         g0 = (APP / "ui/GaugeView.kt").read_text(encoding="utf-8")
         self.assertEqual(dp, int(re.search(r"const val MAX_DP = (\d+)", g0).group(1)), dp)
